@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정이조 | 담임 안내문 생성기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2321;
+    --ink-soft:#5B6360;
+    --paper:#F6F7F9;
+    --card:#FFFFFF;
+    --line:#E3E6E8;
+    --accent:#C13E3E;      /* 강조 - 코드/기한 등 핵심 정보 */
+    --accent-soft:#FBEAEA;
+    --teal:#1F7A6C;        /* 보조 - 아이콘/포인트 */
+    --teal-soft:#E7F3F0;
+    --amber:#B7791F;
+    --amber-soft:#FBF2E2;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- 레이아웃 ---------- */
+  .app{ display:flex; min-height:100vh; }
+  .panel{
+    width:400px; flex:0 0 400px;
+    background:var(--card);
+    border-right:1px solid var(--line);
+    padding:28px 24px 60px;
+    overflow-y:auto;
+    height:100vh; position:sticky; top:0;
+  }
+  .stage{
+    flex:1;
+    padding:36px;
+    display:flex; flex-direction:column; align-items:center; gap:32px;
+  }
+
+  /* ---------- 패널 UI ---------- */
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+  .brand-mark{
+    width:34px; height:34px; border-radius:9px;
+    background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:14px; letter-spacing:-0.5px;
+  }
+  .brand-text{ font-weight:800; font-size:15px; letter-spacing:-0.2px; }
+  .brand-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+
+  .section-title{
+    font-size:12px; font-weight:700; color:var(--ink-soft);
+    letter-spacing:0.02em; margin:26px 0 10px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .section-title:first-of-type{ margin-top:0; }
+
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px;
+  }
+  .field input[type=text], .field select{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px;
+    font-family:inherit; font-size:13.5px; color:var(--ink); background:#fff;
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+  .seg{ display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+  .seg button{
+    flex:1; padding:8px 4px; border:none; background:#fff; cursor:pointer;
+    font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+    border-right:1px solid var(--line);
+  }
+  .seg button:last-child{ border-right:none; }
+  .seg button.active{ background:var(--ink); color:#fff; }
+
+  .count-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:8px 12px; margin-bottom:16px;
+  }
+  .count-row .label{ font-size:12.5px; font-weight:700; color:var(--ink); }
+  .stepper{ display:flex; align-items:center; gap:10px; }
+  .stepper button{
+    width:26px; height:26px; border-radius:7px; border:1px solid var(--line);
+    background:#fff; font-size:15px; font-weight:700; cursor:pointer; color:var(--ink);
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .stepper button:hover{ background:var(--paper); }
+  .stepper .num{ font-weight:800; font-size:14px; min-width:16px; text-align:center; }
+
+  .class-card{
+    border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px;
+    background:var(--paper);
+    position:relative;
+  }
+  .class-card-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+  }
+  .class-code-preview{
+    font-weight:800; font-size:14px; color:var(--accent); letter-spacing:0.01em;
+  }
+  .del-btn{
+    border:none; background:none; color:var(--ink-soft); cursor:pointer;
+    font-size:12px; font-weight:600; padding:2px 6px; border-radius:6px;
+  }
+  .del-btn:hover{ background:var(--accent-soft); color:var(--accent); }
+
+  .actions{ margin-top:26px; display:flex; flex-direction:column; gap:8px; }
+  .btn{
+    padding:12px 14px; border-radius:10px; border:none; cursor:pointer;
+    font-family:inherit; font-weight:700; font-size:13.5px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-primary{ background:var(--ink); color:#fff; }
+  .btn-primary:hover{ background:#000; }
+  .btn-secondary{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:var(--paper); }
+  .mwf-editor{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .mwf-day-col{ display:flex; flex-direction:column; gap:5px; }
+  .mwf-day-label{ font-size:11.5px; font-weight:700; color:var(--ink-soft); text-align:center; margin-bottom:1px; }
+  .mwf-day-col select{
+    width:100%; padding:6px 4px; border:1px solid var(--line); border-radius:7px;
+    font-family:inherit; font-size:12px; font-weight:700; color:var(--accent); background:#fff; text-align:center;
+  }
+
+  .add-class{
+    width:100%; padding:10px; border-radius:10px; border:1px dashed #C6CBCE;
+    background:#fff; color:var(--ink-soft); font-weight:700; font-size:12.5px; cursor:pointer;
+  }
+  .add-class:hover{ color:var(--ink); border-color:var(--ink-soft); }
+
+  /* ---------- 인쇄 페이지(A4) ---------- */
+  .page{
+    width:210mm; min-height:297mm;
+    background:#fff;
+    box-shadow:0 8px 30px rgba(20,25,25,0.10);
+    padding:14mm 15mm 8mm;
+    position:relative;
+    flex:0 0 auto;
+    display:flex; flex-direction:column;
+  }
+  .page-content{ flex:1; }
+  .page-label{
+    font-size:12px; color:var(--ink-soft); font-weight:700; align-self:flex-start;
+    margin-left:2px;
+  }
+  .doc-header{
+    display:flex; align-items:center; justify-content:center; gap:12px;
+    padding-bottom:14px; margin-bottom:16px; border-bottom:3px solid var(--ink);
+  }
+  .doc-icon{ flex:0 0 auto; }
+  .doc-title{ font-size:30px; font-weight:800; letter-spacing:-0.02em; }
+
+  .intro{ font-size:13.5px; line-height:1.85; margin-bottom:16px; }
+  .intro .code-badge{
+    display:inline-block; background:var(--accent); color:#fff; font-weight:800;
+    padding:1px 8px; border-radius:6px; font-size:13px; letter-spacing:0.01em;
+  }
+  .intro .phone{ font-weight:700; color:var(--accent); }
+  .intro .room{ font-weight:700; }
+
+  .callout{
+    font-size:13px; line-height:1.7; margin-bottom:16px;
+    padding:10px 14px; background:var(--teal-soft); border-radius:10px;
+    border-left:4px solid var(--teal);
+  }
+  .callout b{ color:var(--teal); }
+
+  .hw-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+  .hw-box{
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .hw-box-head{
+    padding:9px 14px; font-weight:800; font-size:13px; color:#fff;
+  }
+  .hw-box.sunday .hw-box-head{ background:var(--teal); }
+  .hw-box.due .hw-box-head{ background:var(--accent); }
+  .hw-box-body{ padding:12px 14px 14px; font-size:12.3px; line-height:1.75; flex:1; }
+  .hw-box-body ol{ margin:0 0 8px; padding-left:18px; }
+  .hw-box-body ol li{ margin-bottom:3px; }
+  .hw-note{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; }
+
+  .drag-item{
+    border:1px solid var(--line); border-radius:9px; padding:8px 40px 9px 10px;
+    margin-bottom:8px; background:#FAFBFB; cursor:grab; position:relative;
+  }
+  .drag-item.dragging{ opacity:0.4; }
+  .drag-item .item-title{ font-weight:700; font-size:12.3px; margin-bottom:3px; }
+  .drag-item .item-due{
+    display:inline-block; margin-top:5px; font-size:11px; font-weight:700;
+    color:var(--amber); background:var(--amber-soft); padding:1px 7px; border-radius:6px;
+  }
+  .drag-handle{
+    position:absolute; top:8px; right:8px; color:#C6CBCE; font-size:14px;
+    letter-spacing:-1px; user-select:none; line-height:1;
+  }
+
+  .handbook-note{
+    font-size:12.5px; font-weight:700; margin:2px 0 14px;
+  }
+
+  .tt-title{
+    display:flex; align-items:center; gap:6px; font-weight:800; font-size:14px; margin-bottom:9px;
+  }
+  table.tt{ width:100%; border-collapse:collapse; }
+  table.tt th, table.tt td{
+    border:1px solid var(--line); text-align:center; vertical-align:middle;
+  }
+  table.tt th{
+    background:var(--ink); color:#fff; font-size:12.5px; font-weight:700; padding:8px 4px;
+  }
+  table.tt th.corner{ background:var(--ink); }
+  table.tt td.head-col{
+    background:#F1F3F4; font-weight:800; font-size:14px; width:64px;
+  }
+  table.tt td.cell{ padding:10px 6px; }
+  .subj-code{ font-weight:800; font-size:15px; color:var(--accent); }
+  .subj-name{ font-size:10.5px; color:var(--ink-soft); margin:2px 0 5px; }
+  .subj-detail{ font-size:11px; color:var(--ink); }
+
+  .footer-mark{
+    text-align:center; font-size:10.5px; color:#B9C0C2; letter-spacing:0.04em; margin-top:4px;
+  }
+  .page-footer{ margin-top:16px; }
+  .footer-line{ border-top:3px solid var(--ink); margin-bottom:8px; }
+  .footer-campus{
+    text-align:center; font-size:13px; font-weight:800; color:var(--ink); letter-spacing:0.01em;
+  }
+
+  @media print{
+    .panel{ display:none; }
+    .stage{ padding:0; gap:0; }
+    .page-label{ display:none; }
+    .page{ box-shadow:none; page-break-after:always; margin:0 auto; }
+    body{ background:#fff; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ================= 왼쪽 입력 패널 ================= -->
+  <div class="panel" id="panel"></div>
+
+  <!-- ================= 오른쪽 미리보기 ================= -->
+  <div class="stage" id="stage"></div>
+
+</div>
+
+<script>
+/* ---------------- 상수 ---------------- */
+const WEEKDAYS = ['월','화','수','목','금'];
+const SUBJ = { FW:'Fiction & Writing', NS:'Non-fiction & Speaking', LF:'Language Framework' };
+const CAMPUSES = [
+  '정이조주니어영어학원(목동)',
+  '정이조주니어(목2관)',
+  '정이조주니어(목3관)',
+  '정이조주니어(강서)',
+  '정이조주니어(동작)',
+  '정이조주니어(마포)',
+  '정이조주니어(가재울)',
+  '정이조주니어(김포운양)',
+  '정이조주니어(강동고덕)'
+];
+
+function defaultMwfSchedule(){
+  return { '월':['NS','FW'], '수':['FW','LF'], '금':['NS','LF'] };
+}
+function defaultTthSchedule(){
+  return { '화':['FW','NS','LF'], '목':['FW','NS','LF'] };
+}
+
+function mkClass(dayGroup, slot, levelName, levelNum, suffix, room, vocabDay, campus){
+  return {
+    id: 'c'+Math.random().toString(36).slice(2,9),
+    dayGroup, slot, levelName, levelNum, suffix, room, vocabDay,
+    campus: campus || CAMPUSES[0],
+    order: ['fixed','vocab'],
+    mwfSchedule: defaultMwfSchedule(),
+    tthSchedule: defaultTthSchedule()
+  };
+}
+
+/* ---------------- 상태 ---------------- */
+let state = {
+  teacherName: 'Ryan',
+  phone: '010-7216-2797',
+  classes: [
+    mkClass('MWF','F','Island','3','B','8','월'),
+    mkClass('TTH','F','Island','3','A','5','화'),
+    mkClass('MWF','M','Island','2','A','6','수'),
+  ]
+};
+
+/* ---------------- 코드/시간표 계산 ---------------- */
+function classCode(c){
+  const dayLetter = c.dayGroup === 'MWF' ? 'M' : 'T';
+  const lvlInitial = (c.levelName || '').trim().charAt(0).toUpperCase() || '?';
+  const suf = c.suffix && c.suffix.trim() ? '-' + c.suffix.trim() : '';
+  return `${dayLetter}(${c.slot})${lvlInitial}${c.levelNum}${suf}`;
+}
+
+function timetableSpec(c){
+  const lvlLabel = `Discover ${c.levelName} ${c.levelNum}`;
+  if(c.dayGroup === 'MWF'){
+    return {
+      orientation:'daysAsCols',
+      cols: ['월','수','금'],
+      rows: ['1교시','2교시'],
+      data: c.mwfSchedule || defaultMwfSchedule(),
+      lvlLabel
+    };
+  }
+  return {
+    orientation:'daysAsRows',
+    cols: ['1교시','2교시','3교시'],
+    rows: ['화','목'],
+    data: c.tthSchedule || defaultTthSchedule(),
+    lvlLabel
+  };
+}
+
+/* ---------------- 아이콘 (라인 SVG) ---------------- */
+const ICON_BOOK = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <path d="M16 8.5C13.8 6.7 10.6 6 6 6.6v17.4c4.6-0.6 7.8 0.1 10 1.9" stroke="#1C2321" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 8.5C18.2 6.7 21.4 6 26 6.6v17.4c-4.6-0.6-7.8 0.1-10 1.9" stroke="#1C2321" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 8.5v17.4" stroke="#C13E3E" stroke-width="1.6" stroke-linecap="round"/>
+</svg>`;
+const ICON_CLOCK = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1C2321" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>`;
+
+/* ---------------- 렌더: 컨트롤 패널 ---------------- */
+function renderPanel(){
+  const p = document.getElementById('panel');
+  p.innerHTML = `
+    <div class="brand">
+      <div class="brand-mark">정</div>
+      <div>
+        <div class="brand-text">정이조 · 담임 안내문 생성기</div>
+        <div class="brand-sub">반 정보를 입력하면 A4 안내문으로 자동 조합돼요</div>
+      </div>
+    </div>
+
+    <div class="section-title">담임 선생님 공통 정보</div>
+    <div class="field">
+      <label>선생님 이름</label>
+      <input type="text" id="teacherName" value="${esc(state.teacherName)}">
+    </div>
+    <div class="field">
+      <label>직통 전화번호</label>
+      <input type="text" id="phone" value="${esc(state.phone)}">
+    </div>
+
+    <div class="section-title">담당 반 목록</div>
+    <div class="count-row">
+      <div class="label">반 개수</div>
+      <div class="stepper">
+        <button id="decClass" type="button">−</button>
+        <div class="num">${state.classes.length}</div>
+        <button id="incClass" type="button">+</button>
+      </div>
+    </div>
+
+    <div id="classList"></div>
+    <button class="add-class" id="addClassBtn" type="button">+ 반 추가</button>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="printBtn" type="button">🖨️ 인쇄하기</button>
+      <button class="btn btn-secondary" id="pdfBtn" type="button">⬇️ PDF로 저장</button>
+    </div>
+  `;
+
+  document.getElementById('teacherName').oninput = e => { state.teacherName = e.target.value; renderStage(); };
+  document.getElementById('phone').oninput = e => { state.phone = e.target.value; renderStage(); };
+  document.getElementById('incClass').onclick = () => {
+    const last = state.classes[state.classes.length-1];
+    state.classes.push(mkClass(last?.dayGroup||'MWF', last?.slot||'F', last?.levelName||'Island', last?.levelNum||'1','', '', '월'));
+    renderAll();
+  };
+  document.getElementById('decClass').onclick = () => {
+    if(state.classes.length>1){ state.classes.pop(); renderAll(); }
+  };
+  document.getElementById('addClassBtn').onclick = () => {
+    state.classes.push(mkClass('MWF','F','Island','1','', '', '월'));
+    renderAll();
+  };
+  document.getElementById('printBtn').onclick = () => window.print();
+  document.getElementById('pdfBtn').onclick = exportPDF;
+
+  renderClassList();
+}
+
+function renderMwfEditor(c, i){
+  const days = ['월','수','금'];
+  return `
+    <div class="field">
+      <label>MWF 요일별 수업 배정 (직접 조정 가능)</label>
+      <div class="mwf-editor">
+        ${days.map(d => `
+          <div class="mwf-day-col">
+            <div class="mwf-day-label">${d}</div>
+            ${[0,1].map(p => `
+              <select data-mwf="1" data-idx="${i}" data-day="${d}" data-period="${p}">
+                ${Object.keys(SUBJ).map(code=>`<option value="${code}" ${c.mwfSchedule[d][p]===code?'selected':''}>${code}</option>`).join('')}
+              </select>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderTthEditor(c, i){
+  const days = ['화','목'];
+  return `
+    <div class="field">
+      <label>TTH 요일별 수업 배정 (직접 조정 가능)</label>
+      <div class="mwf-editor" style="grid-template-columns:1fr 1fr;">
+        ${days.map(d => `
+          <div class="mwf-day-col">
+            <div class="mwf-day-label">${d}</div>
+            ${[0,1,2].map(p => `
+              <select data-tth="1" data-idx="${i}" data-day="${d}" data-period="${p}">
+                ${Object.keys(SUBJ).map(code=>`<option value="${code}" ${c.tthSchedule[d][p]===code?'selected':''}>${code}</option>`).join('')}
+              </select>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderClassList(){
+  const list = document.getElementById('classList');
+  list.innerHTML = state.classes.map((c,i) => `
+    <div class="class-card" data-idx="${i}">
+      <div class="class-card-head">
+        <div class="class-code-preview">${esc(classCode(c))}</div>
+        ${state.classes.length>1 ? `<button class="del-btn" data-del="${i}" type="button">삭제</button>` : ''}
+      </div>
+
+      <div class="field">
+        <label>요일 그룹</label>
+        <div class="seg" data-field="dayGroup" data-idx="${i}">
+          <button type="button" data-val="MWF" class="${c.dayGroup==='MWF'?'active':''}">MWF</button>
+          <button type="button" data-val="TTH" class="${c.dayGroup==='TTH'?'active':''}">TTH</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>타임 슬롯</label>
+        <div class="seg" data-field="slot" data-idx="${i}">
+          <button type="button" data-val="F" class="${c.slot==='F'?'active':''}">F · Front</button>
+          <button type="button" data-val="M" class="${c.slot==='M'?'active':''}">M · Middle</button>
+          <button type="button" data-val="T" class="${c.slot==='T'?'active':''}">T · Twilight</button>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>레벨명</label>
+          <select data-field="levelName" data-idx="${i}">
+            ${['Wind','Island','Nation','Globe'].map(l=>`<option value="${l}" ${c.levelName===l?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>레벨 숫자</label>
+          <select data-field="levelNum" data-idx="${i}">
+            ${['1','2','3','4'].map(n=>`<option value="${n}" ${c.levelNum===n?'selected':''}>${n}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>구분</label>
+          <select data-field="suffix" data-idx="${i}">
+            <option value="" ${!c.suffix?'selected':''}>없음</option>
+            ${['A','B','C','D'].map(s=>`<option value="${s}" ${c.suffix===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>강의실 번호</label>
+          <input type="text" data-field="room" data-idx="${i}" value="${esc(c.room)}" placeholder="예: 8">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Vocab Booster 제출 기한 요일</label>
+        <select data-field="vocabDay" data-idx="${i}">
+          ${WEEKDAYS.map(d=>`<option value="${d}" ${c.vocabDay===d?'selected':''}>${d}요일</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>캠퍼스</label>
+        <select data-field="campus" data-idx="${i}">
+          ${CAMPUSES.map(cp=>`<option value="${esc(cp)}" ${c.campus===cp?'selected':''}>${cp}</option>`).join('')}
+        </select>
+      </div>
+
+      ${c.dayGroup==='MWF' ? renderMwfEditor(c,i) : renderTthEditor(c,i)}
+    </div>
+  `).join('');
+
+  list.querySelectorAll('input[data-field], select[data-field]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const idx = +el.dataset.idx, field = el.dataset.field;
+      state.classes[idx][field] = el.value;
+      renderClassList.__skip = true;
+      document.querySelector(`.class-card[data-idx="${idx}"] .class-code-preview`).textContent = classCode(state.classes[idx]);
+      renderStage();
+    });
+  });
+
+  list.querySelectorAll('.seg[data-field] button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const seg = btn.parentElement;
+      const idx = +seg.dataset.idx, field = seg.dataset.field;
+      state.classes[idx][field] = btn.dataset.val;
+      renderAll();
+    });
+  });
+
+  list.querySelectorAll('select[data-mwf]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const idx = +el.dataset.idx, day = el.dataset.day, period = +el.dataset.period;
+      state.classes[idx].mwfSchedule[day][period] = el.value;
+      renderStage();
+    });
+  });
+
+  list.querySelectorAll('select[data-tth]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const idx = +el.dataset.idx, day = el.dataset.day, period = +el.dataset.period;
+      state.classes[idx].tthSchedule[day][period] = el.value;
+      renderStage();
+    });
+  });
+
+  list.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.classes.splice(+btn.dataset.del,1);
+      renderAll();
+    });
+  });
+}
+
+/* ---------------- 렌더: 미리보기(인쇄 페이지) ---------------- */
+function renderStage(){
+  const stage = document.getElementById('stage');
+  stage.innerHTML = state.classes.map((c,i)=>{
+    const code = classCode(c);
+    const spec = timetableSpec(c);
+    return `
+      <div class="page-label">미리보기 ${i+1} / ${state.classes.length} &nbsp;·&nbsp; ${esc(code)}</div>
+      <div class="page" id="page-${c.id}">
+        <div class="page-content">
+        <div class="doc-header">
+          <div class="doc-icon">${ICON_BOOK}</div>
+          <div class="doc-title">담임 안내문</div>
+        </div>
+
+        <div class="intro">
+          안녕하세요, <span class="code-badge">${esc(code)}</span>반 담임 <b>${esc(state.teacherName)}</b>입니다.
+          수업은 <span class="room"><b>${esc(c.room||'—')}</b>번 강의실</span>에서 하십니다.<br>
+          수업, 숙제와 시험에 대한 전반적인 안내 드리오니 확인하시고 궁금하신 사항은 연락 주세요.
+          제 직통 전화번호는 <span class="phone">${esc(state.phone)}</span> 입니다.
+        </div>
+
+        <div class="callout">
+          <b>★ ${esc(c.levelName)} ${esc(c.levelNum)} 숙제</b>는 알림장에 한달치가 기록되어 있으니,
+          담임이 관리하는 숙제의 완료 기한은 아래 표를 잘 따라주세요.
+        </div>
+
+        <div class="hw-grid">
+          <div class="hw-box sunday">
+            <div class="hw-box-head">일요일까지 완료할 숙제</div>
+            <div class="hw-box-body">
+              <ol>
+                <li>워크북(온라인학습): 매주 update되는 학습하기</li>
+                <li>영어독서앱에서 매주 빌린 책 1권 이상 읽고 Book Quiz 하기</li>
+                <li>튜토리: 매주 update되는 학습하기</li>
+              </ol>
+              <div class="hw-note">◆ 자세한 방법은 정이조 주니어 소식지 링크 참조</div>
+            </div>
+          </div>
+
+          <div class="hw-box due">
+            <div class="hw-box-head">해당 기한까지 완료할 숙제</div>
+            <div class="hw-box-body" id="dragzone-${c.id}">
+              ${renderDragItems(c)}
+            </div>
+          </div>
+        </div>
+
+        <div class="handbook-note">★ Handbook은 매일 가지고 다니세요.</div>
+
+        <div class="tt-title">${ICON_CLOCK} 요일별 수업 시간표는 다음과 같습니다</div>
+        ${renderTimetable(spec)}
+        </div>
+
+        <div class="page-footer">
+          <div class="footer-line"></div>
+          <div class="footer-campus">${esc(c.campus)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 드래그 이벤트 바인딩
+  state.classes.forEach(c => bindDrag(c));
+}
+
+function renderDragItems(c){
+  const content = {
+    fixed: { title:'1. LF, FW, NS숙제', due:'기한: 핸드북 알림장 참조', key:'fixed' },
+    vocab: { title:'2. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출', due:`기한: ${c.vocabDay}요일까지`, key:'vocab' }
+  };
+  return c.order.map((key, idx) => {
+    const item = content[key];
+    const num = idx+1;
+    const title = item.key==='fixed' ? `${num}. LF, FW, NS숙제` : `${num}. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출`;
+    return `
+      <div class="drag-item" draggable="true" data-key="${item.key}" data-cid="${c.id}">
+        <span class="drag-handle">⠿⠿</span>
+        <div class="item-title">${title}</div>
+        <div class="item-due">◆ ${item.due}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function bindDrag(c){
+  const zone = document.getElementById('dragzone-'+c.id);
+  if(!zone) return;
+  let dragKey = null;
+
+  zone.querySelectorAll('.drag-item').forEach(el=>{
+    el.addEventListener('dragstart', ()=>{ dragKey = el.dataset.key; el.classList.add('dragging'); });
+    el.addEventListener('dragend', ()=>{ el.classList.remove('dragging'); });
+  });
+
+  zone.addEventListener('dragover', e=>{ e.preventDefault(); });
+  zone.addEventListener('drop', e=>{
+    e.preventDefault();
+    if(!dragKey) return;
+    const targetEl = e.target.closest('.drag-item');
+    const cls = state.classes.find(x=>x.id===c.id);
+    const from = cls.order.indexOf(dragKey);
+    let to = targetEl ? cls.order.indexOf(targetEl.dataset.key) : cls.order.length-1;
+    if(from === -1 || from === to) return;
+    cls.order.splice(from,1);
+    cls.order.splice(to,0,dragKey);
+    zone.innerHTML = renderDragItems(cls);
+    bindDrag(cls);
+  });
+}
+
+function renderTimetable(spec){
+  if(spec.orientation === 'daysAsCols'){
+    // 열=요일, 행=교시
+    const header = `<th class="corner"></th>` + spec.cols.map(d=>`<th>${d}</th>`).join('');
+    const body = spec.rows.map((r, ri) => {
+      const cells = spec.cols.map(d=>{
+        const code = spec.data[d][ri];
+        return cellHtml(code, spec.lvlLabel);
+      }).join('');
+      return `<tr><td class="head-col">${r}</td>${cells}</tr>`;
+    }).join('');
+    return `<table class="tt"><tr>${header}</tr>${body}</table>`;
+  } else {
+    // 행=요일, 열=교시
+    const header = `<th class="corner"></th>` + spec.cols.map((_,ci)=>`<th>${ci+1}교시</th>`).join('');
+    const body = spec.rows.map(r=>{
+      const cells = spec.data[r].map(code => cellHtml(code, spec.lvlLabel)).join('');
+      return `<tr><td class="head-col">${r}</td>${cells}</tr>`;
+    }).join('');
+    return `<table class="tt"><tr>${header}</tr>${body}</table>`;
+  }
+}
+
+function cellHtml(code, lvlLabel){
+  return `<td class="cell">
+    <div class="subj-code">${code}</div>
+    <div class="subj-name">${SUBJ[code]}</div>
+    <div class="subj-detail">${lvlLabel} ${code}</div>
+  </td>`;
+}
+
+/* ---------------- PDF 저장 ---------------- */
+async function exportPDF(){
+  const btn = document.getElementById('pdfBtn');
+  const original = btn.textContent;
+  btn.textContent = '생성 중...';
+  btn.disabled = true;
+  try{
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pages = state.classes.map(c=>document.getElementById('page-'+c.id));
+    for(let i=0;i<pages.length;i++){
+      const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff' });
+      const img = canvas.toDataURL('image/jpeg',0.95);
+      if(i>0) pdf.addPage();
+      pdf.addImage(img,'JPEG',0,0,210,297);
+    }
+    pdf.save('담임안내문.pdf');
+  } catch(err){
+    alert('PDF 생성 중 오류가 발생했어요: ' + err.message);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+}
+
+/* ---------------- 유틸 ---------------- */
+function esc(s){
+  return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function renderAll(){ renderPanel(); renderStage(); }
+renderAll();
+</script>
+</body>
+</html>

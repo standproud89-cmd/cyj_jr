@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정이조 | 숙제 기한표 생성기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2321;
+    --ink-soft:#5B6360;
+    --paper:#F6F7F9;
+    --card:#FFFFFF;
+    --line:#E3E6E8;
+    --accent:#C13E3E;
+    --accent-soft:#FBEAEA;
+    --teal:#1F7A6C;
+    --teal-soft:#E7F3F0;
+    --amber:#B7791F;
+    --amber-soft:#FBF2E2;
+    --pgreen:#2E9E6D;
+    --pgreen-soft:#E7F5EE;
+    --polive:#8A6D1E;
+    --polive-soft:#F6F0DF;
+    --pblue:#3E7FC1;
+    --pblue-soft:#E9F1FA;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased;
+  }
+  .app{ display:flex; min-height:100vh; }
+  .panel{
+    width:400px; flex:0 0 400px; background:var(--card); border-right:1px solid var(--line);
+    padding:28px 24px 60px; overflow-y:auto; height:100vh; position:sticky; top:0;
+  }
+  .stage{ flex:1; padding:36px; display:flex; flex-direction:column; align-items:center; gap:32px; }
+
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+  .brand-mark{ width:34px; height:34px; border-radius:9px; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .brand-text{ font-weight:800; font-size:15px; letter-spacing:-0.2px; }
+  .brand-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+
+  .section-title{ font-size:12px; font-weight:700; color:var(--ink-soft); letter-spacing:0.02em;
+    margin:26px 0 10px; }
+  .section-title:first-of-type{ margin-top:0; }
+
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; }
+  .field input[type=text], .field input[type=date], .field select{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px;
+    font-family:inherit; font-size:13px; color:var(--ink); background:#fff;
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .seg{ display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; margin-bottom:12px;}
+  .seg button{ flex:1; padding:8px 4px; border:none; background:#fff; cursor:pointer; font-family:inherit;
+    font-size:12.5px; font-weight:600; color:var(--ink-soft); border-right:1px solid var(--line); }
+  .seg button:last-child{ border-right:none; }
+  .seg button.active{ background:var(--ink); color:#fff; }
+
+  .holiday-row{ display:flex; gap:6px; margin-bottom:8px; align-items:center; }
+  .holiday-row input[type=date]{ flex:1.1; }
+  .holiday-row input[type=text]{ flex:1; }
+  .holiday-row button{ flex:0 0 auto; border:none; background:none; color:var(--ink-soft);
+    cursor:pointer; font-size:15px; padding:2px 6px; }
+  .holiday-row button:hover{ color:var(--accent); }
+  .add-link{ background:none; border:1px dashed #C6CBCE; border-radius:8px; color:var(--ink-soft);
+    font-weight:700; font-size:12px; padding:7px; width:100%; cursor:pointer; margin-bottom:16px; }
+  .add-link:hover{ color:var(--ink); border-color:var(--ink-soft); }
+
+  .pair-card{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:var(--paper); }
+  .pair-card .pair-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .pair-dot{ width:9px; height:9px; border-radius:50%; }
+  .pair-name{ font-weight:800; font-size:12.5px; }
+
+  .actions{ margin-top:26px; display:flex; flex-direction:column; gap:8px; }
+  .btn{ padding:12px 14px; border-radius:10px; border:none; cursor:pointer; font-family:inherit;
+    font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .btn-primary{ background:var(--ink); color:#fff; }
+  .btn-primary:hover{ background:#000; }
+  .btn-secondary{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:var(--paper); }
+
+  /* ---------- A4 page ---------- */
+  .page{ width:210mm; min-height:297mm; background:#fff; box-shadow:0 8px 30px rgba(20,25,25,0.10);
+    padding:12mm 13mm 8mm; position:relative; flex:0 0 auto; display:flex; flex-direction:column; }
+  .page-content{ flex:1; }
+  .page-label{ font-size:12px; color:var(--ink-soft); font-weight:700; align-self:flex-start; margin-left:2px; }
+  .doc-header{ display:flex; align-items:center; justify-content:center; gap:10px; padding-bottom:10px;
+    margin-bottom:12px; border-bottom:3px solid var(--ink); }
+  .doc-title{ font-size:22px; font-weight:800; letter-spacing:-0.01em; }
+  .doc-sub{ text-align:center; font-size:10.5px; color:var(--ink-soft); line-height:1.6; margin-bottom:12px; }
+  .doc-sub u{ text-decoration:underline; text-decoration-color:var(--accent); }
+
+  .two-col{ display:grid; grid-template-columns:2.15fr 1fr; gap:12px; align-items:start; }
+
+  table.dd{ width:100%; border-collapse:collapse; font-size:11px; }
+  table.dd th, table.dd td{ border:1px solid var(--line); text-align:center; padding:5px 3px; vertical-align:middle; }
+  table.dd thead th.top{ background:var(--teal); color:#fff; font-size:11.5px; padding:6px; }
+  table.dd th.pairhead{ font-weight:800; font-size:12px; padding:6px 3px; }
+  table.dd th.paircode{ font-weight:700; font-size:11px; padding:4px 3px; }
+  table.dd td.daylabel{ background:#F1F3F4; font-weight:800; width:15%; }
+  table.dd td.spacer{ background:#fff; border:none; padding:2px 0; }
+  .jrtest-note{ display:block; margin-top:2px; font-size:9.5px; font-weight:800; color:var(--accent); }
+  .cp-note{ display:block; font-size:9px; color:var(--ink-soft); margin-top:1px; }
+
+  .side-table{ width:100%; border-collapse:collapse; font-size:11px; }
+  .side-table th, .side-table td{ border:1px solid var(--line); text-align:center; padding:5px 3px; }
+  .side-table thead th{ background:var(--amber); color:#fff; font-size:11px; padding:6px 3px; }
+  .side-table td input[type=date]{ border:none; background:transparent; font-size:10.5px; width:100%;
+    text-align:center; font-family:inherit; color:var(--ink); }
+  .side-title{ text-align:center; font-weight:800; font-size:13px; margin-bottom:6px; }
+  .side-note{ font-size:9px; color:var(--ink-soft); text-align:center; margin-bottom:8px; line-height:1.5; }
+  .side-fixed{ font-style:normal; color:var(--ink-soft); }
+
+  .page-footer{ margin-top:12px; }
+  .footer-line{ border-top:3px solid var(--ink); margin-bottom:6px; }
+  .footer-campus{ text-align:center; font-size:11.5px; font-weight:800; color:var(--ink); }
+
+  /* pair badge colors */
+  .p-mw{ background:var(--pgreen); }
+  .p-wf{ background:var(--polive); }
+  .p-mf{ background:var(--pblue); }
+  .p-tth{ background:var(--teal); }
+  .p-mw-soft{ background:var(--pgreen-soft); color:var(--pgreen); }
+  .p-wf-soft{ background:var(--polive-soft); color:var(--polive); }
+  .p-mf-soft{ background:var(--pblue-soft); color:var(--pblue); }
+  /* 마스터 캘린더 전용 배지 색 */
+  .mc-mw{ background:#2E9E6D; color:#fff; }
+  .mc-wf{ background:#F2C230; color:#1C2321; }
+  .mc-mf{ background:#3E7FC1; color:#fff; }
+  .mc-tth{ background:#E0679E; color:#fff; }
+
+  /* ---------- calendar ---------- */
+  .cal-title{ font-size:16px; font-weight:800; margin:4px 0 8px; }
+  .cal-grid{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  .cal-grid th{ font-size:10.5px; font-weight:700; color:var(--ink-soft); padding:4px 0; border:1px solid var(--line); }
+  .cal-grid td{ border:1px solid var(--line); vertical-align:top; height:23mm; padding:3px; font-size:9.5px; position:relative; }
+  .cal-daynum{ font-weight:700; font-size:11px; margin-bottom:2px; }
+  .cal-daynum.muted{ color:#C6CBCE; }
+  .cal-badge{ display:block; border-radius:6px; padding:1.5px 4px; margin-bottom:2px; font-size:8.6px;
+    font-weight:800; color:#fff; }
+  .cal-lesson{ font-size:8.6px; color:var(--ink-soft); }
+  .cal-noclass{ position:absolute; left:3px; right:3px; bottom:3px; top:18px;
+    background:var(--accent); color:#fff; text-align:center; font-weight:800;
+    display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:10px; }
+
+  .lesson-title{ font-weight:800; font-size:13px; margin:12px 0 6px; }
+  table.lt{ width:100%; border-collapse:collapse; font-size:10px; margin-bottom:10px; }
+  table.lt th, table.lt td{ border:1px solid var(--line); text-align:center; padding:4px 2px; }
+  table.lt th{ background:var(--ink); color:#fff; font-size:10px; }
+
+  @media print{
+    .panel{ display:none; }
+    .stage{ padding:0; gap:0; }
+    .page-label{ display:none; }
+    .page{ box-shadow:none; page-break-after:always; margin:0 auto; }
+    body{ background:#fff; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel" id="panel"></div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<script>
+/* ============== 상수 ============== */
+const WEEKDAY_KO = ['일','월','화','수','목','금','토'];
+const CAMPUSES = [
+  '정이조주니어영어학원(목동)','정이조주니어(목2관)','정이조주니어(목3관)','정이조주니어(강서)',
+  '정이조주니어(동작)','정이조주니어(마포)','정이조주니어(가재울)','정이조주니어(김포운양)','정이조주니어(강동고덕)'
+];
+const KR_HOLIDAYS_2026 = [
+  { date:'2026-09-24', label:'추석' },
+  { date:'2026-09-25', label:'추석' },
+  { date:'2026-09-26', label:'추석(대체)' },
+  { date:'2026-10-05', label:'개천절 대체공휴일' },
+  { date:'2026-10-09', label:'한글날' }
+];
+const PAIR_DEFS = {
+  '월수': { days:[1,3], cls:'p-mw', soft:'p-mw-soft', label:'M/W' },
+  '수금': { days:[3,5], cls:'p-wf', soft:'p-wf-soft', label:'W/F' },
+  '월금': { days:[1,5], cls:'p-mf', soft:'p-mf-soft', label:'M/F' },
+  '화목': { days:[2,4], cls:'p-tth', soft:'p-tth', label:'T/TH' }
+};
+const LEVEL_DEFS = {
+  Nation: { subjects:['FW','LF','NS'], exempt:null, side:'speaking', showLabels:true, sideBasis:'NS' },
+  Island: { subjects:['FW','LF','NS'], exempt:null, side:'speaking', showLabels:true, sideBasis:'NS' },
+  Globe:  { subjects:['GW','RA','AD'], exempt:'AD', side:'novel', showLabels:false, sideBasis:'AD' },
+  Wind:   { lessonBased:true }
+};
+const WIND_PATTERNS = {
+  MWF: { days:[1,3,5], lessonsPerMeeting:2, totalMeetings:36, cls:'p-mw', label:'월수금' },
+  TTH: { days:[2,4],   lessonsPerMeeting:3, totalMeetings:24, cls:'p-tth', label:'화목' }
+};
+
+/* ============== 상태 ============== */
+let state = {
+  level:'Nation',
+  className:'Nation',
+  dayGroup:'MWF',
+  startDate:'2026-09-02',
+  endDate:'2026-11-27',
+  holidays:[{date:'',label:''},{date:'',label:''},{date:'',label:''}],
+  schedule:{'월수':'FW','수금':'LF','월금':'NS'},
+  jrTest:{'월수':'','수금':'','월금':'','화목':''},
+  windJrTest:'',
+  includeMasterCalendar:true,
+  campus: CAMPUSES[0]
+};
+
+/* ============== 날짜 유틸 ============== */
+function parseISO(s){ if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function toISO(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function nextNonHoliday(date, hSet){
+  let d = new Date(date);
+  let guard = 0;
+  while((d.getDay()===0 || d.getDay()===6 || hSet.has(toISO(d))) && guard<30){
+    d = addDays(d,1); guard++;
+  }
+  return d;
+}
+function fmtMD(d){ if(!d) return '—'; return `${d.getMonth()+1}/${d.getDate()}`; }
+function fmtMDW(d){ if(!d) return '—'; return `${d.getMonth()+1}월 ${d.getDate()}일(${WEEKDAY_KO[d.getDay()]})`; }
+function holidaySet(){ return new Set(state.holidays.filter(h=>h.date).map(h=>h.date)); }
+
+function generateDates(startISO, endISO, weekdays, count, hSet){
+  let cur = parseISO(startISO);
+  const end = endISO ? parseISO(endISO) : addDays(cur, 365);
+  const out = [];
+  let guard = 0;
+  while(out.length < count && cur <= end && guard < 2000){
+    if(weekdays.includes(cur.getDay()) && !hSet.has(toISO(cur))){ out.push(new Date(cur)); }
+    cur = addDays(cur,1); guard++;
+  }
+  return out;
+}
+
+/* 요일 페어(예: 수&금)가 자기 차례에 휴무일과 겹치면, 그 요일만 다시 찾는 게 아니라
+   "같은 주 3일 수업군(월/수/금)" 안에서 그 다음으로 열리는 가장 가까운 수업일로 보강해서
+   진도가 밀리지 않도록 한다. 그 다음 회차부터는 다시 원래 자기 요일 페어로 돌아온다. */
+/* 월수금 세 페어(월수/수금/월금)는 하루에 반드시 2개까지만 진행된다.
+   실제로는 "월요일=월수+월금 / 수요일=월수+수금 / 금요일=수금+월금"이 A→B→C→A... 순서로
+   그냥 실제 수업일마다 하나씩 돌아가는 구조라, 특정 요일이 휴무일이면 그날의 순번이 통째로
+   다음 실제 수업일로 밀리고, 그 뒤로도 계속 한 칸씩 밀린 순서로 이어진다 (요일에 매몰되지 않음). */
+const MWF_TYPE_CYCLE = [
+  ['월수','월금'], // 월요일 기준
+  ['월수','수금'], // 수요일 기준
+  ['수금','월금']  // 금요일 기준
+];
+function naturalTypeIndex(dow){ if(dow===1) return 0; if(dow===3) return 1; if(dow===5) return 2; return 0; }
+
+function buildMwfPlan(){
+  const hSet = holidaySet();
+  const classDays = generateDates(state.startDate, state.endDate, [1,3,5], 500, hSet);
+  const plan = [];
+  if(classDays.length===0) return plan;
+  let typeIdx = naturalTypeIndex(classDays[0].getDay());
+  classDays.forEach((d,i)=>{
+    if(i>0) typeIdx = (typeIdx+1)%3;
+    plan.push({ date:d, pairs: MWF_TYPE_CYCLE[typeIdx] });
+  });
+  return plan;
+}
+
+function pairSeriesFromPlan(plan, pair, count){
+  const out = [];
+  for(const entry of plan){
+    if(entry.pairs.includes(pair)){ out.push(entry.date); if(out.length>=count) break; }
+  }
+  return out;
+}
+
+/* ============== 패널 렌더 ============== */
+function renderPanel(){
+  const p = document.getElementById('panel');
+  const isWind = state.level === 'Wind';
+  const lvl = LEVEL_DEFS[state.level];
+
+  p.innerHTML = `
+    <div class="brand">
+      <div class="brand-mark">정</div>
+      <div>
+        <div class="brand-text">정이조 · 숙제 기한표 생성기</div>
+        <div class="brand-sub">개강일/종강일/휴무일만 넣으면 자동으로 짜여요</div>
+      </div>
+    </div>
+
+    <div class="section-title">레벨</div>
+    <div class="seg" id="levelSeg">
+      ${['Wind','Island','Nation','Globe'].map(l=>`<button type="button" data-val="${l}" class="${state.level===l?'active':''}">${l}</button>`).join('')}
+    </div>
+
+    <div class="section-title">반 형태</div>
+    <div class="seg" id="dayGroupSeg">
+      <button type="button" data-val="MWF" class="${state.dayGroup==='MWF'?'active':''}">MWF (월수금)</button>
+      <button type="button" data-val="TTH" class="${state.dayGroup==='TTH'?'active':''}">TTH (화목)</button>
+    </div>
+
+    <div class="field">
+      <label>반명</label>
+      <input type="text" id="className" value="${esc(state.className)}">
+    </div>
+
+    <div class="section-title">학기 기간</div>
+    <div class="row2">
+      <div class="field"><label>개강일</label><input type="date" id="startDate" value="${state.startDate}"></div>
+      <div class="field"><label>종강일</label><input type="date" id="endDate" value="${state.endDate}"></div>
+    </div>
+
+    <div class="section-title">휴무일 (공휴일 + 학원 휴무, 비워두면 무시)</div>
+    <div id="holidayList"></div>
+    <button class="add-link" id="addHoliday" type="button">+ 휴무일 추가</button>
+    <button class="add-link" id="fillKrHoliday" type="button" style="border-style:solid;border-color:var(--teal);color:var(--teal);">🇰🇷 2026년 9~11월 공휴일 자동 채우기 (추석·개천절 대체·한글날)</button>
+
+    ${(!isWind && state.dayGroup==='MWF') ? renderScheduleUI(lvl) : ''}
+
+    <div class="section-title">주니어테스트 날짜</div>
+    <div id="jrTestList"></div>
+
+    <div class="section-title">캠퍼스</div>
+    <div class="field">
+      <select id="campus">
+        ${CAMPUSES.map(c=>`<option value="${esc(c)}" ${state.campus===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="field" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="includeMasterCal" ${state.includeMasterCalendar?'checked':''} style="width:16px;height:16px;">
+      <label style="margin:0;">전체 반(M/W·W/F·M/F·T/TH) 마스터 캘린더도 뒤에 붙이기</label>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="printBtn" type="button">🖨️ 인쇄하기</button>
+      <button class="btn btn-secondary" id="pdfBtn" type="button">⬇️ PDF로 저장</button>
+    </div>
+  `;
+
+  bindPanelEvents();
+  renderHolidayList();
+  renderJrTestList();
+}
+
+function renderScheduleUI(lvl){
+  const pairs = Object.keys(state.schedule);
+  return `
+    <div class="section-title">과목 - 요일 배정 (${state.level})</div>
+    <div id="scheduleList">
+      ${pairs.map(pair=>{
+        const def = PAIR_DEFS[pair];
+        return `
+        <div class="pair-card">
+          <div class="pair-head">
+            <span class="pair-dot ${def.cls}"></span>
+            <span class="pair-name">${pair} (${def.label})</span>
+          </div>
+          <select data-pair="${pair}" class="scheduleSel">
+            ${lvl.subjects.map(s=>`<option value="${s}" ${state.schedule[pair]===s?'selected':''}>${s}${s===lvl.exempt?' · Jr.Test 없음':''}</option>`).join('')}
+          </select>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function bindPanelEvents(){
+  document.querySelectorAll('#levelSeg button').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.level = btn.dataset.val;
+      state.className = state.level;
+      if(!['MWF','TTH'].includes(state.dayGroup)) state.dayGroup = 'MWF';
+      const lvl = LEVEL_DEFS[state.level];
+      if(lvl && lvl.subjects){
+        const subs = [...lvl.subjects];
+        state.schedule = { '월수':subs[0], '수금':subs[1], '월금':subs[2] };
+      }
+      renderAll();
+    };
+  });
+  const dgSeg = document.getElementById('dayGroupSeg');
+  if(dgSeg) dgSeg.querySelectorAll('button').forEach(btn=>{
+    btn.onclick = ()=>{ state.dayGroup = btn.dataset.val; renderAll(); };
+  });
+  document.getElementById('className').oninput = e=>{ state.className=e.target.value; renderStage(); };
+  document.getElementById('startDate').oninput = e=>{ state.startDate=e.target.value; renderStage(); };
+  document.getElementById('endDate').oninput = e=>{ state.endDate=e.target.value; renderStage(); };
+  document.getElementById('addHoliday').onclick = ()=>{ state.holidays.push({date:'',label:''}); renderHolidayList(); renderStage(); };
+  document.getElementById('fillKrHoliday').onclick = ()=>{
+    const existing = new Set(state.holidays.map(h=>h.date).filter(Boolean));
+    KR_HOLIDAYS_2026.forEach(h=>{
+      if(!existing.has(h.date)){
+        // 비어있는 첫 칸에 채우거나, 없으면 새 줄 추가
+        const emptySlot = state.holidays.find(row => !row.date);
+        if(emptySlot){ emptySlot.date = h.date; emptySlot.label = h.label; }
+        else { state.holidays.push({date:h.date, label:h.label}); }
+        existing.add(h.date);
+      }
+    });
+    renderHolidayList(); renderStage();
+  };
+  document.getElementById('campus').onchange = e=>{ state.campus=e.target.value; renderStage(); };
+  document.getElementById('includeMasterCal').onchange = e=>{ state.includeMasterCalendar=e.target.checked; renderStage(); };
+  document.getElementById('printBtn').onclick = ()=>window.print();
+  document.getElementById('pdfBtn').onclick = exportPDF;
+
+  document.querySelectorAll('.scheduleSel').forEach(sel=>{
+    sel.onchange = ()=>{ state.schedule[sel.dataset.pair] = sel.value; renderStage(); };
+  });
+}
+
+function renderHolidayList(){
+  const list = document.getElementById('holidayList');
+  list.innerHTML = state.holidays.map((h,i)=>`
+    <div class="holiday-row">
+      <input type="date" data-hidx="${i}" data-hfield="date" value="${h.date}">
+      <input type="text" data-hidx="${i}" data-hfield="label" value="${esc(h.label)}" placeholder="메모(선택)">
+      <button type="button" data-hdel="${i}">✕</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('input[data-hidx]').forEach(el=>{
+    el.oninput = ()=>{
+      state.holidays[+el.dataset.hidx][el.dataset.hfield] = el.value;
+      renderStage();
+    };
+  });
+  list.querySelectorAll('[data-hdel]').forEach(btn=>{
+    btn.onclick = ()=>{ state.holidays.splice(+btn.dataset.hdel,1); renderHolidayList(); renderStage(); };
+  });
+}
+
+function activeJrPairs(){
+  if(state.level === 'Wind') return [];
+  if(state.dayGroup === 'TTH') return ['화목'];
+  const lvl = LEVEL_DEFS[state.level];
+  return Object.keys(state.schedule).filter(p => state.schedule[p] !== lvl.exempt);
+}
+
+function renderJrTestList(){
+  const list = document.getElementById('jrTestList');
+  if(state.level === 'Wind'){
+    list.innerHTML = `
+      <div class="field">
+        <label>주니어테스트 날짜 (해당 날짜가 들어있는 Lesson 줄에 자동으로 표시돼요)</label>
+        <input type="date" id="windJr" value="${state.windJrTest||''}">
+      </div>
+    `;
+    document.getElementById('windJr').oninput = e=>{ state.windJrTest = e.target.value; renderStage(); };
+    return;
+  }
+  list.innerHTML = `<div class="side-note" style="text-align:left;color:var(--ink-soft);">Day 20에 자동으로 표시돼요 (과목마다 그 Day20 날짜 그대로) — 별도 입력이 필요 없어요.</div>`;
+}
+
+/* ============== esc ============== */
+function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ============== Day 테이블 셀 계산 ============== */
+function buildDaySeries(pair){
+  if(pair === '화목'){
+    return generateDates(state.startDate, state.endDate, [2,4], 23, holidaySet());
+  }
+  return pairSeriesFromPlan(buildMwfPlan(), pair, 23);
+}
+
+function buildFullSeries(pair){
+  if(pair === '화목'){
+    return generateDates(state.startDate, state.endDate, [2,4], 24, holidaySet());
+  }
+  return pairSeriesFromPlan(buildMwfPlan(), pair, 24);
+}
+
+/* H번호: 월/수/금 중 휴무일이 아닌 날을 시간순으로 그냥 1개씩 센 값 (M/W·W/F·M/F 세 패턴을 합치면
+   월·수·금 전부가 커버되므로, 패턴 구분 없이 "그 날 수업이 있었는지"만 본다) */
+function buildHNumberMap(){
+  const hSet = holidaySet();
+  const dates = generateDates(state.startDate, state.endDate, [1,3,5], 500, hSet);
+  const map = {};
+  dates.forEach((d,i)=> map[toISO(d)] = i+1);
+  return map;
+}
+
+function dayCellContent(dates, dayNum, showJr){
+  if(dayNum === 24){
+    const prev = dates[22];
+    return `<span class="cp-note">(Day 24 수업날짜: ${fmtMD(prev)})</span>`;
+  }
+  if(dayNum === 8 || dayNum === 16){
+    const main = dates[dayNum-1], prev = dates[dayNum-2];
+    return `${fmtMD(main)}<span class="cp-note">(Day ${dayNum} 수업날짜: ${fmtMD(prev)})</span>`;
+  }
+  const main = dates[dayNum-1];
+  let html = main ? fmtMD(main) : '—';
+  if(dayNum === 20 && showJr && main){
+    html += `<span class="jrtest-note">주니어테스트: ${fmtMDW(main)}</span>`;
+  }
+  return html;
+}
+
+/* ============== 보조표(Speaking&Writing / Novel Study) ============== */
+function sideTableSpec(){
+  const lvl = LEVEL_DEFS[state.level];
+  if(!lvl || !lvl.side) return null;
+
+  // 기준일 자동 제안: NS/AD(sideBasis)가 배정된 요일 페어 중 "더 늦은 요일"(=숙제 체크하는 날)의
+  // 두 번째 실제 수업일 (첫 주는 건너뛰고 "다음 주 그 요일"부터 시작)
+  let base = null;
+  const hSet = holidaySet();
+  if(state.dayGroup === 'TTH' || state.level==='Wind'){
+    const ds = buildFullSeries('화목');
+    base = ds[1] || ds[0];
+  } else {
+    const pair = Object.keys(state.schedule).find(p => state.schedule[p] === lvl.sideBasis) || Object.keys(state.schedule)[0];
+    const checkDow = Math.max(...PAIR_DEFS[pair].days); // 페어 중 더 늦은 요일
+    const series = buildFullSeries(pair).filter(d => d.getDay() === checkDow);
+    base = series[1] || series[0];
+  }
+  if(!base) return null;
+  base = nextNonHoliday(base, hSet);
+
+  if(lvl.side === 'speaking'){
+    const topics = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B'];
+    return { title:'Speaking & Writing<br>Due Dates', colLabel:'Topic #', labels:topics, base };
+  } else {
+    const weeks = ['1','2','3','4','5','6','7','8','9','10','11','Final Draft'];
+    return { title:'Novel Study<br>Due Dates', colLabel:'Week', labels:weeks, base };
+  }
+}
+
+let sideTableOverrides = {}; // id -> ISO date, user edits
+
+function renderSideTable(spec, pageId){
+  if(!spec) return '';
+  const labels = spec.labels;
+  const hSet = holidaySet();
+  const key0 = pageId+'-0';
+  const row0Val = sideTableOverrides[key0] || toISO(nextNonHoliday(spec.base, hSet));
+
+  return `
+    <div class="side-title">${spec.title}</div>
+    <div class="side-note">(아래 표를 보고 숙제 제출 날짜를 ${state.level==='Globe'?'Novel Study':'Speaking & Writing'} 교재 첫페이지에 적으세요.)</div>
+    <table class="side-table">
+      <thead><tr><th>${spec.colLabel}</th><th>제출 날짜</th></tr></thead>
+      <tbody>
+        ${labels.map((label,i)=>{
+          const key = pageId+'-'+i;
+          const isLast = i === labels.length-1;
+          if(isLast){
+            return `<tr><td>${label}</td><td><span class="side-fixed">In class</span></td></tr>`;
+          }
+          const rawDefault = i===0 ? parseISO(row0Val) : addDays(parseISO(row0Val), 7*i);
+          const defaultVal = toISO(nextNonHoliday(rawDefault, hSet));
+          const val = sideTableOverrides[key] ?? defaultVal;
+          return `<tr>
+            <td>${label}</td>
+            <td><input type="date" data-side="${key}" value="${val}"></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ============== Nation / Island / Globe 페이지 ============== */
+function renderNIGPage(){
+  const lvl = LEVEL_DEFS[state.level];
+  const spec = sideTableSpec();
+  let bodyHtml = '';
+
+  if(state.dayGroup === 'TTH'){
+    const dates = buildDaySeries('화목');
+    bodyHtml = `
+      <table class="dd">
+        <tr><th class="pairhead" style="background:var(--ink);color:#fff;">단계</th><td colspan="1" style="font-weight:800;color:var(--accent);">${esc(state.className)}</td></tr>
+        <tr><th class="pairhead" style="background:var(--paper);">과목</th><td>모든과목 (${lvl.subjects ? lvl.subjects.join(', ') : 'AD, GW, RA'})</td></tr>
+        <tr><th class="pairhead" style="background:var(--paper);">수업요일</th><td style="font-weight:800;">화 & 목</td></tr>
+        <tr><th class="daylabel" style="background:var(--ink);color:#fff;">수업한 날</th><th style="background:var(--ink);color:#fff;">과목별 숙제 검사날짜</th></tr>
+        ${Array.from({length:24},(_,i)=>i+1).map(n=>{
+          if(n===9 || n===17){ return `<tr><td class="spacer" colspan="2"></td></tr><tr><td class="daylabel">Day ${n}</td><td>${dayCellContent(dates,n,true)}</td></tr>`; }
+          return `<tr><td class="daylabel">Day ${n}</td><td>${dayCellContent(dates,n,true)}</td></tr>`;
+        }).join('')}
+      </table>
+    `;
+  } else {
+    const pairs = Object.keys(state.schedule);
+    const seriesByPair = {}; pairs.forEach(p => seriesByPair[p] = buildDaySeries(p));
+    bodyHtml = `
+      <table class="dd">
+        <tr><th class="pairhead" style="background:var(--ink);color:#fff;">반명칭</th><td colspan="${pairs.length}" style="font-weight:800;color:var(--accent);">${esc(state.className)}</td></tr>
+        <tr>
+          <th class="paircode" style="background:var(--paper);">과목</th>
+          ${pairs.map(p=>`<td style="font-weight:800;">${lvl.showLabels ? state.schedule[p] : (state.schedule[p]===lvl.exempt? state.schedule[p] : '')}</td>`).join('')}
+        </tr>
+        <tr>
+          <th class="paircode" style="background:var(--paper);">수업요일</th>
+          ${pairs.map(p=>`<td class="${PAIR_DEFS[p].soft}" style="font-weight:800;">${p}</td>`).join('')}
+        </tr>
+        <tr>
+          <th class="daylabel" style="background:var(--ink);color:#fff;">수업한 날</th>
+          ${pairs.map(()=>`<th style="background:var(--ink);color:#fff;">과목별 숙제 검사날짜</th>`).join('')}
+        </tr>
+        ${Array.from({length:24},(_,i)=>i+1).map(n=>{
+          const cells = pairs.map(p=>{
+            const jrOk = state.schedule[p] !== lvl.exempt;
+            return `<td>${dayCellContent(seriesByPair[p], n, jrOk)}</td>`;
+          }).join('');
+          if(n===9 || n===17){ return `<tr><td class="spacer" colspan="${pairs.length+1}"></td></tr><tr><td class="daylabel">Day ${n}</td>${cells}</tr>`; }
+          return `<tr><td class="daylabel">Day ${n}</td>${cells}</tr>`;
+        }).join('')}
+      </table>
+    `;
+  }
+
+  return `
+    <div class="page-content">
+      <div class="doc-header"><div class="doc-title">📋 &nbsp;Homework Due Dates</div></div>
+      <div class="doc-sub">아래 표를 보고 과목별 숙제 검사날짜를 핸드북 알림장에 적어주세요.<br>
+      Day 8, 16, 24 수업날짜 또한 <u>밑줄</u> 부분에 적어주세요.</div>
+      <div class="two-col">
+        <div>${bodyHtml}</div>
+        <div>${renderSideTable(spec, state.level+'-'+state.dayGroup)}</div>
+      </div>
+    </div>
+    <div class="page-footer">
+      <div class="footer-line"></div>
+      <div class="footer-campus">${esc(state.campus)}</div>
+    </div>
+  `;
+}
+
+/* ============== Wind: 회차(meeting) 날짜 계산 ============== */
+function buildWindMeetings(){
+  const pat = WIND_PATTERNS[state.dayGroup];
+  // 마지막 체크포인트(72번째 레슨)는 괄호로만 표기되므로 totalMeetings-1개만 실제 날짜 필요
+  return generateDates(state.startDate, state.endDate, pat.days, pat.totalMeetings - 1, holidaySet());
+}
+
+function findJrTestRow(meetingDates, jrISO){
+  if(!jrISO) return -1;
+  const target = parseISO(jrISO);
+  for(let i=0;i<meetingDates.length;i++){
+    if(meetingDates[i] && toISO(meetingDates[i]) >= toISO(target)) return i; // 0-based meeting index
+  }
+  return -1;
+}
+
+/* ============== Wind: Lesson 표 ============== */
+function renderWindLessonPage(){
+  const pat = WIND_PATTERNS[state.dayGroup];
+  const dates = buildWindMeetings();
+  const total = pat.totalMeetings;
+  const perMeeting = pat.lessonsPerMeeting;
+  const checkpoints = [24,48,72].map(x=>Math.round(x/perMeeting)); // meeting indices(1-based) that are checkpoints
+  const jrRowIdx = findJrTestRow(dates, state.windJrTest); // 0-based meeting index
+
+  const rows = Array.from({length: total},(_,i)=>{
+    const meetingNum = i+1; // 1-based
+    const l1 = i*perMeeting+1, l2 = i*perMeeting+perMeeting;
+    const label = `Lessons ${l1}-${l2}`;
+    let html;
+    if(meetingNum === total){
+      html = `<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(dates[meetingNum-2])})</span>`;
+    } else if(checkpoints.includes(meetingNum)){
+      html = `${fmtMD(dates[meetingNum-1])}<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(dates[meetingNum-2])})</span>`;
+    } else {
+      html = fmtMD(dates[meetingNum-1]);
+    }
+    if(i === jrRowIdx){
+      const jd = parseISO(state.windJrTest);
+      html += `<span class="jrtest-note">${jd.getMonth()+1}월 ${jd.getDate()}일에 주니어테스트 있음</span>`;
+    }
+    return { label, html };
+  });
+
+  const chunkSize = total/3;
+  const chunks = [rows.slice(0,chunkSize), rows.slice(chunkSize,chunkSize*2), rows.slice(chunkSize*2,chunkSize*3)];
+
+  const ucc = [16,41,63].map(lessonNum=>{
+    const meetingNum = Math.ceil(lessonNum/perMeeting);
+    const d = dates[meetingNum-1];
+    return d ? `Lesson ${lessonNum}: ${d.getMonth()+1}월 ${d.getDate()}일` : `Lesson ${lessonNum}: —`;
+  });
+
+  return `
+    <div class="page-content">
+      <div class="doc-header"><div class="doc-title">📋 &nbsp;Homework Due Dates — Wind</div></div>
+      <div class="doc-sub">아래 표를 보고 숙제 검사 날짜를 핸드북 알림장에 적어주세요.<br>
+      반명칭: <b style="color:var(--accent);">${esc(state.className)}</b> (${pat.label} Wind)</div>
+      <table class="lt">
+        <thead><tr>
+          ${chunks.map(()=>`<th>수업한 날</th><th>검사날짜</th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${Array.from({length:chunkSize},(_,r)=>`
+            <tr>
+              ${chunks.map(chunk=>`<td>${chunk[r].label}</td><td>${chunk[r].html}</td>`).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="side-note" style="text-align:left;">
+        [UCC 찍는날]<br>
+        1. ${ucc[0]} &nbsp; 2. ${ucc[1]} &nbsp; 3. ${ucc[2]}
+      </div>
+    </div>
+    <div class="page-footer">
+      <div class="footer-line"></div>
+      <div class="footer-campus">${esc(state.campus)}</div>
+    </div>
+  `;
+}
+
+/* ============== 전체 반(M/W·W/F·M/F·T/TH) 마스터 캘린더 ============== */
+function renderMasterCalendarPage(monthDate){
+  const hSet = holidaySet();
+  const hMap = buildHNumberMap();
+  const mwSeries = buildFullSeries('월수');
+  const wfSeries = buildFullSeries('수금');
+  const mfSeries = buildFullSeries('월금');
+  const tthSeries = buildFullSeries('화목');
+
+  function dayNumOf(series, iso){
+    const idx = series.findIndex(d => toISO(d) === iso);
+    return idx === -1 ? null : idx+1;
+  }
+
+  const y = monthDate.getFullYear(), m = monthDate.getMonth();
+  const monthName = `${y}년 ${m+1}월`;
+  const firstDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const cells = [];
+  for(let i=0;i<firstDow;i++) cells.push(null);
+  for(let d=1; d<=daysInMonth; d++) cells.push(new Date(y,m,d));
+  while(cells.length % 7 !== 0) cells.push(null);
+  const weeks = [];
+  for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
+
+  return `
+    <div class="page-content">
+      <div class="doc-header"><div class="doc-title">🗓️ &nbsp;전체 반 마스터 캘린더 — ${monthName}</div></div>
+      <div class="cal-title">
+        <span class="cal-badge mc-mw" style="display:inline-block;">월&amp;수 (M/W)</span>
+        <span class="cal-badge mc-wf" style="display:inline-block;">수&amp;금 (W/F)</span>
+        <span class="cal-badge mc-mf" style="display:inline-block;">월&amp;금 (M/F)</span>
+        <span class="cal-badge mc-tth" style="display:inline-block;">화&amp;목 (T/TH)</span>
+      </div>
+      <table class="cal-grid">
+        <thead><tr>${WEEKDAY_KO.map(w=>`<th>${w}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${weeks.map(week=>`<tr>${week.map(d=>{
+            if(!d) return `<td></td>`;
+            const iso = toISO(d);
+            const isHol = hSet.has(iso);
+            let inner = `<div class="cal-daynum">${d.getDate()}</div>`;
+            if(isHol){
+              inner += `<div class="cal-noclass">No Class</div>`;
+            } else {
+              const h = hMap[iso];
+              inner += `<div class="cal-lesson" style="font-weight:800;">${h ? 'H'+h : '&nbsp;'}</div>`;
+              const mwN = dayNumOf(mwSeries, iso);
+              const wfN = dayNumOf(wfSeries, iso);
+              const mfN = dayNumOf(mfSeries, iso);
+              const tthN = dayNumOf(tthSeries, iso);
+              const badges = [];
+              if(mwN) badges.push({key:'mw', html:`<span class="cal-badge mc-mw">M/W Day ${mwN}</span>`});
+              if(wfN) badges.push({key:'wf', html:`<span class="cal-badge mc-wf">W/F Day ${wfN}</span>`});
+              if(mfN) badges.push({key:'mf', html:`<span class="cal-badge mc-mf">M/F Day ${mfN}</span>`});
+              if(tthN) badges.push({key:'tth', html:`<span class="cal-badge mc-tth">T/TH Day ${tthN}</span>`});
+              // 요일별로 위에 뜨는 순서: 수요일엔 W/F 먼저, 금요일엔 M/F 먼저
+              let priority;
+              if(d.getDay()===3) priority = ['wf','mw','mf','tth'];
+              else if(d.getDay()===5) priority = ['mf','wf','mw','tth'];
+              else priority = ['mw','mf','wf','tth'];
+              badges.sort((a,b)=> priority.indexOf(a.key) - priority.indexOf(b.key));
+              badges.forEach(b=> inner += b.html);
+            }
+            return `<td>${inner}</td>`;
+          }).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="page-footer">
+      <div class="footer-line"></div>
+      <div class="footer-campus">${esc(state.campus)}</div>
+    </div>
+  `;
+}
+
+/* ============== Wind: 월별 캘린더 ============== */
+function monthsInRange(){
+  const s = parseISO(state.startDate), e = parseISO(state.endDate);
+  const out = [];
+  let cur = new Date(s.getFullYear(), s.getMonth(), 1);
+  while(cur <= e){
+    out.push(new Date(cur));
+    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+  return out;
+}
+
+function renderWindCalendarPage(monthDate){
+  const pat = WIND_PATTERNS[state.dayGroup];
+  const dates = buildWindMeetings();
+  const hSet = holidaySet();
+  const y = monthDate.getFullYear(), m = monthDate.getMonth();
+  const monthName = `${y}년 ${m+1}월`;
+  const firstDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+
+  // date -> lesson range label
+  const dateToLesson = {};
+  dates.forEach((d,i)=>{
+    const l1=i*pat.lessonsPerMeeting+1, l2=i*pat.lessonsPerMeeting+pat.lessonsPerMeeting;
+    dateToLesson[toISO(d)] = `Lesson ${l1}-${l2}`;
+  });
+
+  const cells = [];
+  for(let i=0;i<firstDow;i++) cells.push(null);
+  for(let d=1; d<=daysInMonth; d++) cells.push(new Date(y,m,d));
+  while(cells.length % 7 !== 0) cells.push(null);
+
+  const weeks = [];
+  for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
+
+  return `
+    <div class="page-content">
+      <div class="doc-header"><div class="doc-title">🗓️ &nbsp;Wind 월별 캘린더 — ${monthName}</div></div>
+      <div class="cal-title"><span class="cal-badge ${pat.cls}" style="display:inline-block;">${pat.label} Wind (${state.dayGroup})</span></div>
+      <table class="cal-grid">
+        <thead><tr>${WEEKDAY_KO.map(w=>`<th>${w}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${weeks.map(week=>`<tr>${week.map(d=>{
+            if(!d) return `<td></td>`;
+            const iso = toISO(d);
+            const isHol = hSet.has(iso);
+            const isClass = pat.days.includes(d.getDay()) && !isHol;
+            let inner = `<div class="cal-daynum">${d.getDate()}</div>`;
+            if(isHol){
+              inner += `<div class="cal-noclass">No Class</div>`;
+            } else if(isClass){
+              inner += `<span class="cal-badge ${pat.cls}">${pat.label}</span><div class="cal-lesson">${dateToLesson[iso]||''}</div>`;
+            }
+            return `<td>${inner}</td>`;
+          }).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="page-footer">
+      <div class="footer-line"></div>
+      <div class="footer-campus">${esc(state.campus)}</div>
+    </div>
+  `;
+}
+
+/* ============== Stage 렌더 ============== */
+function renderStage(){
+  const stage = document.getElementById('stage');
+  let pagesHtml = '';
+  let pageCount = 0;
+  const months = monthsInRange();
+  const masterCount = state.includeMasterCalendar ? months.length : 0;
+
+  if(state.level === 'Wind'){
+    pageCount = 1 + months.length + masterCount;
+    pagesHtml += `<div class="page-label">미리보기 1 / ${pageCount} · Lesson 기한표</div><div class="page" id="page-lesson">${renderWindLessonPage()}</div>`;
+    months.forEach((md,i)=>{
+      pagesHtml += `<div class="page-label">미리보기 ${i+2} / ${pageCount} · ${md.getFullYear()}.${md.getMonth()+1} Wind 캘린더</div><div class="page" id="page-cal-${i}">${renderWindCalendarPage(md)}</div>`;
+    });
+  } else {
+    pageCount = 1 + masterCount;
+    pagesHtml += `<div class="page-label">미리보기 1 / ${pageCount} · ${state.level} ${state.dayGroup}</div><div class="page" id="page-main">${renderNIGPage()}</div>`;
+  }
+
+  if(state.includeMasterCalendar){
+    months.forEach((md,i)=>{
+      const idx = (state.level==='Wind' ? months.length : 0) + i + 2;
+      pagesHtml += `<div class="page-label">미리보기 ${idx} / ${pageCount} · ${md.getFullYear()}.${md.getMonth()+1} 마스터 캘린더</div><div class="page" id="page-master-${i}">${renderMasterCalendarPage(md)}</div>`;
+    });
+  }
+
+  stage.innerHTML = pagesHtml;
+
+  stage.querySelectorAll('input[data-side]').forEach(el=>{
+    el.oninput = ()=>{ sideTableOverrides[el.dataset.side] = el.value; renderStage(); };
+  });
+}
+
+/* ============== PDF 저장 ============== */
+async function exportPDF(){
+  const btn = document.getElementById('pdfBtn');
+  const original = btn.textContent;
+  btn.textContent = '생성 중...'; btn.disabled = true;
+  try{
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pages = Array.from(document.querySelectorAll('.page'));
+    for(let i=0;i<pages.length;i++){
+      const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff' });
+      const img = canvas.toDataURL('image/jpeg',0.95);
+      if(i>0) pdf.addPage();
+      pdf.addImage(img,'JPEG',0,0,210,297);
+    }
+    pdf.save('숙제기한표.pdf');
+  } catch(err){
+    alert('PDF 생성 중 오류: ' + err.message);
+  } finally {
+    btn.textContent = original; btn.disabled = false;
+  }
+}
+
+/* ============== 초기화 ============== */
+function renderAll(){ renderPanel(); renderStage(); }
+renderAll();
+</script>
+</body>
+</html>

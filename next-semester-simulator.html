@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정이조 | 다음학기 반편성 시뮬레이터 (테스트)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --ink:#1C2321; --ink-soft:#5B6360; --paper:#F6F7F9; --card:#FFFFFF; --line:#E3E6E8;
+    --accent:#C13E3E; --accent-soft:#FBEAEA; --teal:#1F7A6C; --teal-soft:#E7F3F0;
+    --amber:#B7791F; --amber-soft:#FBF2E2; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased; }
+  .app{ display:flex; min-height:100vh; }
+  .panel{ width:420px; flex:0 0 420px; background:var(--card); border-right:1px solid var(--line);
+    padding:28px 24px 60px; overflow-y:auto; height:100vh; position:sticky; top:0; }
+  .stage{ flex:1; padding:32px; display:flex; flex-direction:column; gap:20px; }
+
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .brand-mark{ width:34px; height:34px; border-radius:9px; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .brand-text{ font-weight:800; font-size:15px; }
+  .brand-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+  .test-badge{ display:inline-block; background:var(--amber-soft); color:var(--amber); font-weight:800;
+    font-size:11px; padding:3px 9px; border-radius:20px; margin:10px 0 20px; }
+
+  .section-title{ font-size:12px; font-weight:700; color:var(--ink-soft); margin:22px 0 8px; }
+  .section-title:first-of-type{ margin-top:0; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; }
+  .field input, .field textarea{ width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px;
+    font-family:inherit; font-size:12.5px; color:var(--ink); background:#fff; }
+  .field textarea{ resize:vertical; min-height:160px; font-family:'SF Mono', Consolas, monospace; font-size:11px; line-height:1.6; }
+
+  .btn{ padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-family:inherit;
+    font-weight:700; font-size:12.5px; width:100%; margin-top:8px; }
+  .btn-primary{ background:var(--ink); color:#fff; }
+  .btn-primary:hover{ background:#000; }
+  .btn-secondary{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:var(--paper); }
+  .btn-small{ width:auto; padding:5px 10px; font-size:11px; margin-top:0; }
+
+  .note{ font-size:11.5px; color:var(--ink-soft); line-height:1.6; background:var(--paper);
+    border-radius:10px; padding:10px 12px; margin-top:8px; }
+  .note b{ color:var(--ink); }
+
+  /* ---------- stage cards ---------- */
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; }
+  .card-title{ font-weight:800; font-size:15px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+
+  table.summary{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.summary th, table.summary td{ border:1px solid var(--line); padding:6px 8px; text-align:center; }
+  table.summary th{ background:var(--paper); font-weight:700; }
+
+  .class-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:14px; }
+  .class-card{ border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--paper); }
+  .class-card-head{ background:var(--ink); color:#fff; padding:10px 14px; }
+  .class-code{ font-weight:800; font-size:15px; color:#fff; }
+  .class-count{ font-size:11px; color:#ffffffb0; }
+  .class-card-body{ padding:12px 14px; }
+  .class-card-body .row2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .class-card-body input{ width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:7px;
+    font-family:inherit; font-size:11.5px; }
+  .student-list{ list-style:none; margin:0; padding:0; font-size:12px; }
+  .student-list li{ padding:3px 0; border-bottom:1px dashed var(--line); display:flex; justify-content:space-between; }
+  .student-list li:last-child{ border-bottom:none; }
+  .lvup-tag{ font-size:9.5px; font-weight:800; color:var(--accent); background:var(--accent-soft);
+    padding:1px 6px; border-radius:6px; margin-left:6px; }
+
+  .msg-item{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:center; gap:10px; background:#fff; }
+  .msg-text{ font-size:12px; line-height:1.6; flex:1; }
+  .msg-actions{ display:flex; gap:6px; flex:0 0 auto; }
+  .msg-actions button{ border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; cursor:pointer; }
+  .copy-btn{ background:var(--teal-soft); color:var(--teal); }
+  .kakao-btn{ background:#FEE500; color:#3C1E1E; }
+
+  .empty{ text-align:center; color:var(--ink-soft); padding:40px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel" id="panel"></div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+<script>
+/* ============== 상태 ============== */
+let state = {
+  capacity: 12,
+  kakaoKey: '',
+  semesterName: '가을 학기',
+  startDate: '2026-08-31',
+  students: [], // {group, code, teacher, room, name, grade, levelUp}
+  classAssign: {} // key(group_targetLevel_suffix) -> {teacher, room}
+};
+
+/* 요일·타임슬롯 코드 → 요일/시간 문구 */
+const TIME_MAP = {
+  MF: { days:'월, 수, 금', time:'오후 2:30-4:05' },
+  MM: { days:'월, 수, 금', time:'오후 4:10-5:45' },
+  MT: { days:'월, 수, 금', time:'오후 5:50-7:25' },
+  TF: { days:'화, 목',     time:'오후 3:10-5:15' },
+  TT: { days:'화, 목',     time:'오후 5:20-7:44' }
+};
+const WEEKDAY_KO = ['일','월','화','수','목','금','토'];
+
+function groupToDisplayCode(group){
+  if(group.length===2) return `${group[0]}(${group[1]})`;
+  return group;
+}
+
+function formatStartDate(iso, semesterName){
+  const d = new Date(iso+'T00:00:00');
+  return `${semesterName}(${d.getMonth()+1}월 ${d.getDate()}일(${WEEKDAY_KO[d.getDay()]}) 개강)`;
+}
+
+
+/* 예시 데이터 (업로드 이미지 기준, 담임 Ryan 반들이 전부 같은 요일·타임슬롯이라고 가정한 테스트용) */
+const EXAMPLE_TSV = `그룹\t현재반코드\t담임\t강의실\t학생이름\t학년\t레벨업여부
+TF\tI3-B\tRyan\t8\t임주원\t3\tX
+TF\tI3-B\tRyan\t8\t김리안\t2\tX
+TF\tI3-B\tRyan\t8\t김재이\t1\tX
+TF\tI3-B\tRyan\t8\t서민준\t1\tX
+TF\tI3-B\tRyan\t8\t오지유\t3\tX
+TF\tI3-B\tRyan\t8\t이주은\t2\tX
+TF\tI3-B\tRyan\t8\t임주아\t3\tX
+TF\tI3-B\tRyan\t8\t조은서\t2\tX
+TF\tI3-B\tRyan\t8\t안소윤\t4\tO
+TF\tI3-B\tRyan\t8\t이나무\t2\tO
+TF\tI3-B\tRyan\t8\t조윤서\t4\tO
+TF\tI3-B\tRyan\t8\t강지훈\t4\tO
+TF\tI4-A\tRyan\t6\t김서정\t3\tO
+TF\tI4-A\tRyan\t6\t박현준\t4\tO
+TF\tI4-A\tRyan\t6\t김도은\t3\tX
+TF\tI4-A\tRyan\t6\t이시현\t4\tX
+TF\tI4-A\tRyan\t6\t박유나\t5\tX
+TF\tI4-A\tRyan\t6\t강은하\t4\tX
+TF\tI4-A\tRyan\t6\t서린아\t3\tX
+TF\tI4-A\tRyan\t6\t이한\t4\tX
+TF\tI4-A\tRyan\t6\t황현우\t5\tX
+TF\tI3-A\tRyan\t5\t서형준\t4\tO
+TF\tI3-A\tRyan\t5\t유하연\t4\tO
+TF\tI3-A\tRyan\t5\t유진우\t4\tX
+TF\tI3-A\tRyan\t5\t임시우\t4\tX
+TF\tI3-A\tRyan\t5\t정서우\t4\tX
+TF\tI3-A\tRyan\t5\t구혜원\t4\tX
+TF\tI3-A\tRyan\t5\t김시현\t4\tX
+TF\tI3-A\tRyan\t5\t김해안\t2\tX
+TF\tI3-A\tRyan\t5\t전주아\t3\tX
+TF\tI3-A\tRyan\t5\t이지연\t4\tX
+TF\tI3-A\tRyan\t5\t이하준\t4\tX
+TF\tI4-B\tRyan\t9\t강민우\t5\tX
+TF\tI4-B\tRyan\t9\t민서진\t3\tX
+TF\tI4-B\tRyan\t9\t박초이\t5\tX
+TF\tI4-B\tRyan\t9\t박민아\t3\tX
+TF\tI4-B\tRyan\t9\t방아란\t4\tX
+TF\tI4-B\tRyan\t9\t전도현\t2\tX
+TF\tI4-B\tRyan\t9\t최민준\t3\tX
+TF\tI4-B\tRyan\t9\t최소원\t2\tX
+TF\tI4-B\tRyan\t9\t선아린\t3\tO
+TF\tI4-B\tRyan\t9\t이도율\t4\tX
+TF\tN2-B\tRyan\t4\t전지우\t6\tO
+TF\tN2-B\tRyan\t4\t김유안\t3\tX
+TF\tN2-B\tRyan\t4\t이지호\t4\tX
+TF\tN2-B\tRyan\t4\t이태민\t3\tX
+TF\tN2-B\tRyan\t4\t송진아\t5\tO
+TF\tN2-B\tRyan\t4\t전서윤\t5\tO
+TF\tN2-B\tRyan\t4\t김유찬\t5\tO
+TF\tN2-B\tRyan\t4\t이주아\t4\tX`;
+
+/* ============== 파싱 ============== */
+function parseTSV(text){
+  const lines = text.trim().split('\n').filter(l=>l.trim());
+  const rows = lines.slice(1); // 헤더 제외
+  return rows.map(line=>{
+    const [group, code, teacher, room, name, grade, levelUp] = line.split('\t').map(s=>(s||'').trim());
+    return { group, code, teacher, room, name, grade, levelUp: (levelUp==='O'||levelUp==='o') };
+  }).filter(r=>r.name);
+}
+
+/* 전체 레벨 순서 (Wind1(3개월)만 예외, 나머지는 전부 6개월/2학기).
+   레벨업은 숫자+1이 아니라 이 배열의 "다음 칸"으로 이동한다 (Island4 다음은 Nation1). */
+const LEVEL_SEQUENCE = [
+  'W1','W2',
+  'I1','I2','I3','I4',
+  'N1','N2','N3','N4',
+  'G1','G2','G3','G4'
+];
+const LEVEL_INITIAL_MAP = { W:'W', I:'I', N:'N', G:'G' };
+
+function parseCode(code){
+  const m = code.match(/^([A-Za-z]+)(\d+)-([A-Za-z0-9]+)$/);
+  if(!m) return { letter:code, number:0, suffix:'', seqKey:code };
+  return { letter:m[1], number:parseInt(m[2],10), suffix:m[3], seqKey:`${m[1]}${m[2]}` };
+}
+
+function nextLevelSeqKey(seqKey){
+  const idx = LEVEL_SEQUENCE.indexOf(seqKey);
+  if(idx === -1) return seqKey; // 못 찾으면 그대로 (형식이 다른 코드일 수 있음)
+  if(idx === LEVEL_SEQUENCE.length-1) return seqKey; // Globe4가 마지막 — 다음 단계 없음
+  return LEVEL_SEQUENCE[idx+1];
+}
+
+/* ============== 재배정 계산 ============== */
+function computeAssignment(){
+  const capacity = state.capacity;
+  const withTarget = state.students.map(s=>{
+    const { seqKey } = parseCode(s.code);
+    const targetLevel = s.levelUp ? nextLevelSeqKey(seqKey) : seqKey;
+    const groupKey = `${s.group}__${targetLevel}`;
+    return { ...s, targetLevel, groupKey };
+  });
+
+  // 그룹키별로 묶기
+  const byGroup = {};
+  withTarget.forEach(s=>{
+    if(!byGroup[s.groupKey]) byGroup[s.groupKey] = [];
+    byGroup[s.groupKey].push(s);
+  });
+
+  // 각 그룹을 정원 단위로 잘라 새 반 생성
+  const newClasses = [];
+  Object.keys(byGroup).sort().forEach(groupKey=>{
+    const list = byGroup[groupKey].slice().sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    const [group, targetLevel] = groupKey.split('__');
+    const chunkCount = Math.ceil(list.length / capacity);
+    for(let i=0;i<chunkCount;i++){
+      const suffix = String.fromCharCode(65+i); // A,B,C...
+      const chunk = list.slice(i*capacity, (i+1)*capacity);
+      const newCode = `${groupToDisplayCode(group)}${targetLevel}-${suffix}`;
+      const assignKey = `${groupKey}__${suffix}`;
+      newClasses.push({ assignKey, newCode, group, targetLevel, suffix, students: chunk });
+    }
+  });
+
+  return newClasses;
+}
+
+function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* ============== 패널 렌더 ============== */
+function renderPanel(){
+  const p = document.getElementById('panel');
+  p.innerHTML = `
+    <div class="brand">
+      <div class="brand-mark">정</div>
+      <div>
+        <div class="brand-text">정이조 · 다음학기 반편성 시뮬레이터</div>
+        <div class="brand-sub">테스트용 미리보기 — 11월 신규반 확정 전 로직 검증</div>
+      </div>
+    </div>
+    <div class="test-badge">⚠️ TEST MODE — 실제 반편성 전 로직 확인용</div>
+
+    <div class="section-title">학기 정보</div>
+    <div class="field"><label>학기 이름</label><input type="text" id="semesterName" value="${esc(state.semesterName)}"></div>
+    <div class="field"><label>개강일</label><input type="date" id="startDate" value="${state.startDate}"></div>
+
+    <div class="section-title">반 정원</div>
+    <div class="field"><input type="number" id="capacity" value="${state.capacity}" min="1"></div>
+
+    <div class="section-title">학생 명단 (엑셀에서 복사 → 붙여넣기, 탭 구분)</div>
+    <div class="field">
+      <textarea id="rosterInput" placeholder="그룹	현재반코드	담임	강의실	학생이름	학년	레벨업여부">${state.students.length ? toTSV(state.students) : ''}</textarea>
+    </div>
+    <button class="btn btn-secondary" id="loadExample">예시 데이터 불러오기 (업로드 이미지 기준)</button>
+    <button class="btn btn-primary" id="applyRoster">명단 반영해서 계산하기</button>
+
+    <div class="note">
+      <b>지금 가정하고 있는 것:</b> 업로드해주신 표의 5개 반(I3-B/I4-A/I3-A/I4-B/N2-B)이 전부 <b>같은 요일·타임슬롯(TF)</b>이라고 가정해서 묶었어요.
+      실제로 서로 다른 요일/타임슬롯이면 "그룹" 칸을 반마다 다르게 적어주시면 그 반들끼리는 안 섞이게 계산돼요.
+      레벨업(O) 학생은 레벨숫자만 +1 되고, 나머지(X)는 그대로 유지됩니다.
+    </div>
+
+    <div class="section-title">카카오톡 공유 (선택)</div>
+    <div class="field">
+      <label>카카오 JavaScript 키 (등록 후 여기 붙여넣으면 공유 버튼 활성화)</label>
+      <input type="text" id="kakaoKey" value="${state.kakaoKey}" placeholder="아직 없으면 비워두세요 — 복사하기 버튼은 그대로 작동해요">
+    </div>
+  `;
+
+  document.getElementById('semesterName').oninput = e=>{ state.semesterName = e.target.value; renderStage(); };
+  document.getElementById('startDate').oninput = e=>{ state.startDate = e.target.value; renderStage(); };
+  document.getElementById('capacity').oninput = e=>{ state.capacity = parseInt(e.target.value)||12; renderStage(); };
+  document.getElementById('loadExample').onclick = ()=>{
+    document.getElementById('rosterInput').value = EXAMPLE_TSV;
+  };
+  document.getElementById('applyRoster').onclick = ()=>{
+    state.students = parseTSV(document.getElementById('rosterInput').value);
+    renderStage();
+  };
+  document.getElementById('kakaoKey').oninput = e=>{
+    state.kakaoKey = e.target.value.trim();
+    initKakao();
+  };
+}
+
+function toTSV(students){
+  return '그룹\t현재반코드\t담임\t강의실\t학생이름\t학년\t레벨업여부\n' +
+    students.map(s=>`${s.group}\t${s.code}\t${s.teacher}\t${s.room}\t${s.name}\t${s.grade}\t${s.levelUp?'O':'X'}`).join('\n');
+}
+
+function initKakao(){
+  try{
+    if(window.Kakao && state.kakaoKey){
+      if(Kakao.isInitialized()) Kakao.cleanup();
+      Kakao.init(state.kakaoKey);
+    }
+  }catch(e){ console.warn('Kakao init failed', e); }
+}
+
+/* ============== 메시지 생성 (반 단위) ============== */
+function buildClassMessage(cls, teacher, room){
+  const timeInfo = TIME_MAP[cls.group] || { days:'(요일 미정)', time:'(시간 미정)' };
+  const displayCode = `${groupToDisplayCode(cls.group)}${cls.targetLevel}-${cls.suffix}`;
+  return `학부모님~\n한 학기 동안 믿고 맡겨 주셔서 감사했습니다!\n다음 학기 강의실 안내 보내드립니다~\n\n${formatStartDate(state.startDate, state.semesterName)}\n반 명칭: ${displayCode}\n수업 요일 및 시간: ${timeInfo.days} ${timeInfo.time}\n강의실: ${room ? room+'번' : '(미정)'} 강의실`;
+}
+
+function copyText(text, btn){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig = btn.textContent;
+    btn.textContent = '복사됨!';
+    setTimeout(()=>{ btn.textContent = orig; }, 1200);
+  });
+}
+
+function shareKakao(text){
+  if(!window.Kakao || !Kakao.isInitialized()){
+    alert('카카오 JS 키를 먼저 왼쪽 패널에 입력해주세요.');
+    return;
+  }
+  Kakao.Share.sendDefault({
+    objectType: 'text',
+    text: text,
+    link: { mobileWebUrl: location.href, webUrl: location.href }
+  });
+}
+
+/* ============== 스테이지 렌더 ============== */
+function renderStage(){
+  const stage = document.getElementById('stage');
+  if(!state.students.length){
+    stage.innerHTML = `<div class="card"><div class="empty">왼쪽에서 "예시 데이터 불러오기"를 누르거나 실제 명단을 붙여넣고<br>"명단 반영해서 계산하기"를 눌러주세요.</div></div>`;
+    return;
+  }
+
+  const newClasses = computeAssignment();
+
+  // 요약
+  const totalStudents = state.students.length;
+  const levelUpCount = state.students.filter(s=>s.levelUp).length;
+
+  let html = `
+    <div class="card">
+      <div class="card-title">📊 요약</div>
+      <table class="summary">
+        <tr><th>전체 학생</th><th>레벨업 대상</th><th>레벨 유지</th><th>생성될 새 반 수</th></tr>
+        <tr><td>${totalStudents}명</td><td>${levelUpCount}명</td><td>${totalStudents-levelUpCount}명</td><td>${newClasses.length}개</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏫 새 학기 반 편성 (정원 ${state.capacity}명 기준 자동 분배)</div>
+      <div class="class-grid">
+        ${newClasses.map(cls=>{
+          const assign = state.classAssign[cls.assignKey] || {};
+          return `
+          <div class="class-card">
+            <div class="class-card-head">
+              <div class="class-code">${cls.newCode}</div>
+              <div class="class-count">${cls.students.length}명</div>
+            </div>
+            <div class="class-card-body">
+              <div class="row2">
+                <input type="text" placeholder="담임" data-assign="${cls.assignKey}" data-field="teacher" value="${assign.teacher||''}">
+                <input type="text" placeholder="강의실" data-assign="${cls.assignKey}" data-field="room" value="${assign.room||''}">
+              </div>
+              <ul class="student-list">
+                ${cls.students.map(s=>`<li>${s.name}(${s.grade}) ${s.levelUp?'<span class=\"lvup-tag\">LEVEL UP</span>':''}</li>`).join('')}
+              </ul>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💬 반별 안내문자 미리보기</div>
+      <div id="msgList">
+        ${newClasses.map(cls=>{
+          const assign = state.classAssign[cls.assignKey] || {};
+          const msg = buildClassMessage(cls, assign.teacher, assign.room);
+          return `
+          <div class="msg-item" data-assignkey="${cls.assignKey}">
+            <div class="msg-text">${msg.replace(/\n/g,'<br>')}</div>
+            <div class="msg-actions">
+              <button class="copy-btn" data-copy>복사</button>
+              <button class="kakao-btn" data-kakao>카톡 공유</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  stage.innerHTML = html;
+
+  // 담임/강의실 입력 바인딩
+  stage.querySelectorAll('[data-assign]').forEach(el=>{
+    el.oninput = ()=>{
+      const key = el.dataset.assign, field = el.dataset.field;
+      if(!state.classAssign[key]) state.classAssign[key] = {};
+      state.classAssign[key][field] = el.value;
+      renderStage();
+    };
+  });
+
+  // 메시지 버튼 바인딩 (반 단위, 재렌더 후 다시 걸어줘야 함)
+  newClasses.forEach(cls=>{
+    const assign = state.classAssign[cls.assignKey] || {};
+    const msg = buildClassMessage(cls, assign.teacher, assign.room);
+    const item = stage.querySelector(`.msg-item[data-assignkey="${cls.assignKey}"]`);
+    const copyBtn = item.querySelector('[data-copy]');
+    const kakaoBtn = item.querySelector('[data-kakao]');
+    copyBtn.onclick = ()=> copyText(msg, copyBtn);
+    kakaoBtn.onclick = ()=> shareKakao(msg);
+  });
+}
+
+/* ============== 초기화 ============== */
+function renderAll(){ renderPanel(); renderStage(); }
+renderAll();
+</script>
+</body>
+</html>
