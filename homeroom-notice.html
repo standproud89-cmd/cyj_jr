@@ -57,6 +57,13 @@
   }
   .brand-text{ font-weight:800; font-size:15px; letter-spacing:-0.2px; }
   .brand-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    font-weight:700; font-size:12.5px; color:var(--ink-soft);
+    padding:7px 14px; border-radius:20px; border:1px solid var(--line);
+    margin-bottom:18px; background:#fff;
+  }
+  .back-link:hover{ background:var(--paper); color:var(--ink); }
 
   .section-title{
     font-size:12px; font-weight:700; color:var(--ink-soft);
@@ -347,6 +354,7 @@ const ICON_CLOCK = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" 
 function renderPanel(){
   const p = document.getElementById('panel');
   p.innerHTML = `
+    <a class="back-link" href="index.html#prep">← 처음으로</a>
     <div class="brand">
       <div class="brand-mark">정</div>
       <div>
