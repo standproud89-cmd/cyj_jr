@@ -54,15 +54,15 @@
   .screen{ width:100%; max-width:1400px; display:none; }
   .screen.active{ display:block; }
 
-  /* ---------- 홈 (2박스) ---------- */
+  /* ---------- 홈 (3박스) ---------- */
   .home-grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:clamp(20px,3vw,40px);
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(20px,3vw,40px);
   }
   .home-box{
-    border-radius:28px; padding:clamp(32px,5vw,64px) clamp(24px,4vw,48px);
+    border-radius:28px; padding:clamp(28px,4vw,56px) clamp(22px,3.5vw,40px);
     cursor:pointer; position:relative; overflow:hidden;
     display:flex; flex-direction:column; justify-content:flex-end;
-    min-height:clamp(280px,42vh,460px);
+    min-height:clamp(260px,38vh,420px);
     transition:transform 0.15s ease;
   }
   .home-box:hover{ transform:translateY(-4px); }
@@ -92,6 +92,7 @@
   .home-box.dark .home-box-accent{ background:linear-gradient(90deg, var(--purple), var(--red), var(--orange)); }
   .home-box.light .home-box-accent{ background:linear-gradient(90deg, var(--teal), var(--accent)); }
   .home-box.light .home-box-accent.hex{ background:linear-gradient(90deg, var(--purple), var(--blue), var(--red), var(--orange)); }
+  .home-box.light .home-box-accent.gold{ background:linear-gradient(90deg, #C9971F, #E8B84B); }
 
   /* ---------- 서브메뉴 (3박스) ---------- */
   .sub-title{
@@ -172,6 +173,12 @@
         <div class="home-box-title">Class prep.</div>
         <div class="home-box-sub">담임 안내문 · 숙제 기한표 · 다음학기 안내문자</div>
       </div>
+      <div class="home-box light" id="box-coupon">
+        <div class="home-box-accent gold"></div>
+        <div class="home-box-icon">🎟️</div>
+        <div class="home-box-title">For Staff</div>
+        <div class="home-box-sub">LTE · Wow 쿠폰함</div>
+      </div>
     </div>
   </div>
 
@@ -236,6 +243,7 @@ function showScreen(name){
 
 document.getElementById('box-inclass').onclick = () => showScreen('inclass');
 document.getElementById('box-prep').onclick = () => showScreen('prep');
+document.getElementById('box-coupon').onclick = () => { window.location.href = 'coupon-hub.html'; };
 backBtn.onclick = () => showScreen('home');
 
 // 새로고침해도 현재 화면 유지되도록 해시로 초기 화면 결정
