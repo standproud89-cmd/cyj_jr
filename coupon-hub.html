@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정이조 주니어 | For Staff 로그인</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --ink:#1C2321; --ink-soft:#5B6360; --paper:#F6F7F9; --line:#E3E6E8;
+    --gold:#C9971F; --err:#C13E3E;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--paper); color:var(--ink);
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+  .topbar{ padding: clamp(16px,3vh,32px) clamp(20px,4vw,48px); }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    font-weight:700; font-size:13px; color:var(--ink-soft);
+    padding:8px 16px; border-radius:20px; border:1px solid var(--line); background:#fff;
+  }
+  .back-link:hover{ background:var(--paper); color:var(--ink); }
+
+  .main{ flex:1; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:28px;
+    padding:clamp(36px,5vw,56px) clamp(28px,5vw,48px); max-width:420px; width:100%;
+  }
+  .icon{ font-size:44px; text-align:center; margin-bottom:10px; }
+  .title{ font-size:22px; font-weight:800; text-align:center; margin-bottom:6px; }
+  .sub{ font-size:13px; color:var(--ink-soft); text-align:center; margin-bottom:28px; }
+
+  .field{ margin-bottom:16px; }
+  label{ display:block; font-size:13px; font-weight:700; margin-bottom:6px; }
+  input[type=text], input[type=password]{
+    width:100%; padding:13px 16px; border:1px solid var(--line); border-radius:12px;
+    font-size:15px; font-family:inherit;
+  }
+  input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
+
+  button.submit{
+    width:100%; margin-top:8px; padding:14px; border:none; border-radius:12px;
+    background:var(--gold); color:#fff; font-weight:800; font-size:15px; cursor:pointer;
+  }
+  button.submit:disabled{ opacity:0.55; cursor:default; }
+
+  .error{
+    background:#FDEDED; border:1px solid #F3C6C6; color:var(--err);
+    padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:16px; display:none;
+  }
+  .help{ margin-top:20px; font-size:12px; color:var(--ink-soft); text-align:center; line-height:1.7; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-link" href="index.html#home">← 처음으로</a>
+</div>
+
+<div class="main">
+  <div class="card">
+    <div class="icon">🎟️</div>
+    <div class="title">For Staff</div>
+    <div class="sub">아이디와 비밀번호로 로그인해주세요</div>
+
+    <div class="error" id="errorBox"></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label>아이디</label>
+        <input type="text" id="username" placeholder="cyjdj02" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input type="password" id="password" placeholder="비밀번호" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="submit" id="submitBtn">로그인</button>
+    </form>
+
+    <div class="help">
+      처음 로그인하시나요? 초기 비밀번호는 아이디와 동일해요.<br>
+      비밀번호를 잊으셨다면 원장님께 문의해주세요.
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://nqrtnxpqxtglwhdvtsxf.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Yxuoe98BlUlZRidr1QsA-A_AS3-UwRW";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  // 아이디 → 이름/역할 매칭표 (강사 추가/변경 시 이 목록만 고치면 됨)
+  const STAFF_DIRECTORY = {
+    cyjdj00: { name: "Tina",   role: "director" },
+    cyjdj02: { name: "Ryan",   role: "teacher" },
+    cyjdj03: { name: "Mark",   role: "teacher" },
+    cyjdj04: { name: "Cathy",  role: "teacher" },
+    cyjdj05: { name: "Hazel",  role: "teacher" },
+    cyjdj06: { name: "Rachel", role: "teacher" },
+    cyjdj07: { name: "Swan",   role: "teacher" },
+    cyjdj08: { name: "Justin", role: "teacher" },
+  };
+
+  const form = document.getElementById('loginForm');
+  const errorBox = document.getElementById('errorBox');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function showError(msg){
+    errorBox.textContent = msg;
+    errorBox.style.display = 'block';
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorBox.style.display = 'none';
+
+    const rawId = document.getElementById('username').value.trim().toLowerCase();
+    const password = document.getElementById('password').value;
+
+    if(!rawId || !password){
+      showError('아이디와 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    const staffInfo = STAFF_DIRECTORY[rawId];
+    if(!staffInfo){
+      showError('등록되지 않은 아이디예요. 아이디를 다시 확인해주세요.');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '로그인 중...';
+
+    const email = rawId + '@jeongijo.local';
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = '로그인';
+
+    if(error){
+      showError('아이디 또는 비밀번호가 올바르지 않아요.');
+      return;
+    }
+
+    // 로그인 성공 → 이름/역할 정보를 세션에 저장하고 역할별 화면으로 이동
+    sessionStorage.setItem('staff_id', rawId);
+    sessionStorage.setItem('staff_name', staffInfo.name);
+    sessionStorage.setItem('staff_role', staffInfo.role);
+
+    if(staffInfo.role === 'director'){
+      window.location.href = 'coupon-director.html';
+    } else {
+      window.location.href = 'coupon-teacher.html';
+    }
+  });
+</script>
+
+</body>
+</html>
