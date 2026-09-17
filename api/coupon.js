@@ -9,10 +9,16 @@ function base64url(input) {
 }
 
 async function getAccessToken() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  let creds;
+  try {
+    creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '{}');
+  } catch (e) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON 환경변수가 올바른 JSON 형식이 아니에요: ' + e.message);
+  }
+  const email = creds.client_email;
+  const privateKey = (creds.private_key || '').replace(/\\n/g, '\n');
   if (!email || !privateKey) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY 환경변수가 설정 안 됨');
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON 안에 client_email 또는 private_key가 없어요');
   }
 
   const now = Math.floor(Date.now() / 1000);
