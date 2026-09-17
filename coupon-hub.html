@@ -136,14 +136,14 @@
     submitBtn.disabled = true;
     submitBtn.textContent = '로그인 중...';
 
-    const email = rawId + '@jeongijo.local';
+    const email = rawId + '@gmail.com';
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
     submitBtn.disabled = false;
     submitBtn.textContent = '로그인';
 
     if(error){
-      showError('아이디 또는 비밀번호가 올바르지 않아요.');
+      showError('로그인 실패: ' + error.message + ' (status: ' + (error.status || '-') + ')');
       return;
     }
 
