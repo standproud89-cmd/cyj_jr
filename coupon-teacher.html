@@ -168,6 +168,12 @@
   async function loadBalance(){
     const res = await fetch('/api/coupon?action=balances');
     const data = await res.json();
+    if(data.error){
+      document.getElementById('lteNum').textContent = '!';
+      document.getElementById('wowNum').textContent = '!';
+      alert('잔여 개수 불러오기 실패: ' + data.error);
+      return;
+    }
     const mine = (data.rows || []).find(r => r.id === staffId);
     document.getElementById('lteNum').textContent = mine ? mine.lte : 0;
     document.getElementById('wowNum').textContent = mine ? mine.wow : 0;
@@ -176,6 +182,11 @@
   async function loadHistory(){
     const res = await fetch('/api/coupon?action=history');
     const data = await res.json();
+    if(data.error){
+      document.getElementById('historyBody').innerHTML =
+        `<tr><td colspan="4" class="empty" style="color:var(--err);">에러: ${data.error}</td></tr>`;
+      return;
+    }
     const mine = (data.rows || []).filter(r => r.id === staffId && r.category !== '지급' && r.category !== '회수');
 
     const body = document.getElementById('historyBody');

@@ -171,6 +171,13 @@
   async function loadBalances(){
     const res = await fetch('/api/coupon?action=balances');
     const data = await res.json();
+
+    if(data.error){
+      document.getElementById('balanceBody').innerHTML =
+        `<tr><td colspan="4" class="empty" style="color:var(--err);">에러: ${data.error}</td></tr>`;
+      return;
+    }
+
     balancesCache = data.rows || [];
 
     const body = document.getElementById('balanceBody');
@@ -196,6 +203,15 @@
   async function loadHistory(){
     const res = await fetch('/api/coupon?action=history');
     const data = await res.json();
+
+    if(data.error){
+      document.getElementById('pendingBody').innerHTML =
+        `<tr><td class="empty" style="color:var(--err);">에러: ${data.error}</td></tr>`;
+      document.getElementById('historyBody').innerHTML =
+        `<tr><td colspan="9" class="empty" style="color:var(--err);">에러: ${data.error}</td></tr>`;
+      return;
+    }
+
     const rows = data.rows || [];
 
     const pendingRows = rows.filter(r => r.status === '대기');
