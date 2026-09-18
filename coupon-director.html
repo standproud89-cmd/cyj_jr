@@ -79,7 +79,7 @@
 <div class="topbar">
   <div class="topbar-left">
     <a class="back-link" href="index.html#home">← 처음으로</a>
-    <span class="who">👋 <b id="whoName">-</b> 원장님</span>
+    <span class="who">👋 <b id="whoName">-</b> 원장님 <span id="campusLabel" style="color:var(--ink-soft);font-weight:600;"></span></span>
   </div>
   <span class="logout-link" id="logoutBtn">로그아웃</span>
 </div>
@@ -149,11 +149,14 @@
   const staffId = sessionStorage.getItem('staff_id');
   const staffName = sessionStorage.getItem('staff_name');
   const staffRole = sessionStorage.getItem('staff_role');
+  const staffCampus = sessionStorage.getItem('staff_campus');
 
   if(!staffId || staffRole !== 'director'){
     window.location.href = 'coupon-hub.html';
   }
   document.getElementById('whoName').textContent = staffName || staffId;
+  const CAMPUS_NAMES = { dj: '목동', m2: '목동2관' };
+  document.getElementById('campusLabel').textContent = '(' + (CAMPUS_NAMES[staffCampus] || staffCampus) + ')';
 
   document.getElementById('logoutBtn').onclick = async () => {
     await sb.auth.signOut();
@@ -163,10 +166,10 @@
 
   let balancesCache = [];
 
-  const EXCLUDE_FROM_COUPONS = ['cyjdj00']; // 원장님은 쿠폰 대상 아님
+  // 원장님 본인은 쿠폰 대상이 아니므로 목록에서 제외 (어느 캠퍼스든 로그인한 본인 아이디 기준)
 
   async function loadBalances(){
-    const res = await fetch('/api/coupon?action=balances');
+    const res = await fetch('/api/coupon?action=balances&campus=' + encodeURIComponent(staffCampus));
     const data = await res.json();
 
     if(data.error){
@@ -175,7 +178,7 @@
       return;
     }
 
-    balancesCache = (data.rows || []).filter(r => !EXCLUDE_FROM_COUPONS.includes(r.id));
+    balancesCache = (data.rows || []).filter(r => r.id !== staffId);
 
     const body = document.getElementById('balanceBody');
     if(balancesCache.length === 0){
@@ -198,7 +201,7 @@
   }
 
   async function loadHistory(){
-    const res = await fetch('/api/coupon?action=history');
+    const res = await fetch('/api/coupon?action=history&campus=' + encodeURIComponent(staffCampus));
     const data = await res.json();
 
     if(data.error){
@@ -255,7 +258,7 @@
       const res = await fetch('/api/coupon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'grant', id, name, type, delta, reason, handler: staffName }),
+        body: JSON.stringify({ action: 'grant', id, name, type, delta, reason, handler: staffName, campus: staffCampus }),
       });
       const data = await res.json();
       if(data.error) throw new Error(data.error);

@@ -104,32 +104,42 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
       const action = req.query.action;
+      const campus = req.query.campus;
+      if (!campus) {
+        return res.status(400).json({ error: 'campus 파라미터가 필요해요' });
+      }
 
       if (action === 'balances') {
-        const data = await sheetsGet('잔여현황!A2:D', token);
-        const rows = (data.values || []).map((r) => ({
-          id: r[0] || '',
-          name: r[1] || '',
-          lte: Number(r[2] || 0),
-          wow: Number(r[3] || 0),
-        }));
+        const data = await sheetsGet('잔여현황!A2:E', token);
+        const rows = (data.values || [])
+          .filter((r) => (r[0] || '') === campus)
+          .map((r) => ({
+            campus: r[0] || '',
+            id: r[1] || '',
+            name: r[2] || '',
+            lte: Number(r[3] || 0),
+            wow: Number(r[4] || 0),
+          }));
         return res.status(200).json({ rows });
       }
 
       if (action === 'history') {
-        const data = await sheetsGet('거래내역!A2:I', token);
-        const rows = (data.values || []).map((r, i) => ({
-          row: i + 2,
-          date: r[0] || '',
-          id: r[1] || '',
-          name: r[2] || '',
-          type: r[3] || '',
-          category: r[4] || '',
-          delta: r[5] || '',
-          reason: r[6] || '',
-          status: r[7] || '',
-          handler: r[8] || '',
-        }));
+        const data = await sheetsGet('거래내역!A2:J', token);
+        const rows = (data.values || [])
+          .map((r, i) => ({
+            row: i + 2,
+            campus: r[0] || '',
+            date: r[1] || '',
+            id: r[2] || '',
+            name: r[3] || '',
+            type: r[4] || '',
+            category: r[5] || '',
+            delta: r[6] || '',
+            reason: r[7] || '',
+            status: r[8] || '',
+            handler: r[9] || '',
+          }))
+          .filter((r) => r.campus === campus);
         return res.status(200).json({ rows });
       }
 
@@ -139,12 +149,15 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
       const body = req.body || {};
       const action = body.action;
+      if (!body.campus) {
+        return res.status(400).json({ error: 'campus 값이 필요해요' });
+      }
 
       if (action === 'request') {
         const now = new Date().toISOString();
         await sheetsAppend(
-          '거래내역!A:I',
-          [now, body.id, body.name, body.type, '신청', -1, body.reason || '', '대기', ''],
+          '거래내역!A:J',
+          [body.campus, now, body.id, body.name, body.type, '사용', -1, body.reason || '', '완료', body.name],
           token
         );
         return res.status(200).json({ ok: true });
@@ -155,16 +168,10 @@ module.exports = async (req, res) => {
         const delta = Number(body.delta);
         const category = delta > 0 ? '지급' : '회수';
         await sheetsAppend(
-          '거래내역!A:I',
-          [now, body.id, body.name, body.type, category, delta, body.reason || '', '완료', body.handler || ''],
+          '거래내역!A:J',
+          [body.campus, now, body.id, body.name, body.type, category, delta, body.reason || '', '완료', body.handler || ''],
           token
         );
-        return res.status(200).json({ ok: true });
-      }
-
-      if (action === 'resolve') {
-        const status = body.decision === 'approve' ? '완료' : '거절';
-        await sheetsUpdate(`거래내역!H${body.row}:I${body.row}`, [status, body.handler || ''], token);
         return res.status(200).json({ ok: true });
       }
 

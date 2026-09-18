@@ -73,7 +73,7 @@
     <form id="loginForm">
       <div class="field">
         <label>아이디</label>
-        <input type="text" id="username" placeholder="cyjdj02" autocomplete="username" required>
+        <input type="text" id="username" placeholder="아이디 입력" autocomplete="username" required>
       </div>
       <div class="field">
         <label>비밀번호</label>
@@ -96,14 +96,16 @@
 
   // 아이디 → 이름/역할 매칭표 (강사 추가/변경 시 이 목록만 고치면 됨)
   const STAFF_DIRECTORY = {
-    cyjdj00: { name: "Tina",   role: "director" },
-    cyjdj02: { name: "Ryan",   role: "teacher" },
-    cyjdj03: { name: "Mark",   role: "teacher" },
-    cyjdj04: { name: "Cathy",  role: "teacher" },
-    cyjdj05: { name: "Hazel",  role: "teacher" },
-    cyjdj06: { name: "Rachel", role: "teacher" },
-    cyjdj07: { name: "Swan",   role: "teacher" },
-    cyjdj08: { name: "Justin", role: "teacher" },
+    cyjdj00: { name: "Tina",   role: "director", campus: "dj" },
+    cyjdj02: { name: "Ryan",   role: "teacher",  campus: "dj" },
+    cyjdj03: { name: "Mark",   role: "teacher",  campus: "dj" },
+    cyjdj04: { name: "Cathy",  role: "teacher",  campus: "dj" },
+    cyjdj05: { name: "Hazel",  role: "teacher",  campus: "dj" },
+    cyjdj06: { name: "Rachel", role: "teacher",  campus: "dj" },
+    cyjdj07: { name: "Swan",   role: "teacher",  campus: "dj" },
+    cyjdj08: { name: "Justin", role: "teacher",  campus: "dj" },
+    cyjm214: { name: "목동2관 원장님", role: "director", campus: "m2" },
+    cyjm201: { name: "목동2관 선생님", role: "teacher",  campus: "m2" },
   };
 
   const form = document.getElementById('loginForm');
@@ -151,6 +153,7 @@
     sessionStorage.setItem('staff_id', rawId);
     sessionStorage.setItem('staff_name', staffInfo.name);
     sessionStorage.setItem('staff_role', staffInfo.role);
+    sessionStorage.setItem('staff_campus', staffInfo.campus);
 
     if(staffInfo.role === 'director'){
       window.location.href = 'coupon-director.html';

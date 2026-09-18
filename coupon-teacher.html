@@ -100,7 +100,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">✏️ 사용신청</div>
+    <div class="section-title">✏️ 사용하기</div>
     <div class="request-form">
       <div class="field">
         <label>종류</label>
@@ -113,13 +113,13 @@
         <label>사용 사유 (간단히)</label>
         <textarea id="reqReason" placeholder="예: 다음 주 화요일 점심시간 연장 사용하겠습니다"></textarea>
       </div>
-      <button class="req-btn" id="reqBtn">신청하기</button>
+      <button class="req-btn" id="reqBtn">사용하기</button>
       <div class="msg" id="reqMsg"></div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">📋 내 신청/사용 내역</div>
+    <div class="section-title">📋 내 사용/지급 내역</div>
     <table>
       <thead><tr><th>일시</th><th>종류</th><th>사유</th><th>상태</th></tr></thead>
       <tbody id="historyBody"><tr><td colspan="4" class="empty">불러오는 중...</td></tr></tbody>
@@ -146,6 +146,7 @@
   const staffId = sessionStorage.getItem('staff_id');
   const staffName = sessionStorage.getItem('staff_name');
   const staffRole = sessionStorage.getItem('staff_role');
+  const staffCampus = sessionStorage.getItem('staff_campus');
 
   if(!staffId || staffRole !== 'teacher'){
     window.location.href = 'coupon-hub.html';
@@ -166,7 +167,7 @@
   }
 
   async function loadBalance(){
-    const res = await fetch('/api/coupon?action=balances');
+    const res = await fetch('/api/coupon?action=balances&campus=' + encodeURIComponent(staffCampus));
     const data = await res.json();
     if(data.error){
       document.getElementById('lteNum').textContent = '!';
@@ -180,18 +181,18 @@
   }
 
   async function loadHistory(){
-    const res = await fetch('/api/coupon?action=history');
+    const res = await fetch('/api/coupon?action=history&campus=' + encodeURIComponent(staffCampus));
     const data = await res.json();
     if(data.error){
       document.getElementById('historyBody').innerHTML =
         `<tr><td colspan="4" class="empty" style="color:var(--err);">에러: ${data.error}</td></tr>`;
       return;
     }
-    const mine = (data.rows || []).filter(r => r.id === staffId && r.category !== '지급' && r.category !== '회수');
+    const mine = (data.rows || []).filter(r => r.id === staffId);
 
     const body = document.getElementById('historyBody');
     if(mine.length === 0){
-      body.innerHTML = '<tr><td colspan="4" class="empty">아직 신청 내역이 없어요</td></tr>';
+      body.innerHTML = '<tr><td colspan="4" class="empty">아직 내역이 없어요</td></tr>';
     } else {
       body.innerHTML = mine.slice().reverse().map(r => `
         <tr>
@@ -221,18 +222,18 @@
     }
 
     btn.disabled = true;
-    btn.textContent = '신청 중...';
+    btn.textContent = '처리 중...';
 
     try{
       const res = await fetch('/api/coupon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'request', id: staffId, name: staffName, type, reason }),
+        body: JSON.stringify({ action: 'request', id: staffId, name: staffName, type, reason, campus: staffCampus }),
       });
       const data = await res.json();
       if(data.error) throw new Error(data.error);
       msg.className = 'msg ok';
-      msg.textContent = '신청됐어요! 원장님 승인을 기다려주세요.';
+      msg.textContent = '사용 처리됐어요!';
       document.getElementById('reqReason').value = '';
       await refreshAll();
     }catch(e){
@@ -241,7 +242,7 @@
     }
 
     btn.disabled = false;
-    btn.textContent = '신청하기';
+    btn.textContent = '사용하기';
   };
 
   document.getElementById('pwBtn').onclick = async () => {
