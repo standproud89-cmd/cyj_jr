@@ -155,7 +155,7 @@
     window.location.href = 'coupon-hub.html';
   }
   document.getElementById('whoName').textContent = staffName || staffId;
-  const CAMPUS_NAMES = { dj: '목동', m2: '목동2관' };
+  const CAMPUS_NAMES = { dj: '동작', m2: '목동2관' };
   document.getElementById('campusLabel').textContent = '(' + (CAMPUS_NAMES[staffCampus] || staffCampus) + ')';
 
   document.getElementById('logoutBtn').onclick = async () => {
@@ -295,6 +295,7 @@
   };
 
   refreshAll();
+  setInterval(refreshAll, 10000); // 10초마다 자동 갱신
 </script>
 
 </body>
