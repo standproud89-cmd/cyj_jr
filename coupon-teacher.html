@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>정이조 주니어 | 선생님 - For Staff</title>
+<title>정이조 주니어 | 선생님 - For Staff / Teacher</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -80,58 +80,58 @@
 
 <div class="topbar">
   <div class="topbar-left">
-    <a class="back-link" href="index.html#home">← 처음으로</a>
-    <span class="who">👋 <b id="whoName">-</b> 선생님</span>
+    <a class="back-link" href="index.html#home">← 처음으로 / Home</a>
+    <span class="who">👋 <b id="whoName">-</b> 선생님 / Teacher</span>
   </div>
-  <span class="logout-link" id="logoutBtn">로그아웃</span>
+  <span class="logout-link" id="logoutBtn">로그아웃 / Log out</span>
 </div>
 
 <div class="wrap">
 
   <div class="balance-grid">
     <div class="balance-card">
-      <div class="label">LTE 잔여</div>
-      <div><span class="num" id="lteNum">-</span><span class="unit">개</span></div>
+      <div class="label">LTE 잔여 / LTE Balance</div>
+      <div><span class="num" id="lteNum">-</span><span class="unit">개 / left</span></div>
     </div>
     <div class="balance-card">
-      <div class="label">Wow 잔여</div>
-      <div><span class="num" id="wowNum">-</span><span class="unit">개</span></div>
+      <div class="label">Wow 잔여 / Wow Balance</div>
+      <div><span class="num" id="wowNum">-</span><span class="unit">개 / left</span></div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">✏️ 사용하기</div>
+    <div class="section-title">✏️ 사용하기 / Use a Coupon</div>
     <div class="request-form">
       <div class="field">
-        <label>종류</label>
+        <label>종류 / Type</label>
         <select id="reqType">
           <option value="LTE">LTE</option>
           <option value="Wow">Wow</option>
         </select>
       </div>
       <div class="field">
-        <label>사용 사유 (간단히)</label>
-        <textarea id="reqReason" placeholder="예: 다음 주 화요일 점심시간 연장 사용하겠습니다"></textarea>
+        <label>사용 사유 (간단히) / Reason (brief)</label>
+        <textarea id="reqReason" placeholder="예: 다음 주 화요일 점심시간 연장 사용하겠습니다 / e.g. Extending lunch time next Tuesday"></textarea>
       </div>
-      <button class="req-btn" id="reqBtn">사용하기</button>
+      <button class="req-btn" id="reqBtn">사용하기 / Use</button>
       <div class="msg" id="reqMsg"></div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">📋 내 사용/지급 내역</div>
+    <div class="section-title">📋 내 사용/지급 내역 / My History</div>
     <table>
-      <thead><tr><th>일시</th><th>구분</th><th>종류</th><th>증감</th><th>사유</th><th>상태</th></tr></thead>
-      <tbody id="historyBody"><tr><td colspan="6" class="empty">불러오는 중...</td></tr></tbody>
+      <thead><tr><th>일시 / Date</th><th>구분 / Type</th><th>종류 / Item</th><th>증감 / Change</th><th>사유 / Reason</th><th>상태 / Status</th></tr></thead>
+      <tbody id="historyBody"><tr><td colspan="6" class="empty">불러오는 중... / Loading...</td></tr></tbody>
     </table>
   </div>
 
   <div class="section">
-    <div class="section-title">🔒 비밀번호 변경</div>
+    <div class="section-title">🔒 비밀번호 변경 / Change Password</div>
     <div class="pwbox">
-      <label>새 비밀번호</label>
-      <input type="text" id="newPw" placeholder="새 비밀번호 입력" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:10px;">
-      <button class="req-btn" id="pwBtn">비밀번호 변경</button>
+      <label>새 비밀번호 / New Password</label>
+      <input type="text" id="newPw" placeholder="새 비밀번호 입력 / Enter new password" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:10px;">
+      <button class="req-btn" id="pwBtn">비밀번호 변경 / Change</button>
       <div class="msg" id="pwMsg"></div>
     </div>
   </div>
@@ -160,9 +160,9 @@
   };
 
   function statusBadge(status){
-    if(status === '대기') return '<span class="badge pending">대기</span>';
-    if(status === '완료') return '<span class="badge done">완료</span>';
-    if(status === '거절') return '<span class="badge rejected">거절</span>';
+    if(status === '대기') return '<span class="badge pending">대기 / Pending</span>';
+    if(status === '완료') return '<span class="badge done">완료 / Done</span>';
+    if(status === '거절') return '<span class="badge rejected">거절 / Rejected</span>';
     return status;
   }
 
@@ -172,7 +172,7 @@
     if(data.error){
       document.getElementById('lteNum').textContent = '!';
       document.getElementById('wowNum').textContent = '!';
-      alert('잔여 개수 불러오기 실패: ' + data.error);
+      alert('잔여 개수 불러오기 실패: ' + data.error + ' / Failed to load balance');
       return;
     }
     const mine = (data.rows || []).find(r => r.id === staffId);
@@ -181,9 +181,9 @@
   }
 
   function categoryLabel(category){
-    if(category === '지급') return '<span style="color:var(--ok); font-weight:800;">➕ 지급</span>';
-    if(category === '회수') return '<span style="color:var(--err); font-weight:800;">➖ 회수</span>';
-    if(category === '사용') return '<span style="color:var(--ink-soft); font-weight:800;">✏️ 사용</span>';
+    if(category === '지급') return '<span style="color:var(--ok); font-weight:800;">➕ 지급 / Granted</span>';
+    if(category === '회수') return '<span style="color:var(--err); font-weight:800;">➖ 회수 / Revoked</span>';
+    if(category === '사용') return '<span style="color:var(--ink-soft); font-weight:800;">✏️ 사용 / Used</span>';
     return category;
   }
   function deltaLabel(delta){
@@ -198,14 +198,14 @@
     const data = await res.json();
     if(data.error){
       document.getElementById('historyBody').innerHTML =
-        `<tr><td colspan="6" class="empty" style="color:var(--err);">에러: ${data.error}</td></tr>`;
+        `<tr><td colspan="6" class="empty" style="color:var(--err);">에러: ${data.error} / Error</td></tr>`;
       return;
     }
     const mine = (data.rows || []).filter(r => r.id === staffId);
 
     const body = document.getElementById('historyBody');
     if(mine.length === 0){
-      body.innerHTML = '<tr><td colspan="6" class="empty">아직 내역이 없어요</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" class="empty">아직 내역이 없어요 / No history yet</td></tr>';
     } else {
       body.innerHTML = mine.slice().reverse().map(r => `
         <tr>
@@ -232,12 +232,12 @@
 
     if(!reason){
       msg.className = 'msg err';
-      msg.textContent = '사용 사유를 입력해주세요.';
+      msg.textContent = '사용 사유를 입력해주세요. / Please enter a reason.';
       return;
     }
 
     btn.disabled = true;
-    btn.textContent = '처리 중...';
+    btn.textContent = '처리 중... / Processing...';
 
     try{
       const res = await fetch('/api/coupon', {
@@ -248,16 +248,16 @@
       const data = await res.json();
       if(data.error) throw new Error(data.error);
       msg.className = 'msg ok';
-      msg.textContent = '사용 처리됐어요!';
+      msg.textContent = '사용 처리됐어요! / Done!';
       document.getElementById('reqReason').value = '';
       await refreshAll();
     }catch(e){
       msg.className = 'msg err';
-      msg.textContent = '오류: ' + e.message;
+      msg.textContent = '오류: ' + e.message + ' / Error';
     }
 
     btn.disabled = false;
-    btn.textContent = '사용하기';
+    btn.textContent = '사용하기 / Use';
   };
 
   document.getElementById('pwBtn').onclick = async () => {
@@ -265,16 +265,16 @@
     const msg = document.getElementById('pwMsg');
     if(!newPw || newPw.length < 4){
       msg.className = 'msg err';
-      msg.textContent = '비밀번호는 4자 이상으로 입력해주세요.';
+      msg.textContent = '비밀번호는 4자 이상으로 입력해주세요. / Password must be at least 4 characters.';
       return;
     }
     const { error } = await sb.auth.updateUser({ password: newPw });
     if(error){
       msg.className = 'msg err';
-      msg.textContent = '변경 실패: ' + error.message;
+      msg.textContent = '변경 실패: ' + error.message + ' / Failed';
     } else {
       msg.className = 'msg ok';
-      msg.textContent = '비밀번호가 변경됐어요!';
+      msg.textContent = '비밀번호가 변경됐어요! / Password changed!';
       document.getElementById('newPw').value = '';
     }
   };
