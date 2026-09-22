@@ -74,6 +74,7 @@
   .badge.rejected{ background:#FDEDED; color:var(--err); }
 
   .pwbox{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
+  .expiry-note{ font-size:11px; color:var(--ink-soft); margin-top:6px; min-height:14px; }
 </style>
 </head>
 <body>
@@ -92,10 +93,12 @@
     <div class="balance-card">
       <div class="label">LTE 잔여 / LTE Balance</div>
       <div><span class="num" id="lteNum">-</span><span class="unit">개 / left</span></div>
+      <div class="expiry-note" id="lteExpiryNote"></div>
     </div>
     <div class="balance-card">
       <div class="label">Wow 잔여 / Wow Balance</div>
       <div><span class="num" id="wowNum">-</span><span class="unit">개 / left</span></div>
+      <div class="expiry-note" id="wowExpiryNote"></div>
     </div>
   </div>
 
@@ -121,8 +124,8 @@
   <div class="section">
     <div class="section-title">📋 내 사용/지급 내역 / My History</div>
     <table>
-      <thead><tr><th>일시 / Date</th><th>구분 / Type</th><th>종류 / Item</th><th>증감 / Change</th><th>사유 / Reason</th><th>상태 / Status</th></tr></thead>
-      <tbody id="historyBody"><tr><td colspan="6" class="empty">불러오는 중... / Loading...</td></tr></tbody>
+      <thead><tr><th>일시 / Date</th><th>구분 / Type</th><th>종류 / Item</th><th>증감 / Change</th><th>만료일 / Expiry</th><th>사유 / Reason</th><th>상태 / Status</th></tr></thead>
+      <tbody id="historyBody"><tr><td colspan="7" class="empty">불러오는 중... / Loading...</td></tr></tbody>
     </table>
   </div>
 
@@ -178,6 +181,21 @@
     const mine = (data.rows || []).find(r => r.id === staffId);
     document.getElementById('lteNum').textContent = mine ? mine.lte : 0;
     document.getElementById('wowNum').textContent = mine ? mine.wow : 0;
+    document.getElementById('lteExpiryNote').innerHTML = formatExpiryNote(mine && mine.lteExpiry, mine && mine.lteUnlimited);
+    document.getElementById('wowExpiryNote').innerHTML = formatExpiryNote(mine && mine.wowExpiry, mine && mine.wowUnlimited);
+  }
+
+  function formatExpiryNote(expiry, unlimited){
+    const parts = [];
+    if(expiry) parts.push(`⏰ ${expiry} 만료 / expires`);
+    if(unlimited) parts.push('♾️ 무제한 포함 / incl. unlimited');
+    return parts.join(' · ');
+  }
+
+  function expiryCell(r){
+    if(r.category !== '지급') return '-';
+    if(r.unlimited === 'Y') return '♾️ 무제한 / Unlimited';
+    return r.expiry || '-';
   }
 
   function categoryLabel(category){
@@ -198,14 +216,14 @@
     const data = await res.json();
     if(data.error){
       document.getElementById('historyBody').innerHTML =
-        `<tr><td colspan="6" class="empty" style="color:var(--err);">에러: ${data.error} / Error</td></tr>`;
+        `<tr><td colspan="7" class="empty" style="color:var(--err);">에러: ${data.error} / Error</td></tr>`;
       return;
     }
     const mine = (data.rows || []).filter(r => r.id === staffId);
 
     const body = document.getElementById('historyBody');
     if(mine.length === 0){
-      body.innerHTML = '<tr><td colspan="6" class="empty">아직 내역이 없어요 / No history yet</td></tr>';
+      body.innerHTML = '<tr><td colspan="7" class="empty">아직 내역이 없어요 / No history yet</td></tr>';
     } else {
       body.innerHTML = mine.slice().reverse().map(r => `
         <tr>
@@ -213,6 +231,7 @@
           <td>${categoryLabel(r.category)}</td>
           <td>${r.type}</td>
           <td>${deltaLabel(r.delta)}</td>
+          <td>${expiryCell(r)}</td>
           <td>${r.reason || '-'}</td>
           <td>${statusBadge(r.status)}</td>
         </tr>
