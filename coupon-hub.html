@@ -154,17 +154,13 @@
       return;
     }
 
-    // 로그인 성공 → 이름/역할 정보를 세션에 저장하고 역할별 화면으로 이동
+    // 로그인 성공 → 이름/역할 정보를 세션에 저장하고 For Staff 대문(쿠폰함/SPB 선택)으로 이동
     sessionStorage.setItem('staff_id', rawId);
     sessionStorage.setItem('staff_name', staffInfo.name);
     sessionStorage.setItem('staff_role', staffInfo.role);
     sessionStorage.setItem('staff_campus', staffInfo.campus);
 
-    if(staffInfo.role === 'director'){
-      window.location.href = 'coupon-director.html';
-    } else {
-      window.location.href = 'coupon-teacher.html';
-    }
+    window.location.href = 'staff-home.html';
   });
 </script>
 

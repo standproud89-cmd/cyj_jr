@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정이조 주니어 | For Staff</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --ink:#1C2321; --ink-soft:#5B6360; --paper:#F6F7F9; --line:#E3E6E8;
+    --gold:#C9971F; --blue:#2E7FE3;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--paper); color:var(--ink);
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: clamp(16px,3vh,32px) clamp(20px,4vw,48px); flex-wrap:wrap; gap:10px;
+  }
+  .topbar-left{ display:flex; align-items:center; gap:14px; }
+  .back-link, .logout-link{
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    font-weight:700; font-size:13px; color:var(--ink-soft);
+    padding:8px 16px; border-radius:20px; border:1px solid var(--line); background:#fff; cursor:pointer;
+  }
+  .back-link:hover, .logout-link:hover{ background:var(--paper); color:var(--ink); }
+  .who{ font-size:13.5px; font-weight:700; color:var(--ink-soft); }
+  .who b{ color:var(--ink); }
+
+  .main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px clamp(20px,4vw,48px) 60px; }
+  .main-title{ text-align:center; margin-bottom:clamp(28px,4vh,44px); }
+  .main-title .icon{ font-size:40px; margin-bottom:8px; }
+  .main-title h1{ font-size:clamp(20px,2.6vw,28px); margin:0 0 6px; }
+  .main-title p{ font-size:13px; color:var(--ink-soft); margin:0; }
+
+  .box-grid{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,32px); max-width:760px; width:100%; }
+  @media (max-width:620px){ .box-grid{ grid-template-columns:1fr; } }
+  .box{
+    background:#fff; border:2px solid var(--line); border-radius:26px;
+    padding:clamp(28px,4vw,44px) clamp(22px,3vw,32px);
+    cursor:pointer; position:relative; overflow:hidden;
+    transition:transform .15s ease, box-shadow .15s ease;
+    text-align:left;
+  }
+  .box:hover{ transform:translateY(-4px); box-shadow:0 14px 34px rgba(28,35,33,0.08); }
+  .box:active{ transform:translateY(0); }
+  .box-accent{ position:absolute; top:0; left:0; right:0; height:8px; }
+  .box.gold .box-accent{ background:linear-gradient(90deg, #C9971F, #E8B84B); }
+  .box.blue .box-accent{ background:linear-gradient(90deg, var(--blue), #7EB3F7); }
+  .box-icon{ font-size:clamp(38px,5vw,52px); margin-bottom:14px; }
+  .box-title{ font-weight:900; font-size:clamp(19px,2.4vw,24px); letter-spacing:-0.01em; }
+  .box-desc{ font-size:13px; color:var(--ink-soft); margin-top:8px; font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="back-link" href="index.html#home">← 처음으로</a>
+    <span class="who">👋 <b id="whoName">-</b><span id="whoRoleLabel"></span></span>
+  </div>
+  <span class="logout-link" id="logoutBtn">로그아웃</span>
+</div>
+
+<div class="main">
+  <div class="main-title">
+    <div class="icon">🎟️</div>
+    <h1>For Staff</h1>
+    <p>이용하실 항목을 선택해주세요</p>
+  </div>
+
+  <div class="box-grid">
+    <div class="box gold" id="box-coupon">
+      <div class="box-accent"></div>
+      <div class="box-icon">🎟️</div>
+      <div class="box-title">쿠폰함</div>
+      <div class="box-desc">LTE · Wow 쿠폰 지급 / 사용 내역</div>
+    </div>
+    <div class="box blue" id="box-spb">
+      <div class="box-accent"></div>
+      <div class="box-icon">📘</div>
+      <div class="box-title">Student Point Book</div>
+      <div class="box-desc">반 · 학생 스티커 지급 관리</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const staffId = sessionStorage.getItem('staff_id');
+  const staffName = sessionStorage.getItem('staff_name');
+  const staffRole = sessionStorage.getItem('staff_role');
+
+  // 로그인 안 된 상태로 직접 들어오면 로그인 화면으로 되돌림
+  if(!staffId){
+    window.location.href = 'coupon-hub.html';
+  }
+
+  document.getElementById('whoName').textContent = staffName || '-';
+  document.getElementById('whoRoleLabel').textContent = staffRole === 'director' ? ' 원장님' : ' 선생님';
+
+  document.getElementById('box-coupon').onclick = () => {
+    window.location.href = staffRole === 'director' ? 'coupon-director.html' : 'coupon-teacher.html';
+  };
+  document.getElementById('box-spb').onclick = () => {
+    window.location.href = 'spb.html';
+  };
+
+  document.getElementById('logoutBtn').onclick = () => {
+    sessionStorage.removeItem('staff_id');
+    sessionStorage.removeItem('staff_name');
+    sessionStorage.removeItem('staff_role');
+    sessionStorage.removeItem('staff_campus');
+    window.location.href = 'coupon-hub.html';
+  };
+</script>
+
+</body>
+</html>
