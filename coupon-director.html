@@ -171,6 +171,26 @@
   const CAMPUS_NAMES = { dj: '동작', m2: '목동2관' };
   document.getElementById('campusLabel').textContent = '(' + (CAMPUS_NAMES[staffCampus] || staffCampus) + ')';
 
+  // 캠퍼스별 선생님 명단 (coupon-hub.html의 STAFF_DIRECTORY와 동기화 필요 - 선생님 추가/변경 시 여기도 같이 고칠 것)
+  // 거래내역이 하나도 없는 선생님도 0/0으로 명단에 나오게 하기 위한 용도
+  const TEACHER_ROSTER = {
+    dj: [
+      { id: 'cyjdj02', name: 'Ryan' },
+      { id: 'cyjdj03', name: 'Mark' },
+      { id: 'cyjdj04', name: 'Cathy' },
+      { id: 'cyjdj05', name: 'Hazel' },
+      { id: 'cyjdj06', name: 'Rachel' },
+      { id: 'cyjdj07', name: 'Swan' },
+      { id: 'cyjdj08', name: 'Justin' },
+      { id: 'cyjdj09', name: 'Ella' },
+      { id: 'cyjdj10', name: 'Kay' },
+      { id: 'cyjdj11', name: 'Tiaan' },
+    ],
+    m2: [
+      { id: 'cyjm201', name: '목동2관 선생님' },
+    ],
+  };
+
   document.getElementById('logoutBtn').onclick = async () => {
     await sb.auth.signOut();
     sessionStorage.clear();
@@ -207,7 +227,18 @@
       return;
     }
 
-    balancesCache = (data.rows || []).filter(r => r.id !== staffId);
+    const computed = (data.rows || []).filter(r => r.id !== staffId);
+    const computedById = {};
+    computed.forEach(r => { computedById[r.id] = r; });
+
+    // 거래내역이 하나도 없어서 API 결과에 안 잡힌 선생님도 0/0으로 채워서 명단에 표시
+    const roster = TEACHER_ROSTER[staffCampus] || [];
+    balancesCache = roster.map(t => computedById[t.id] || {
+      id: t.id, name: t.name, lte: 0, wow: 0,
+      lteExpiry: null, wowExpiry: null, lteUnlimited: false, wowUnlimited: false,
+    });
+    // 명단에 없는데 거래내역에는 있는 아이디(오타 등 예외 케이스)도 놓치지 않도록 추가
+    computed.forEach(r => { if(!roster.find(t => t.id === r.id)) balancesCache.push(r); });
 
     const body = document.getElementById('balanceBody');
     if(balancesCache.length === 0){
