@@ -74,7 +74,21 @@
   .badge.rejected{ background:#FDEDED; color:var(--err); }
 
   .pwbox{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 20px; }
-  .expiry-note{ font-size:11px; color:var(--ink-soft); margin-top:6px; min-height:14px; }
+  button.balance-card{ font-family:inherit; cursor:pointer; width:100%; transition:border-color .15s, box-shadow .15s; }
+  button.balance-card:hover, button.balance-card:focus-visible{ border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-soft); outline:none; }
+  .detail-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:8px; font-weight:700; }
+  .modal-bg{ position:fixed; inset:0; background:rgba(28,35,33,.45); display:none; align-items:center; justify-content:center; padding:16px; z-index:50; }
+  .modal-bg.open{ display:flex; }
+  .modal{ background:#fff; border-radius:18px; width:100%; max-width:440px; max-height:86vh; overflow:auto; padding:22px 20px 20px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .modal-head h3{ margin:0; font-size:17px; font-weight:800; }
+  .modal-x{ border:none; background:var(--paper); width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; color:var(--ink-soft); }
+  .modal-sub{ font-size:12px; color:var(--ink-soft); margin:0 0 14px; line-height:1.5; }
+  .lot-table td, .lot-table th{ text-align:center; }
+  .lot-table tr.expired td{ color:#A5ABA9; background:#F5F6F7; }
+  .lot-table tr.soon td.exp{ color:var(--err); font-weight:800; }
+  .lot-tag{ display:inline-block; font-size:10.5px; font-weight:800; padding:1px 7px; border-radius:9px; background:#E3E6E8; color:#7A817F; margin-left:4px; }
+  .lot-total{ margin-top:12px; font-size:12.5px; font-weight:700; text-align:right; color:var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -90,16 +104,16 @@
 <div class="wrap">
 
   <div class="balance-grid">
-    <div class="balance-card">
+    <button type="button" class="balance-card" id="lteCard" aria-haspopup="dialog">
       <div class="label">LTE 잔여 / LTE Balance</div>
       <div><span class="num" id="lteNum">-</span><span class="unit">개 / left</span></div>
-      <div class="expiry-note" id="lteExpiryNote"></div>
-    </div>
-    <div class="balance-card">
+      <div class="detail-hint">만료일 보기 ▸ / View expiry</div>
+    </button>
+    <button type="button" class="balance-card" id="wowCard" aria-haspopup="dialog">
       <div class="label">Wow 잔여 / Wow Balance</div>
       <div><span class="num" id="wowNum">-</span><span class="unit">개 / left</span></div>
-      <div class="expiry-note" id="wowExpiryNote"></div>
-    </div>
+      <div class="detail-hint">만료일 보기 ▸ / View expiry</div>
+    </button>
   </div>
 
   <div class="section">
@@ -139,6 +153,18 @@
     </div>
   </div>
 
+</div>
+
+<div class="modal-bg" id="lotModalBg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lotTitle">
+    <div class="modal-head"><h3 id="lotTitle">-</h3><button class="modal-x" id="lotClose" aria-label="닫기 / Close">✕</button></div>
+    <p class="modal-sub">만료일이 빠른 쿠폰부터 자동으로 사용돼요. 지급일로부터 6개월 뒤 만료되고, 무제한 쿠폰은 가장 마지막에 사용돼요.<br>Coupons expiring first are used first. Valid for 6 months from the grant date; unlimited coupons are used last.</p>
+    <table class="lot-table">
+      <thead><tr><th>지급일 / Granted</th><th>개수 / Qty</th><th>만료일 / Expiry</th></tr></thead>
+      <tbody id="lotBody"></tbody>
+    </table>
+    <div class="lot-total" id="lotTotal"></div>
+  </div>
 </div>
 
 <script>
@@ -181,16 +207,46 @@
     const mine = (data.rows || []).find(r => r.id === staffId);
     document.getElementById('lteNum').textContent = mine ? mine.lte : 0;
     document.getElementById('wowNum').textContent = mine ? mine.wow : 0;
-    document.getElementById('lteExpiryNote').innerHTML = formatExpiryNote(mine && mine.lteExpiry, mine && mine.lteUnlimited);
-    document.getElementById('wowExpiryNote').innerHTML = formatExpiryNote(mine && mine.wowExpiry, mine && mine.wowUnlimited);
+    myLots = { LTE: (mine && mine.lteLots) || [], Wow: (mine && mine.wowLots) || [] };
   }
 
-  function formatExpiryNote(expiry, unlimited){
-    const parts = [];
-    if(expiry) parts.push(`⏰ ${expiry} 만료 / expires`);
-    if(unlimited) parts.push('♾️ 무제한 포함 / incl. unlimited');
-    return parts.join(' · ');
+  let myLots = { LTE: [], Wow: [] };
+
+  function lotSortKey(l){
+    // 사용 가능(만료 빠른 순) → 무제한 → 만료된 것
+    if(l.expired) return '3' + (l.expiry || '');
+    if(l.unlimited) return '2' + (l.grantDate || '');
+    return '1' + (l.expiry || '');
   }
+  function daysLeft(expiry){
+    const t = new Date(Date.now() + 9*3600*1000).toISOString().slice(0,10);
+    return Math.round((new Date(expiry) - new Date(t)) / 86400000);
+  }
+  function openLots(type){
+    const lots = (myLots[type] || []).slice().sort((a,b) => lotSortKey(a).localeCompare(lotSortKey(b)));
+    document.getElementById('lotTitle').textContent = type + ' 쿠폰 현황 / ' + type + ' Coupons';
+    const body = document.getElementById('lotBody');
+    if(lots.length === 0){
+      body.innerHTML = '<tr><td colspan="3" class="empty">남은 쿠폰이 없어요 / No coupons left</td></tr>';
+    } else {
+      body.innerHTML = lots.map(l => {
+        let exp, cls = '';
+        if(l.unlimited){ exp = '❤️ 무제한 / Unlimited'; }
+        else if(l.expired){ exp = l.expiry + '<span class="lot-tag">만료 / Expired</span>'; cls = 'expired'; }
+        else { exp = l.expiry; if(daysLeft(l.expiry) <= 30) cls = 'soon'; }
+        return `<tr class="${cls}"><td>${l.grantDate || '-'}</td><td>${l.qty}개</td><td class="exp">${exp}</td></tr>`;
+      }).join('');
+    }
+    const usable = lots.filter(l => !l.expired).reduce((s,l) => s + l.qty, 0);
+    document.getElementById('lotTotal').textContent = '사용 가능 합계 / Usable total: ' + usable + '개';
+    document.getElementById('lotModalBg').classList.add('open');
+  }
+  function closeLots(){ document.getElementById('lotModalBg').classList.remove('open'); }
+  document.getElementById('lteCard').onclick = () => openLots('LTE');
+  document.getElementById('wowCard').onclick = () => openLots('Wow');
+  document.getElementById('lotClose').onclick = closeLots;
+  document.getElementById('lotModalBg').onclick = (e) => { if(e.target.id === 'lotModalBg') closeLots(); };
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeLots(); });
 
   function expiryCell(r){
     if(r.category !== '지급') return '-';

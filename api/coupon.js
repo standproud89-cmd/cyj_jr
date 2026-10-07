@@ -61,12 +61,17 @@ async function getAccessToken() {
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
+// 한국 시간(KST) 기준 'YYYY-MM-DD' (서버가 UTC라 날짜가 하루 어긋나는 것을 방지)
+function kstDateStr(d) {
+  return new Date(new Date(d).getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 // 거래내역 행(A~L) 배열을 받아 만료일 기반 FIFO 소진 로직으로 선생님별 잔여 개수를 계산한다.
 // A:캠퍼스 B:일시 C:아이디 D:이름 E:종류 F:구분 G:증감 H:사유 I:상태 J:처리자 K:만료일 L:무제한
 function computeBalances(rows) {
   const lots = {}; // key = "아이디|종류" -> [{qty, expiry:'YYYY-MM-DD'|null, unlimited:bool}]
   const names = {};
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = kstDateStr(new Date());
 
   function getLots(key) {
     if (!lots[key]) lots[key] = [];
@@ -97,12 +102,15 @@ function computeBalances(rows) {
       } else if (expiryRaw) {
         expiry = expiryRaw;
       }
-      getLots(key).push({ qty: delta, expiry, unlimited });
+      const grantDate = r[1] ? kstDateStr(r[1]) : '';
+      getLots(key).push({ qty: delta, expiry, unlimited, grantDate });
     } else if (category === '사용' || category === '회수') {
       let need = Math.abs(delta);
       const lotArr = getLots(key);
+      const usedOn = r[1] ? kstDateStr(r[1]) : todayStr;
       const order = lotArr
         .filter((lot) => lot.qty > 0)
+        .filter((lot) => lot.unlimited || !lot.expiry || lot.expiry >= usedOn) // 사용 시점에 이미 만료된 쿠폰은 소진 대상에서 제외
         .sort((a, b) => {
           if (a.unlimited && !b.unlimited) return 1;
           if (!a.unlimited && b.unlimited) return -1;
@@ -127,13 +135,17 @@ function computeBalances(rows) {
         lte: 0, wow: 0,
         lteExpiry: null, wowExpiry: null,
         lteUnlimited: false, wowUnlimited: false,
+        lteLots: [], wowLots: [],
       };
     }
     let sum = 0;
     let nearestExpiry = null;
     let hasUnlimited = false;
+    const lotList = [];
     for (const lot of lots[key]) {
       if (lot.qty <= 0) continue;
+      const expired = !lot.unlimited && !!lot.expiry && lot.expiry < todayStr;
+      lotList.push({ grantDate: lot.grantDate, qty: lot.qty, expiry: lot.unlimited ? null : lot.expiry, unlimited: lot.unlimited, expired });
       if (!lot.unlimited && lot.expiry && lot.expiry < todayStr) continue; // 만료된 잔여분은 카운트하지 않음
       sum += lot.qty;
       if (lot.unlimited) hasUnlimited = true;
@@ -143,10 +155,12 @@ function computeBalances(rows) {
       result[id].lte = sum;
       result[id].lteExpiry = nearestExpiry;
       result[id].lteUnlimited = hasUnlimited;
+      result[id].lteLots = lotList;
     } else if (type === 'Wow') {
       result[id].wow = sum;
       result[id].wowExpiry = nearestExpiry;
       result[id].wowUnlimited = hasUnlimited;
+      result[id].wowLots = lotList;
     }
   }
   return Object.values(result);
@@ -261,9 +275,11 @@ module.exports = async (req, res) => {
           if (body.unlimited) {
             unlimitedFlag = 'Y';
           } else {
-            const expiry = new Date(now);
-            expiry.setMonth(expiry.getMonth() + 6);
-            expiryStr = expiry.toISOString().slice(0, 10);
+            // 지급일(KST) + 6개월
+            const [y, m, d] = kstDateStr(now).split('-').map(Number);
+            const exp = new Date(Date.UTC(y, m - 1 + 6, d));
+            if (exp.getUTCDate() !== d) exp.setUTCDate(0); // 말일 보정 (예: 8/31 + 6개월 → 2/28)
+            expiryStr = exp.toISOString().slice(0, 10);
           }
         }
 
