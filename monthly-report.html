@@ -92,6 +92,7 @@ td.chk{background:var(--warn-bg);outline:2px solid var(--warn-line);outline-offs
 .zone .plus{font-size:30px;line-height:1;color:var(--ink)}.zone small{font-size:12px}
 .rcb{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.rcr{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px}.ph{flex:0 0 230px;max-width:100%;max-height:300px;overflow:hidden;border:1px solid var(--line);border-radius:10px;cursor:zoom-in;background:var(--surface2)}.ph img{display:block;width:100%}.ph.big{flex:1 1 100%;max-height:none;cursor:zoom-out}td.d{text-align:center;min-width:104px;padding:2px 4px}td.d input{font:700 11px Poppins,'Noto Sans KR',sans-serif;text-align:center;padding:5px 0;width:100%;min-width:92px;letter-spacing:-.01em}td.d.chk{background:var(--warn-bg)}td input[type=number]{min-width:66px}.nt{display:block}.ng{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 0}.nc{display:flex;flex-direction:column;align-items:stretch;gap:5px;min-width:0;padding:2px 16px;text-align:center}.nc+.nc{border-left:1px solid var(--line)}.nc .nl{background:var(--c);color:#fff;font:700 11px 'Noto Sans KR',sans-serif;border:0;border-radius:99px;padding:2px 10px;box-sizing:content-box;max-width:calc(100% - 20px);min-width:0;text-align:center;align-self:center}.nc .nl:focus{outline:2px solid var(--c);outline-offset:2px}.nc .nv{font:700 16px/1.4 'Noto Sans KR',sans-serif;color:var(--ink);border:0;border-radius:6px;background:transparent;padding:2px 0;width:100%;min-width:0;height:1.4em;resize:none;overflow:hidden;letter-spacing:-.01em;text-align:center}.nc .nv:focus{outline:2px solid var(--c);outline-offset:2px}.rlogo{height:38px;width:auto;align-self:center;margin-bottom:6px}@media (max-width:560px){.ng{grid-template-columns:1fr;gap:10px}.nc+.nc{border-left:0;border-top:1px solid var(--line);padding-top:12px}}.rep{padding:10px 4px 4px}.top img{height:48px}@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .top img,:root:not([data-theme=light]) .rlogo{background:#fff;border-radius:10px;padding:3px 10px}}:root[data-theme=dark] .top img,:root[data-theme=dark] .rlogo{background:#fff;border-radius:10px;padding:3px 10px}.rlogo{height:46px!important}.slot.over{outline:2px solid var(--accent);outline-offset:-2px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <main>
  <a class="bk" href="staff-home.html">← For Staff</a>
@@ -107,11 +108,9 @@ const nvSize=v=>v.length<=7?30:v.length<=12?24:v.length<=18?19:16;
 const NOTICES=[{l:'다음달 스피킹탑 일정',v:'11/4'},{l:'주니어테스트',v:'11/11(수), 11/13(금)'},{l:'동작SNS써포터즈 신청',v:'10/19~10/30(금)'}];
 const fileName=it=>`${(it.cls||'').replace(/[\\\\/:*?"<>|]/g,'').trim()}_${(it.name||'').replace(/[\\\\/:*?"<>|]/g,'').trim()}.png`;
 const rgbOf=s=>{const c=document.createElement('canvas').getContext('2d');c.fillStyle=s;const h=c.fillStyle;return h[0]==='#'?[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)):(h.match(/[\\d.]+/g)||[0,0,0]).slice(0,3).map(Number)};
-async function savePng(){
-  const it=RI[rep],el=document.querySelector('.rep'),btn=document.getElementById('pngbtn');
-  if(!it||!el||!window.html2canvas)return;
-  const old=btn.textContent;btn.disabled=true;btn.textContent='이미지 만드는 중…';
-  try{
+async function renderPng(){
+  const el=document.querySelector('.rep');
+  if(!el||!window.html2canvas)return null;
     const bg=getComputedStyle(document.body).backgroundColor;
     const canvas=await html2canvas(el,{scale:2,backgroundColor:bg,logging:false,onclone:(doc,node)=>{
       const w=doc.defaultView;
@@ -121,13 +120,40 @@ async function savePng(){
         const isl=n.classList.contains('nl');Object.assign(d.style,{background:isl?cs.backgroundColor:'transparent',color:cs.color,font:cs.font,padding:isl?'2px 10px':'2px 0',width:isl?cs.width:'100%',boxSizing:'content-box',borderRadius:isl?'99px':'0',alignSelf:isl?'center':'auto',textAlign:'center',lineHeight:n.classList.contains('nl')?'1.4':'1.4',border:'0',whiteSpace:'pre-wrap',wordBreak:'keep-all',display:'block',minHeight:'1.4em',height:'auto'});
         n.replaceWith(d)});
     }});
-    const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));
-    const fname=fileName(it);let dl=null;
-    try{dl=(window.claude&&claude.use)?await claude.use('downloads'):null}catch(e){dl=null}
-    if(dl){await dl.save({filename:fname,data:blob})}
-    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
-  }catch(e){if(!(e&&e.code==='declined'))alert&&0}
+    return await new Promise(r=>canvas.toBlob(r,'image/png'));
+}
+async function saveBlob(blob,fname){
+  let dl=null;
+  try{dl=(window.claude&&claude.use)?await claude.use('downloads'):null}catch(e){dl=null}
+  if(dl){await dl.save({filename:fname,data:blob})}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+}
+async function savePng(){
+  const it=RI[rep],btn=document.getElementById('pngbtn');
+  if(!it||!btn)return;
+  const old=btn.textContent;btn.disabled=true;btn.textContent='이미지 만드는 중…';
+  try{const blob=await renderPng();if(blob)await saveBlob(blob,fileName(it))}catch(e){}
   btn.disabled=false;btn.textContent=old;
+}
+let busyAll=false;
+async function saveAll(){
+  if(busyAll||!window.JSZip||!window.html2canvas)return;
+  busyAll=true;const keep=rep,zip=new JSZip(),used={};
+  const label=t=>{const b=document.getElementById('allbtn');if(b){b.textContent=t;b.disabled=true}};
+  try{
+    for(let i=0;i<RI.length;i++){
+      rep=i;render();label(`이미지 만드는 중… ${i+1}/${RI.length}`);
+      await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,120)));
+      const blob=await renderPng();if(!blob)continue;
+      let n=fileName(RI[i]);if(used[n]){const k=++used[n];n=n.replace(/\.png$/,`_${k}.png`)}else used[n]=1;
+      zip.file(n,blob);
+    }
+    rep=keep;render();label('압축하는 중…');
+    const z=await zip.generateAsync({type:'blob'});
+    const d=new Date(),p=x=>String(x).padStart(2,'0');
+    await saveBlob(z,`성적표_전체_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.zip`);
+  }catch(e){}
+  rep=keep;busyAll=false;render();
 }
 let showSample=false;
 let slots=Array.from({length:MAX},(_,i)=>({id:i+1,name:'',cls:'',src:'',file:null,sample:false})), items=[], step=1, msg='', rep=0, comments={};
@@ -375,7 +401,7 @@ function v3(){
   <div class="stats">${S.map(([k],s)=>{const vv=rows.map(r=>r.v[s]).filter(x=>x!=null),aa=rows.map(r=>r.a[s]).filter(x=>x!=null),nn=rows.length-vv.length;const m=vv.length?mean(vv):null,c=aa.length?mean(aa):null,df=m!=null&&c!=null?m-c:null;return `<div class="stat"><span class="b" style="background:${['var(--lf)','var(--fw)','var(--ns)'][s]}">${k}</span><span class="v" ${m==null?'style="font-size:18px;color:var(--sub)"':''}>${m==null?'성적없음':m.toFixed(1)}</span><span class="s">반 평균 <b style="color:var(--accent)">${c==null?'-':c.toFixed(1)}</b>${df==null?'':` · 반평균 대비 <b style="color:${df>=0?'var(--ok)':'var(--bad)'}">${df>=0?'+':''}${df.toFixed(1)}</b>`}${nn?` · <span style="color:var(--sub)">성적없음 ${nn}회</span>`:''}</span></div>`}).join('')}</div>
   ${S.map(([k,n,c],s)=>`<div class="ch"><h4><i style="background:${c}"></i>${n} <span style="color:var(--sub);font-weight:400">(${k})</span><span class="lg"><span style="color:${c}">━ ${it.name}</span><span style="color:var(--accent)">╍ 반 평균</span></span></h4>${chart(rows,s,c)}</div>`).join('')}
   <div class="nt"><div class="ng">${NOTICES.map((n,i)=>`<div class="nc" style="--c:var(--${['lf','fw','ns'][i]})"><input type="text" class="nl" style="width:${nlW(n.l)}em" data-nt="${i}:l" value="${n.l}" aria-label="${i+1}번 항목 이름"><textarea class="nv" rows="1" data-nt="${i}:v" aria-label="${i+1}번 항목 내용">${n.v}</textarea></div>`).join('')}</div></div></div>
-  <div class="row"><button class="btn" data-act="edit">← 값 다시 확인</button><button class="btn" data-act="home">처음으로 (새로 등록)</button><button class="btn cta" data-act="png" id="pngbtn">⬇ 이미지(PNG)로 저장</button><span class="hint" id="pngname">${fileName(it)}</span></div></div>`;
+  <div class="row"><button class="btn" data-act="edit">← 값 다시 확인</button><button class="btn" data-act="home">처음으로 (새로 등록)</button><button class="btn cta" data-act="png" id="pngbtn">⬇ 이미지(PNG)로 저장</button>${RI.length>1?`<button class="btn cta" data-act="all" id="allbtn">⬇ 전체 이미지(ZIP) 저장 (${RI.length}명)</button>`:''}<span class="hint" id="pngname">${fileName(it)}</span></div></div>`;
 }
 function bind(){
   const v=$('#view');
@@ -391,6 +417,7 @@ function bind(){
     if(a==='report'){RI=items.map(it=>({...it,rows:(it.rows||[]).filter(validRow)})).filter(it=>it.rows.length);rep=0;setStep(3)}
     if(a==='edit')setStep(2);
     if(a==='png')savePng();
+    if(a==='all')saveAll();
     if(a==='home'){stopRead();RI=[];slots=slots.map(s=>({id:s.id,name:'',cls:'',src:'',file:null,sample:false}));items=[];msg='';comments={};setStep(1)}
   });
   const fp=$('#fpick');if(fp)fp.onchange=e=>{fillFrom(e.target.files)};
