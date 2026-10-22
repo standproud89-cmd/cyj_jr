@@ -137,10 +137,12 @@
   body.theme-dark .back-btn{ background:var(--hcard); border-color:var(--hborder); color:#c9c9cc; }
   body.theme-dark .back-btn:hover{ background:#221f24; color:#fff; }
 
+  #screen-inclass .sub-grid{ grid-template-columns:repeat(2, 1fr); }
+
   /* ---------- 모바일: 세로 배치 ---------- */
   @media (max-width: 780px){
     .home-grid{ grid-template-columns:1fr; }
-    .sub-grid{ grid-template-columns:1fr; }
+    .sub-grid, #screen-inclass .sub-grid{ grid-template-columns:1fr; }
     .home-box{ min-height:200px; }
     .sub-box{ min-height:auto; flex-direction:row; align-items:center; gap:16px; }
     .sub-box-title{ margin-top:0; }
@@ -165,7 +167,7 @@
         <div class="home-box-accent hex"></div>
         <div class="home-box-icon">🎯</div>
         <div class="home-box-title">In class</div>
-        <div class="home-box-sub">Activity Tool · Review Test · Halloween</div>
+        <div class="home-box-sub">Activity Tool · Review Test</div>
       </div>
       <div class="home-box light" id="box-prep">
         <div class="home-box-accent"></div>
@@ -177,7 +179,7 @@
         <div class="home-box-accent gold"></div>
         <div class="home-box-icon">🎟️</div>
         <div class="home-box-title">For Staff</div>
-        <div class="home-box-sub">LTE · Wow 쿠폰함 · Student Point Book</div>
+        <div class="home-box-sub">LTE · Wow 쿠폰함 · Monthly Report</div>
       </div>
     </div>
   </div>
@@ -193,10 +195,6 @@
       <a class="sub-box" href="activity-tool/index.html#review">
         <div><span class="sub-box-icon">⏱️</span><div class="sub-box-title">Review Test</div></div>
         <div class="sub-box-desc">타이머 · 카운트다운 알림음</div>
-      </a>
-      <a class="sub-box sub-box-dark" href="activity-tool/index.html#halloween">
-        <div><span class="sub-box-icon">🎃</span><div class="sub-box-title">Halloween</div></div>
-        <div class="sub-box-desc">방탈출 스타일 반 이벤트</div>
       </a>
     </div>
   </div>

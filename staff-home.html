@@ -80,11 +80,11 @@
       <div class="box-title">쿠폰함</div>
       <div class="box-desc">LTE · Wow 쿠폰 지급 / 사용 내역</div>
     </div>
-    <div class="box blue" id="box-spb">
+    <div class="box blue" id="box-mr">
       <div class="box-accent"></div>
-      <div class="box-icon">📘</div>
-      <div class="box-title">Student Point Book</div>
-      <div class="box-desc">반 · 학생 스티커 지급 관리</div>
+      <div class="box-icon">📊</div>
+      <div class="box-title">Monthly Report</div>
+      <div class="box-desc">상담 시스템 캡처로 월간 성적표 만들기</div>
     </div>
   </div>
 </div>
@@ -105,8 +105,8 @@
   document.getElementById('box-coupon').onclick = () => {
     window.location.href = staffRole === 'director' ? 'coupon-director.html' : 'coupon-teacher.html';
   };
-  document.getElementById('box-spb').onclick = () => {
-    window.location.href = 'spb.html';
+  document.getElementById('box-mr').onclick = () => {
+    window.location.href = 'monthly-report.html';
   };
 
   document.getElementById('logoutBtn').onclick = () => {
