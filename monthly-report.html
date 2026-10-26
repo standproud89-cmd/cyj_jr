@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>정이조 주니어 | Monthly Report</title>
 <script>if(!sessionStorage.getItem('staff_id')){location.replace('coupon-hub.html')}</script>
-<style>html{background:#fff}body{margin:0;font:14px/1.5 system-ui,-apple-system,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink)}img{max-width:100%}[hidden]{display:none!important}.bk{display:inline-block;margin:10px 16px 0;font:600 12px 'Noto Sans KR',sans-serif;color:var(--sub);text-decoration:none}.bk:hover{color:var(--ink)}</style>
+<style>html{background:#fff}body{margin:0;font:14px/1.5 system-ui,-apple-system,'Poppins','Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink)}img{max-width:100%}[hidden]{display:none!important}.bk{display:inline-block;margin:10px 16px 0;font:600 12px 'Poppins','Noto Sans KR',sans-serif;color:var(--sub);text-decoration:none}.bk:hover{color:var(--ink)}</style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Poppins:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&family=Poppins:wght@400;500;600;700;800&display=swap">
 <style>
-:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#FAF9F6;--ink:#232023;--sub:#6E6A63;--line:#E7E1D4;--accent:#2563EB;--lf:#CA8A04;--fw:#E11D48;--ns:#0D9488;--cta:#232023;--cta-fg:#FCEFD9;--warn-bg:#FFF4D6;--warn-line:#E5B93C;--bad:#C2263B;--ok:#0D9488;color-scheme:light}
+:root{--n1:#F82800;--n2:#E80080;--n3:#0068C0;--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#FAF9F6;--ink:#232023;--sub:#6E6A63;--line:#E7E1D4;--accent:#2563EB;--lf:#CA8A04;--fw:#E11D48;--ns:#0D9488;--cta:#232023;--cta-fg:#FCEFD9;--warn-bg:#FFF4D6;--warn-line:#E5B93C;--bad:#C2263B;--ok:#0D9488;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1B1912;--surface:#242018;--surface2:#2B2619;--ink:#F3EFE7;--sub:#B4ADA0;--line:#39352A;--accent:#60A5FA;--lf:#FBBF24;--fw:#FB7185;--ns:#2DD4BF;--cta:#F3EFE7;--cta-fg:#232023;--warn-bg:#3A2F10;--warn-line:#8A6D1E;--bad:#FB7185;--ok:#2DD4BF;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#1B1912;--surface:#242018;--surface2:#2B2619;--ink:#F3EFE7;--sub:#B4ADA0;--line:#39352A;--accent:#60A5FA;--lf:#FBBF24;--fw:#FB7185;--ns:#2DD4BF;--cta:#F3EFE7;--cta-fg:#232023;--warn-bg:#3A2F10;--warn-line:#8A6D1E;--bad:#FB7185;--ok:#2DD4BF;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR','Pretendard',-apple-system,sans-serif;padding-inline:16px;padding-block:24px;line-height:1.5}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Poppins','Noto Sans KR','Pretendard',-apple-system,sans-serif;padding-inline:16px;padding-block:24px;line-height:1.5}
 main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .top img{height:44px;width:auto}
@@ -26,7 +26,7 @@ main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .panel{border:1px solid var(--line);border-radius:16px;padding:18px;background:var(--surface);display:flex;flex-direction:column;gap:14px}
 .panel h2{margin:0;font-size:18px}
 .hint{color:var(--sub);font-size:13px;margin:0}
-.btn{font:700 14px 'Noto Sans KR',sans-serif;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:11px 16px;cursor:pointer;min-height:44px}
+.btn{font:700 14px 'Poppins','Noto Sans KR',sans-serif;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:11px 16px;cursor:pointer;min-height:44px}
 .btn.cta{background:var(--cta);color:var(--cta-fg);border-color:var(--cta)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -42,7 +42,7 @@ main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .card .no{position:absolute;left:8px;top:8px;background:var(--cta);color:var(--cta-fg);font:700 12px Poppins;border-radius:99px;padding:1px 9px}
 .card .x{position:absolute;right:6px;top:6px;width:32px;height:32px;border-radius:99px;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:18px;cursor:pointer}
 .card .f{padding:10px;display:flex;flex-direction:column;gap:8px}
-input[type=text],input[type=number],textarea{font:500 14px 'Noto Sans KR',sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 10px;width:100%;min-width:0}
+input[type=text],input[type=number],textarea{font:500 14px 'Poppins','Noto Sans KR',sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 10px;width:100%;min-width:0}
 input.miss{border-color:var(--bad);background:var(--warn-bg)}
 label.l{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.06em}
 .read{display:flex;flex-direction:column;gap:14px}
@@ -64,7 +64,7 @@ td.chk{background:var(--warn-bg);outline:2px solid var(--warn-line);outline-offs
 .spin{width:16px;height:16px;border:3px solid var(--line);border-top-color:var(--cta);border-radius:50%;display:inline-block;animation:sp .8s linear infinite;vertical-align:-3px}
 @keyframes sp{to{transform:rotate(360deg)}}
 .tabs{display:flex;gap:6px;flex-wrap:wrap}
-.tabs button{font:700 13px 'Noto Sans KR';border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 14px;border-radius:99px;cursor:pointer;min-height:40px}
+.tabs button{font:700 13px 'Poppins','Noto Sans KR';border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 14px;border-radius:99px;cursor:pointer;min-height:40px}
 .tabs button.on{background:var(--cta);color:var(--cta-fg);border-color:var(--cta)}
 .rep{display:flex;flex-direction:column;gap:14px}
 .rep .head{text-align:center;display:flex;flex-direction:column;gap:2px}
@@ -87,10 +87,30 @@ td.chk{background:var(--warn-bg);outline:2px solid var(--warn-line);outline-offs
 .sh{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
 .no2{font:700 12px Poppins;background:var(--cta);color:var(--cta-fg);border-radius:99px;padding:1px 9px}
 .st{font-size:12px;color:var(--sub);font-weight:700}.slot.okc .st{color:var(--ok)}
-.x2{margin-left:auto;font:700 12px 'Noto Sans KR';border:1px solid var(--line);background:var(--surface);color:var(--sub);border-radius:8px;padding:5px 9px;cursor:pointer;min-height:32px}
+.x2{margin-left:auto;font:700 12px 'Poppins','Noto Sans KR';border:1px solid var(--line);background:var(--surface);color:var(--sub);border-radius:8px;padding:5px 9px;cursor:pointer;min-height:32px}
 .zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;aspect-ratio:16/8;cursor:pointer;color:var(--sub);text-align:center}
 .zone .plus{font-size:30px;line-height:1;color:var(--ink)}.zone small{font-size:12px}
-.rcb{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.rcr{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px}.ph{flex:0 0 230px;max-width:100%;max-height:300px;overflow:hidden;border:1px solid var(--line);border-radius:10px;cursor:zoom-in;background:var(--surface2)}.ph img{display:block;width:100%}.ph.big{flex:1 1 100%;max-height:none;cursor:zoom-out}td.d{text-align:center;min-width:104px;padding:2px 4px}td.d input{font:700 11px Poppins,'Noto Sans KR',sans-serif;text-align:center;padding:5px 0;width:100%;min-width:92px;letter-spacing:-.01em}td.d.chk{background:var(--warn-bg)}td input[type=number]{min-width:66px}.nt{display:block}.ng{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 0}.nc{display:flex;flex-direction:column;align-items:stretch;gap:5px;min-width:0;padding:2px 16px;text-align:center}.nc+.nc{border-left:1px solid var(--line)}.nc .nl{background:var(--c);color:#fff;font:700 11px 'Noto Sans KR',sans-serif;border:0;border-radius:99px;padding:2px 10px;box-sizing:content-box;max-width:calc(100% - 20px);min-width:0;text-align:center;align-self:center}.nc .nl:focus{outline:2px solid var(--c);outline-offset:2px}.nc .nv{font:700 16px/1.4 'Noto Sans KR',sans-serif;color:var(--ink);border:0;border-radius:6px;background:transparent;padding:2px 0;width:100%;min-width:0;height:1.4em;resize:none;overflow:hidden;letter-spacing:-.01em;text-align:center}.nc .nv:focus{outline:2px solid var(--c);outline-offset:2px}.rlogo{height:38px;width:auto;align-self:center;margin-bottom:6px}@media (max-width:560px){.ng{grid-template-columns:1fr;gap:10px}.nc+.nc{border-left:0;border-top:1px solid var(--line);padding-top:12px}}.rep{padding:10px 4px 4px}.top img{height:48px}@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .top img,:root:not([data-theme=light]) .rlogo{background:#fff;border-radius:10px;padding:3px 10px}}:root[data-theme=dark] .top img,:root[data-theme=dark] .rlogo{background:#fff;border-radius:10px;padding:3px 10px}.rlogo{height:46px!important}.slot.over{outline:2px solid var(--accent);outline-offset:-2px}
+.rcb{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.rcr{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px}.ph{flex:0 0 230px;max-width:100%;max-height:300px;overflow:hidden;border:1px solid var(--line);border-radius:10px;cursor:zoom-in;background:var(--surface2)}.ph img{display:block;width:100%}.ph.big{flex:1 1 100%;max-height:none;cursor:zoom-out}td.d{text-align:center;min-width:104px;padding:2px 4px}td.d input{font:700 11px Poppins,'Poppins','Noto Sans KR',sans-serif;text-align:center;padding:5px 0;width:100%;min-width:92px;letter-spacing:-.01em}td.d.chk{background:var(--warn-bg)}td input[type=number]{min-width:66px}.nt{display:block}.ng{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 0}.nc{display:flex;flex-direction:column;align-items:stretch;gap:5px;min-width:0;padding:2px 16px;text-align:center}.nc+.nc{border-left:1px solid var(--line)}.nc .nl{background:var(--c);color:#fff;font:700 11px 'Poppins','Noto Sans KR',sans-serif;border:0;border-radius:99px;padding:2px 10px;box-sizing:content-box;max-width:calc(100% - 20px);min-width:0;text-align:center;align-self:center}.nc .nl:focus{outline:2px solid var(--c);outline-offset:2px}.nc .nv{font:700 16px/1.4 'Poppins','Noto Sans KR',sans-serif;color:var(--ink);border:0;border-radius:6px;background:transparent;padding:2px 0;width:100%;min-width:0;height:1.4em;resize:none;overflow:hidden;letter-spacing:-.01em;text-align:center}.nc .nv:focus{outline:2px solid var(--c);outline-offset:2px}.rlogo{height:38px;width:auto;align-self:center;margin-bottom:6px}@media (max-width:560px){.ng{grid-template-columns:1fr;gap:10px}.nc+.nc{border-left:0;border-top:1px solid var(--line);padding-top:12px}}.rep{padding:10px 4px 4px}.top img{height:48px}@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .top img,:root:not([data-theme=light]) .rlogo{background:#fff;border-radius:10px;padding:3px 10px}}:root[data-theme=dark] .top img,:root[data-theme=dark] .rlogo{background:#fff;border-radius:10px;padding:3px 10px}.rlogo{height:46px!important}.slot.over{outline:2px solid var(--accent);outline-offset:-2px}
+/* 성적표 상단·점수 박스 개편 */
+.rep .head{padding:2px 6px 0;flex-direction:row;justify-content:space-between;align-items:center;text-align:left;gap:12px}
+.rep .head .hl{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.rep .head .hl .rlogo{height:38px;width:auto;align-self:flex-start;margin:0}
+.rep .head .hr{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;text-align:right;min-width:0}
+.rep .head .hc{font:700 13px Poppins,'Poppins','Noto Sans KR',sans-serif;letter-spacing:.08em;color:var(--sub)}
+.rep .head .hn{font:700 24px/1.2 'Poppins','Noto Sans KR',Poppins,sans-serif;color:var(--ink);word-break:keep-all}
+.stat{align-items:center;text-align:center;padding:14px 12px}
+.stat .b{align-self:center;font:700 17px Poppins;padding:3px 18px;border-radius:99px;letter-spacing:.04em}
+.stat .v{text-align:center}
+.stat .s{text-align:center}
+button,input,textarea,select{font-family:inherit}
+.rep .head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.rep .head .hm{font:800 25px/1.2 'Poppins','Poppins','Noto Sans KR',sans-serif;letter-spacing:.05em;color:var(--ink);text-align:center;white-space:nowrap}
+@media (max-width:560px){.rep .head .hm .hs{font-size:13px}.rep .head .hm{font-size:19px}.rep .head .hn{font-size:20px}}
+.nc,.nc .nl,.nc .nv{font-family:'Jua','Noto Sans KR',sans-serif;font-synthesis:none}
+/* 일정 안내 3칸: 라벨의 색 도형(알약) 제거 → 색 글씨만 */
+.nc .nl{background:transparent;color:var(--c);font-size:15px;padding:2px 0;border-radius:0}
+.rep .head .hm{display:flex;flex-direction:column;align-items:center;gap:2px}
+.rep .head .hm .hs{font:700 16px/1.3 'Poppins','Noto Sans KR',sans-serif;letter-spacing:.1em;color:var(--sub)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -105,7 +125,7 @@ const LOGO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAtAAAAEVCAYAAADJmtIGAA
 document.getElementById('logo').src=LOGO;
 const MAX=12, WD=['일','월','화','수','목','금','토'];
 const nvSize=v=>v.length<=7?30:v.length<=12?24:v.length<=18?19:16;
-const NOTICES=[{l:'다음달 스피킹탑 일정',v:'11/4'},{l:'주니어테스트',v:'11/11(수), 11/13(금)'},{l:'동작SNS써포터즈 신청',v:'10/19~10/30(금)'}];
+const NOTICES=[{l:'다음 달 UCC 촬영 일정',v:'미정'},{l:'주니어테스트',v:'11/11(수), 11/13(금)'},{l:'동작SNS써포터즈 신청',v:'10/19~10/30(금)'}];
 const fileName=it=>`${(it.cls||'').replace(/[\\\\/:*?"<>|]/g,'').trim()}_${(it.name||'').replace(/[\\\\/:*?"<>|]/g,'').trim()}.png`;
 const rgbOf=s=>{const c=document.createElement('canvas').getContext('2d');c.fillStyle=s;const h=c.fillStyle;return h[0]==='#'?[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)):(h.match(/[\\d.]+/g)||[0,0,0]).slice(0,3).map(Number)};
 async function renderPng(){
@@ -117,7 +137,7 @@ async function renderPng(){
       node.querySelectorAll('svg *').forEach(n=>{for(const p of ['fill','stroke']){const v=n.getAttribute(p);if(v&&v.includes('var('))n.setAttribute(p,w.getComputedStyle(n).getPropertyValue(p))}});
       const sf=rgbOf(w.getComputedStyle(doc.body).backgroundColor);
       node.querySelectorAll('.nc input,.nc textarea').forEach(n=>{const cs=w.getComputedStyle(n),d=doc.createElement('div');d.textContent=n.value;d.className=n.className;
-        const isl=n.classList.contains('nl');Object.assign(d.style,{background:isl?cs.backgroundColor:'transparent',color:cs.color,font:cs.font,padding:isl?'2px 10px':'2px 0',width:isl?cs.width:'100%',boxSizing:'content-box',borderRadius:isl?'99px':'0',alignSelf:isl?'center':'auto',textAlign:'center',lineHeight:n.classList.contains('nl')?'1.4':'1.4',border:'0',whiteSpace:'pre-wrap',wordBreak:'keep-all',display:'block',minHeight:'1.4em',height:'auto'});
+        const isl=n.classList.contains('nl');Object.assign(d.style,{background:isl?cs.backgroundColor:'transparent',color:cs.color,font:cs.font,padding:'2px 0',width:isl?cs.width:'100%',boxSizing:'content-box',borderRadius:isl?'99px':'0',alignSelf:isl?'center':'auto',textAlign:'center',lineHeight:n.classList.contains('nl')?'1.4':'1.4',border:'0',whiteSpace:'pre-wrap',wordBreak:'keep-all',display:'block',minHeight:'1.4em',height:'auto'});
         n.replaceWith(d)});
     }});
     return await new Promise(r=>canvas.toBlob(r,'image/png'));
@@ -323,7 +343,7 @@ function v2(){
        </tbody></table></div>`:'')+`<div class="row"><button class="btn" data-addrow="${ix}">＋ 행 직접 추가</button>${it.status==='err'||it.status==='stop'?`<button class="btn cta" data-act="retry" data-i="${ix}" ${busy?'disabled':''}>이 학생 다시 읽기</button>`:''}</div>`;
      }else body=`<p class="hint">${it.status==='run'?'표를 읽고 있어요…':'순서를 기다리는 중이에요.'}</p>`;
      return `<div class="rc">${head}<div class="rcb">${photo}<div class="rcr">${body}</div></div></div>`}).join('')}</div>
-   <div class="row"><button class="btn" data-act="back" ${busy?'disabled':''}>← 사진·이름 수정</button><button class="btn cta" data-act="report" ${busy||!okItems?'disabled':''}>리포트 생성 (${okItems}명)</button>${!busy&&items.length>okItems?`<span class="hint" style="color:var(--bad);font-weight:700">읽은 값이 없는 ${items.length-okItems}명은 리포트에서 빠져요.</span>`:''}${!busy&&items.some(it=>(it.rows||[]).some(r=>!validRow(r)&&r.d))?`<span class="hint">빈 칸은 리포트에 '성적없음'으로 표시돼요. (값이 아예 없는 날짜만 빠져요)</span>`:''}</div></div>`;
+   <div class="row"><button class="btn" data-act="back" ${busy?'disabled':''}>← 사진·이름 수정</button><button class="btn cta" data-act="report" ${busy||!okItems?'disabled':''}>리포트 생성 (${okItems}명)</button>${!busy&&items.length>okItems?`<span class="hint" style="color:var(--bad);font-weight:700">읽은 값이 없는 ${items.length-okItems}명은 리포트에서 빠져요.</span>`:''}${!busy&&items.some(it=>(it.rows||[]).some(r=>!validRow(r)&&r.d))?`<span class="hint">빈 칸은 리포트에 따로 표시하지 않아요. (값이 아예 없는 날짜만 빠져요)</span>`:''}</div></div>`;
 }
 
 function guessName(fn){
@@ -389,7 +409,7 @@ function chart(rows,s,color){
     return rot?`<text transform="translate(${X(i)+4},${H-40}) rotate(50)" text-anchor="start" font-size="10" font-family="Poppins" fill="var(--sub)">${md}${wd}</text>`:`<text x="${X(i)}" y="${H-32}" text-anchor="middle" font-size="11" font-weight="700" font-family="Poppins" fill="var(--sub)">${md}</text><text x="${X(i)}" y="${H-18}" text-anchor="middle" font-size="10" fill="var(--sub)">${wd}</text>`}).join('');
   const dots=rows.map((r,i)=>r.v[s]==null?'':`<circle cx="${X(i)}" cy="${Y(r.v[s])}" r="4.5" fill="var(--surface)" stroke="${color}" stroke-width="2.5"/><text x="${X(i)}" y="${Y(r.v[s])-10}" text-anchor="middle" font-size="10.5" font-weight="700" font-family="Poppins" fill="${color}" stroke="var(--surface)" stroke-width="3" paint-order="stroke">${r.v[s]}</text>`).join('');
   const da=rows.map((r,i)=>r.a[s]==null?'':`<circle cx="${X(i)}" cy="${Y(r.a[s])}" r="2.8" fill="var(--accent)"/>`).join('');
-  const none=rows.map((r,i)=>r.v[s]!=null?'':`<line x1="${X(i)}" x2="${X(i)}" y1="${T}" y2="${H-B}" stroke="var(--line)" stroke-dasharray="3 4"/>`+(rot?`<text transform="translate(${X(i)+4},${(T+H-B)/2}) rotate(-90)" text-anchor="middle" font-size="11" font-weight="700" fill="var(--sub)" stroke="var(--surface)" stroke-width="4" paint-order="stroke">성적없음</text>`:`<text x="${X(i)}" y="${(T+H-B)/2}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--sub)" stroke="var(--surface)" stroke-width="4" paint-order="stroke">성적없음</text>`)).join('');
+  const none='';
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="점수 추이">${g}${none}${line('a','stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"')}${da}${line('v',`stroke="${color}" stroke-width="3"`)}${dots}${lab}</svg>`;
 }
 function v3(){
@@ -397,10 +417,10 @@ function v3(){
   const S=[['LF','Language Framework','var(--lf)'],['FW','Fiction & Writing','var(--fw)'],['NS','Non-Fiction & Speaking','var(--ns)']];
   const cm=comments[it.id]??'';
   return `<div class="panel"><div class="tabs">${RI.map((x,i)=>`<button class="${i===rep?'on':''}" data-tab="${i}">${x.name}</button>`).join('')}</div>
-  <div class="rep"><div class="head"><img class="rlogo" src="${LOGO}" alt="CYJ Jr."><small>MONTHLY REPORT</small><h3>월간 성적 리포트</h3></div>
-  <div class="stats">${S.map(([k],s)=>{const vv=rows.map(r=>r.v[s]).filter(x=>x!=null),aa=rows.map(r=>r.a[s]).filter(x=>x!=null),nn=rows.length-vv.length;const m=vv.length?mean(vv):null,c=aa.length?mean(aa):null,df=m!=null&&c!=null?m-c:null;return `<div class="stat"><span class="b" style="background:${['var(--lf)','var(--fw)','var(--ns)'][s]}">${k}</span><span class="v" ${m==null?'style="font-size:18px;color:var(--sub)"':''}>${m==null?'성적없음':m.toFixed(1)}</span><span class="s">반 평균 <b style="color:var(--accent)">${c==null?'-':c.toFixed(1)}</b>${df==null?'':` · 반평균 대비 <b style="color:${df>=0?'var(--ok)':'var(--bad)'}">${df>=0?'+':''}${df.toFixed(1)}</b>`}${nn?` · <span style="color:var(--sub)">성적없음 ${nn}회</span>`:''}</span></div>`}).join('')}</div>
+  <div class="rep"><div class="head"><div class="hl"><img class="rlogo" src="${LOGO}" alt="CYJ Jr."></div><div class="hm"><span class="hs">CYJ Jr. 동작캠퍼스</span>MONTHLY REPORT</div><div class="hr"><span class="hc">${it.cls||''}</span><span class="hn">${it.name||''}</span></div></div>
+  <div class="stats">${S.map(([k],s)=>{const vv=rows.map(r=>r.v[s]).filter(x=>x!=null),aa=rows.map(r=>r.a[s]).filter(x=>x!=null),nn=rows.length-vv.length;const m=vv.length?mean(vv):null,c=aa.length?mean(aa):null,df=m!=null&&c!=null?m-c:null;return `<div class="stat"><span class="b" style="background:${['var(--lf)','var(--fw)','var(--ns)'][s]}">${k}</span><span class="v" ${m==null?'style="color:var(--sub)"':''}>${m==null?'-':m.toFixed(1)}</span><span class="s">반 평균 <b style="color:var(--accent)">${c==null?'-':c.toFixed(1)}</b>${df==null?'':` · 반평균 대비 <b style="color:${df>=0?'var(--ok)':'var(--bad)'}">${df>=0?'+':''}${df.toFixed(1)}</b>`}</span></div>`}).join('')}</div>
   ${S.map(([k,n,c],s)=>`<div class="ch"><h4><i style="background:${c}"></i>${n} <span style="color:var(--sub);font-weight:400">(${k})</span><span class="lg"><span style="color:${c}">━ ${it.name}</span><span style="color:var(--accent)">╍ 반 평균</span></span></h4>${chart(rows,s,c)}</div>`).join('')}
-  <div class="nt"><div class="ng">${NOTICES.map((n,i)=>`<div class="nc" style="--c:var(--${['lf','fw','ns'][i]})"><input type="text" class="nl" style="width:${nlW(n.l)}em" data-nt="${i}:l" value="${n.l}" aria-label="${i+1}번 항목 이름"><textarea class="nv" rows="1" data-nt="${i}:v" aria-label="${i+1}번 항목 내용">${n.v}</textarea></div>`).join('')}</div></div></div>
+  <div class="nt"><div class="ng">${NOTICES.map((n,i)=>`<div class="nc" style="--c:var(--n${i+1})"><input type="text" class="nl" style="width:${nlW(n.l)}em" data-nt="${i}:l" value="${n.l}" aria-label="${i+1}번 항목 이름"><textarea class="nv" rows="1" data-nt="${i}:v" aria-label="${i+1}번 항목 내용">${n.v}</textarea></div>`).join('')}</div></div></div>
   <div class="row"><button class="btn" data-act="edit">← 값 다시 확인</button><button class="btn" data-act="home">처음으로 (새로 등록)</button><button class="btn cta" data-act="png" id="pngbtn">⬇ 이미지(PNG)로 저장</button>${RI.length>1?`<button class="btn cta" data-act="all" id="allbtn">⬇ 전체 이미지(ZIP) 저장 (${RI.length}명)</button>`:''}<span class="hint" id="pngname">${fileName(it)}</span></div></div>`;
 }
 function bind(){
