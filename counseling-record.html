@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정이조 | 상담 기록 작성</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2321;
+    --ink-soft:#5B6360;
+    --paper:#F6F7F9;
+    --card:#FFFFFF;
+    --line:#E3E6E8;
+    --accent:#C13E3E;
+    --accent-soft:#FBEAEA;
+    --teal:#1F7A6C;
+    --teal-soft:#E7F3F0;
+    --amber:#B7791F;
+    --amber-soft:#FBF2E2;
+    --pgreen:#2E9E6D;
+    --pgreen-soft:#E7F5EE;
+    --polive:#8A6D1E;
+    --polive-soft:#F6F0DF;
+    --pblue:#3E7FC1;
+    --pblue-soft:#E9F1FA;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased;
+  }
+  .app{ display:flex; min-height:100vh; }
+  .panel{
+    width:400px; flex:0 0 400px; background:var(--card); border-right:1px solid var(--line);
+    padding:28px 24px 60px; overflow-y:auto; height:100vh; position:sticky; top:0;
+  }
+  .stage{ flex:1; padding:36px; display:flex; flex-direction:column; align-items:center; gap:32px; }
+
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+  .brand-mark{ width:34px; height:34px; border-radius:9px; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .brand-text{ font-weight:800; font-size:15px; letter-spacing:-0.2px; }
+  .brand-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    font-weight:700; font-size:12.5px; color:var(--ink-soft);
+    padding:7px 14px; border-radius:20px; border:1px solid var(--line);
+    margin-bottom:18px; background:#fff;
+  }
+  .back-link:hover{ background:var(--paper); color:var(--ink); }
+
+  .section-title{ font-size:12px; font-weight:700; color:var(--ink-soft); letter-spacing:0.02em;
+    margin:26px 0 10px; }
+  .section-title:first-of-type{ margin-top:0; }
+
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; }
+  .field input[type=text], .field input[type=date], .field select{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px;
+    font-family:inherit; font-size:13px; color:var(--ink); background:#fff;
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .seg{ display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; margin-bottom:12px;}
+  .seg button{ flex:1; padding:8px 4px; border:none; background:#fff; cursor:pointer; font-family:inherit;
+    font-size:12.5px; font-weight:600; color:var(--ink-soft); border-right:1px solid var(--line); }
+  .seg button:last-child{ border-right:none; }
+  .seg button.active{ background:var(--ink); color:#fff; }
+
+  .holiday-row{ display:flex; gap:6px; margin-bottom:8px; align-items:center; }
+  .holiday-row input[type=date]{ flex:1.1; }
+  .holiday-row input[type=text]{ flex:1; }
+  .holiday-row button{ flex:0 0 auto; border:none; background:none; color:var(--ink-soft);
+    cursor:pointer; font-size:15px; padding:2px 6px; }
+  .holiday-row button:hover{ color:var(--accent); }
+  .add-link{ background:none; border:1px dashed #C6CBCE; border-radius:8px; color:var(--ink-soft);
+    font-weight:700; font-size:12px; padding:7px; width:100%; cursor:pointer; margin-bottom:16px; }
+  .add-link:hover{ color:var(--ink); border-color:var(--ink-soft); }
+
+  .pair-card{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:var(--paper); }
+  .pair-card .pair-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .pair-dot{ width:9px; height:9px; border-radius:50%; }
+  .pair-name{ font-weight:800; font-size:12.5px; }
+
+  .actions{ margin-top:26px; display:flex; flex-direction:column; gap:8px; }
+  .btn{ padding:12px 14px; border-radius:10px; border:none; cursor:pointer; font-family:inherit;
+    font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .btn-primary{ background:var(--ink); color:#fff; }
+  .btn-primary:hover{ background:#000; }
+  .btn-secondary{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ background:var(--paper); }
+
+  /* ---------- A4 page ---------- */
+  .page{ width:210mm; min-height:297mm; background:#fff; box-shadow:0 8px 30px rgba(20,25,25,0.10);
+    padding:12mm 13mm 8mm; position:relative; flex:0 0 auto; display:flex; flex-direction:column; }
+  .page-content{ flex:1; }
+  .page-label{ font-size:12px; color:var(--ink-soft); font-weight:700; align-self:flex-start; margin-left:2px; }
+  .doc-header{ display:flex; align-items:center; justify-content:center; gap:10px; padding-bottom:10px;
+    margin-bottom:12px; border-bottom:3px solid var(--ink); }
+  .doc-title{ font-size:27px; font-weight:800; letter-spacing:-0.01em; }
+  .doc-sub{ text-align:center; font-size:12.5px; color:var(--ink-soft); line-height:1.75; margin-bottom:18px; }
+  .doc-sub u{ text-decoration:underline; text-decoration-color:var(--accent); }
+
+  .two-col{ display:grid; grid-template-columns:2.15fr 1fr; gap:16px; align-items:start; }
+
+  table.dd{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.dd th, table.dd td{ border:1px solid var(--line); text-align:center; padding:6px 4px; vertical-align:middle; }
+  table.dd thead th.top{ background:var(--teal); color:#fff; font-size:13.5px; padding:10px; }
+  table.dd th.pairhead{ font-weight:800; font-size:14px; padding:10px 4px; }
+  table.dd th.paircode{ font-weight:700; font-size:13px; padding:7px 4px; }
+  table.dd td.daylabel{ background:#F1F3F4; font-weight:800; width:15%; }
+  table.dd td.spacer{ background:#fff; border:none; padding:4px 0; }
+  .jrtest-note{ display:block; margin-top:4px; font-size:11px; font-weight:800; color:var(--accent); }
+  .cp-note{ display:block; font-size:10.5px; color:var(--ink-soft); margin-top:2px; }
+
+  .side-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .side-table th, .side-table td{ border:1px solid var(--line); text-align:center; padding:14px 4px; }
+  .side-table thead th{ background:var(--amber); color:#fff; font-size:13px; padding:11px 4px; }
+  .side-table td input[type=date]{ border:none; background:transparent; font-size:12.5px; width:100%;
+    text-align:center; font-family:inherit; color:var(--ink); }
+  .side-title{ text-align:center; font-weight:800; font-size:16px; margin-bottom:9px; }
+  .side-note{ font-size:10.5px; color:var(--ink-soft); text-align:center; margin-bottom:12px; line-height:1.65; }
+  .side-fixed{ font-style:normal; color:var(--ink-soft); }
+
+  .page-footer{ margin-top:12px; }
+  .footer-line{ border-top:3px solid var(--ink); margin-bottom:6px; }
+  .footer-campus{ text-align:center; font-size:11.5px; font-weight:800; color:var(--ink); }
+
+  /* pair badge colors */
+  .p-mw{ background:var(--pgreen); }
+  .p-wf{ background:var(--polive); }
+  .p-mf{ background:var(--pblue); }
+  .p-tth{ background:var(--teal); }
+  .p-mw-soft{ background:var(--pgreen-soft); color:var(--pgreen); }
+  .p-wf-soft{ background:var(--polive-soft); color:var(--polive); }
+  .p-mf-soft{ background:var(--pblue-soft); color:var(--pblue); }
+  /* 마스터 캘린더 전용 배지 색 */
+  .mc-mw{ background:#2E9E6D; color:#fff; }
+  .mc-wf{ background:#F2C230; color:#1C2321; }
+  .mc-mf{ background:#3E7FC1; color:#fff; }
+  .mc-tth{ background:#E0679E; color:#fff; }
+
+  /* ---------- calendar ---------- */
+  .cal-title{ font-size:16px; font-weight:800; margin:4px 0 8px; }
+  .cal-grid{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  .cal-grid th{ font-size:10.5px; font-weight:700; color:var(--ink-soft); padding:4px 0; border:1px solid var(--line); }
+  .cal-grid td{ border:1px solid var(--line); vertical-align:top; height:23mm; padding:3px; font-size:9.5px; position:relative; }
+  .cal-daynum{ font-weight:700; font-size:11px; margin-bottom:2px; }
+  .cal-daynum.muted{ color:#C6CBCE; }
+  .cal-badge{ display:block; border-radius:6px; padding:1.5px 4px; margin-bottom:2px; font-size:8.6px;
+    font-weight:800; color:#fff; }
+  .cal-lesson{ font-size:8.6px; color:var(--ink-soft); }
+  .cal-noclass{ position:absolute; left:3px; right:3px; bottom:3px; top:18px;
+    background:var(--accent); color:#fff; text-align:center; font-weight:800;
+    display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:10px; }
+
+  .lesson-title{ font-weight:800; font-size:13px; margin:12px 0 6px; }
+  table.lt{ width:100%; border-collapse:collapse; font-size:10px; margin-bottom:10px; }
+  table.lt th, table.lt td{ border:1px solid var(--line); text-align:center; padding:4px 2px; }
+  table.lt th{ background:var(--ink); color:#fff; font-size:10px; }
+
+  @media print{
+    .panel{ display:none; }
+    .stage{ padding:0; gap:0; }
+    .page-label{ display:none; }
+    .page{ box-shadow:none; page-break-after:always; margin:0 auto; }
+    body{ background:#fff; }
+  }
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .chips button{border:1px solid var(--line);background:#fff;border-radius:18px;padding:6px 12px;font:600 12.5px inherit;font-family:inherit;color:var(--ink-soft);cursor:pointer}
+  .chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .field textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px;color:var(--ink);min-height:84px;resize:vertical;line-height:1.5}
+  .field textarea:focus{outline:2px solid var(--teal);outline-offset:1px}
+  table.rec{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px}
+  table.rec th,table.rec td{border:1px solid var(--line);padding:8px 10px;vertical-align:middle}
+  table.rec th{background:#F1F3F4;width:19%;font-weight:800;text-align:center}
+  .blk{margin-bottom:12px}
+  .blk-h{background:var(--teal);color:#fff;font-weight:800;font-size:13px;padding:7px 12px;border-radius:6px 6px 0 0}
+  .blk-b{border:1px solid var(--line);border-top:none;padding:11px 13px;font-size:13px;line-height:1.7;white-space:pre-wrap;min-height:34px;border-radius:0 0 6px 6px}
+  .blk-b.empty{color:#B5BBBE}
+  .tag{display:inline-block;background:var(--teal-soft);color:var(--teal);font-weight:800;font-size:11.5px;padding:2px 9px;border-radius:10px;margin-right:4px}
+  .due{color:var(--accent);font-weight:800}
+  .sign{display:flex;justify-content:flex-end;gap:28px;margin-top:18px;font-size:12px;color:var(--ink-soft)}
+  .sign span{border-bottom:1px solid var(--ink-soft);display:inline-block;min-width:90px;text-align:center;padding-bottom:2px;color:var(--ink)}
+
+  .rate{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:12px}
+  .rate button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 2px;font-family:inherit;font-weight:700;font-size:12px;color:var(--ink-soft);cursor:pointer}
+  
+  .rate button.on[data-v="1"]{background:#3E7FC1;border-color:#3E7FC1;color:#fff}
+  .rate button.on[data-v="2"]{background:var(--amber);border-color:var(--amber);color:#fff}
+  .rate button.on[data-v="3"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .fl{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:5px;display:block}
+  .fl small{font-weight:600;color:var(--ink-soft)}
+  .badge{display:inline-block;color:#fff;font-weight:800;font-size:12.5px;padding:3px 12px;border-radius:12px}
+  .b0{background:var(--teal)}.b1{background:#3E7FC1}.b2{background:var(--amber)}.b3{background:var(--accent)}
+  .it{border:1px solid var(--line);border-radius:6px;margin-bottom:9px;overflow:hidden}
+  .it-h{background:#F1F3F4;font-weight:800;font-size:12.5px;padding:6px 12px}
+  .it-b{padding:9px 13px;font-size:13px;line-height:1.7;white-space:pre-wrap;min-height:30px}
+  .it-b.empty{color:#B5BBBE}
+  .typebadge{display:inline-block;background:var(--teal);color:#fff;font-weight:800;padding:2px 10px;border-radius:10px;font-size:12px}
+
+  .field textarea,.field input[type=text],.field input[type=date],.field select{background:#fff!important;color:var(--ink)!important;color-scheme:light}
+  .rate{display:flex!important;flex-direction:column;gap:6px}
+  .rate button{text-align:left;padding:9px 12px 9px 14px!important;font-size:12.5px!important;line-height:1.4;border-left-width:5px!important;color:var(--ink)}
+  .rate button[data-v="0"]{border-left-color:var(--teal);background:var(--teal-soft)}
+  .rate button[data-v="1"]{border-left-color:#3E7FC1;background:#E9F1FA}
+  .rate button[data-v="2"]{border-left-color:var(--amber);background:var(--amber-soft)}
+  .rate button[data-v="3"]{border-left-color:var(--accent);background:var(--accent-soft)}
+  .rate button.on{color:#fff!important}
+  .rate button.on[data-v="0"]{background:var(--teal)}
+  .rate button.on[data-v="1"]{background:#3E7FC1}
+  .rate button.on[data-v="2"]{background:var(--amber)}
+  .rate button.on[data-v="3"]{background:var(--accent)}
+  .fl::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);margin-right:7px}
+  .field textarea{border:1.5px solid #C9CFD2!important}
+  .field textarea:focus{border-color:var(--teal)!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel" id="panel"></div>
+  <div class="stage" id="stage"></div>
+</div>
+<script>
+if(!sessionStorage.getItem('staff_id')){ location.href='coupon-hub.html'; }
+const CAMPUSES=['정이조주니어영어학원(목동)','정이조주니어(목2관)','정이조주니어(목3관)','정이조주니어(강서)','정이조주니어(동작)','정이조주니어(마포)','정이조주니어(가재울)','정이조주니어(김포운양)','정이조주니어(강동고덕)'];
+const WK=['일','월','화','수','목','금','토'];
+const HW=['매우 잘하고 있음','좀 더 보완이 필요해 보임','종종 안하거나 성실히 안함','숙제를 거의 안하고 있음'];
+const SP=['스크립트 숙지 및 추가 질문 답변 잘함','스크립트는 숙지가 잘 되었으나, 추가 질문에 답변 잘 못함','스크립트 숙지가 부족하고, 추가 질문도 답변을 잘 못함','스크립트 숙지 안되어 있고, 추가 질문 이해 못함'];
+const A=['학생 수업 성취도 및 태도','학부모 상담 및 반응'];
+const T=(k,l)=>({k,l,t:'text'}), R=(k,l,o)=>({k,l,o,t:'rate'});
+const TYPES={
+ '개강 상담':[T('a1',A[0]),T('a2',A[1]),T('a3','온라인 숙제 안내 (빅박스, 톡트리, 북퀴즈)'),T('a4','교재 숙제 안내'),T('a5','Speaking Top 안내')],
+ '1차 성적 상담':[T('a1',A[0]),T('a2',A[1]),R('a3','온라인 숙제 성취도',HW),R('a4','교재 숙제 성취도',HW),R('a5','Speaking Top 진행 여부 및 완료',SP),T('a6','기타 상담 내용')],
+ '2차 성적 상담':[T('a1',A[0]),T('a2',A[1]),R('a3','온라인 숙제 성취도',HW),R('a4','교재 숙제 성취도',HW),R('a5','Speaking Top 진행 여부 및 완료',SP)],
+ '마무리 상담':[T('a1',A[0]),T('a2',A[1]),R('a3','온라인 숙제 성취도',HW),R('a4','교재 숙제 성취도',HW),R('a5','Speaking Top 진행 여부 및 완료',SP),T('a6','Jr. Test 성적 안내 및 성취도 상담')]
+};
+function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+const savedCampus=sessionStorage.getItem('staff_campus');
+const st={type:'개강 상담',date:today(),student:'',cls:'',teacher:sessionStorage.getItem('staff_name')||'',
+  campus:CAMPUSES.includes(savedCampus)?savedCampus:CAMPUSES[0],ans:{}};
+const key=(it)=>st.type+'|'+it.k;
+function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function fmt(iso){if(!iso)return '—';const[y,m,d]=iso.split('-').map(Number);return `${y}.${m}.${d} (${WK[new Date(y,m-1,d).getDay()]})`}
+
+function itemsPanel(){
+  return TYPES[st.type].map((it,i)=>{
+    const v=st.ans[key(it)];
+    if(it.t==='rate') return `<div class="field"><span class="fl">${i+1}. ${it.l} <small>(선택)</small></span><div class="rate" data-k="${key(it)}">${it.o.map((l,n)=>`<button type="button" data-v="${n}" class="${v===n?'on':''}">${l}</button>`).join('')}</div></div>`;
+    return `<div class="field"><span class="fl">${i+1}. ${it.l}</span><textarea data-k="${key(it)}">${esc(v||'')}</textarea></div>`;
+  }).join('');
+}
+function renderPanel(){
+  document.getElementById('panel').innerHTML=`
+  <a class="back-link" href="staff-home.html">← For Staff</a>
+  <div class="brand"><div class="brand-mark">정</div><div><div class="brand-text">정이조 · 상담 기록 작성</div><div class="brand-sub">상담 종류를 고르고 채우면 오른쪽에 완성돼요</div></div></div>
+  <div class="section-title">상담 종류</div>
+  <div class="seg" id="typeSeg" style="flex-wrap:wrap">${Object.keys(TYPES).map(t=>`<button type="button" data-v="${t}" class="${st.type===t?'active':''}" style="flex:1 1 50%;border-bottom:1px solid var(--line)">${t}</button>`).join('')}</div>
+  <div class="section-title">기본 정보</div>
+  <div class="row2">
+    <div class="field"><label>상담일</label><input type="date" id="date" value="${st.date}"></div>
+    <div class="field"><label>학생 이름</label><input type="text" id="student" value="${esc(st.student)}"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>반</label><input type="text" id="cls" value="${esc(st.cls)}" placeholder="예: M(F)N2-A"></div>
+    <div class="field"><label>담당 선생님</label><input type="text" id="teacher" value="${esc(st.teacher)}"></div>
+  </div>
+  <div class="field"><select id="campus">${CAMPUSES.map(c=>`<option ${st.campus===c?'selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="section-title">${st.type} 내용</div>
+  <div id="items">${itemsPanel()}</div>
+  <div class="actions">
+    <button class="btn btn-primary" id="printBtn" type="button">🖨️ 인쇄하기</button>
+    <button class="btn btn-secondary" id="pdfBtn" type="button">⬇️ PDF로 저장</button>
+    <button class="btn btn-secondary" id="copyBtn" type="button">📋 텍스트 복사 (한 번에)</button>
+    <button class="btn btn-secondary" id="newBtn" type="button">＋ 새 기록 (학생·내용 비우기)</button>
+  </div>`;
+  bind();
+}
+function bind(){
+  ['date','student','cls','teacher'].forEach(id=>document.getElementById(id).oninput=e=>{st[id]=e.target.value;renderStage()});
+  document.getElementById('campus').onchange=e=>{st.campus=e.target.value;renderStage()};
+  document.querySelectorAll('#typeSeg button').forEach(b=>b.onclick=()=>{st.type=b.dataset.v;renderPanel();renderStage()});
+  document.querySelectorAll('#items textarea').forEach(t=>t.oninput=()=>{st.ans[t.dataset.k]=t.value;renderStage()});
+  document.querySelectorAll('#items .rate').forEach(r=>r.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const n=+b.dataset.v; st.ans[r.dataset.k]= st.ans[r.dataset.k]===n?undefined:n;
+    r.querySelectorAll('button').forEach(x=>x.classList.toggle('on',+x.dataset.v===st.ans[r.dataset.k]));renderStage()}));
+  document.getElementById('printBtn').onclick=()=>window.print();
+  document.getElementById('pdfBtn').onclick=exportPDF;
+  document.getElementById('copyBtn').onclick=copyText;
+  document.getElementById('newBtn').onclick=()=>{st.date=today();st.student='';st.cls='';st.ans={};renderPanel();renderStage()};
+}
+function recText(){
+  const body=TYPES[st.type].map((it,i)=>{const v=st.ans[key(it)];
+    const val=it.t==='rate'?(v===undefined?'-':it.o[v]):(v&&v.trim()?v.trim():'-');
+    return `${i+1}. ${it.l}\n${val}`}).join('\n\n');
+  return `[${st.type}] ${fmt(st.date)}\n학생: ${st.student||'-'}${st.cls?' ('+st.cls+')':''}\n\n${body}`;
+}
+function renderStage(){
+  document.getElementById('stage').innerHTML=`
+  <div class="page-label">미리보기 · ${st.type} <span style="font-weight:600">— 아래 글을 드래그하거나 [텍스트 복사] 버튼으로 한 번에 가져가세요</span></div>
+  <div class="page"><div class="page-content">
+    <div id="rectext" style="white-space:pre-wrap;font-size:14px;line-height:1.85;user-select:text">${esc(recText())}</div>
+  </div></div>`;
+}
+function copyText(){
+  const t=recText();
+  const b=document.getElementById('copyBtn'),o=b.textContent;
+  const ok=()=>{b.textContent='✅ 복사됐어요';setTimeout(()=>b.textContent=o,1500)};
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(ok).catch(()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();ok()});
+}
+async function exportPDF(){
+  const b=document.getElementById('pdfBtn'),o=b.textContent;b.textContent='생성 중...';b.disabled=true;
+  try{const{jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');
+    const c=await html2canvas(document.querySelector('.page'),{scale:2,useCORS:true,backgroundColor:'#fff'});
+    const pxPage=Math.floor(c.width*297/210);
+    for(let y=0,i=0;y<c.height;y+=pxPage,i++){
+      const h=Math.min(pxPage,c.height-y),sl=document.createElement('canvas');sl.width=c.width;sl.height=pxPage;
+      const x=sl.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,sl.width,sl.height);x.drawImage(c,0,y,c.width,h,0,0,c.width,h);
+      if(i>0)pdf.addPage();pdf.addImage(sl.toDataURL('image/jpeg',.95),'JPEG',0,0,210,297);
+    }
+    pdf.save(`상담기록_${st.student||'학생'}_${st.type}_${st.date}.pdf`);
+  }catch(e){alert('PDF 생성 중 오류: '+e.message)}finally{b.textContent=o;b.disabled=false}
+}
+renderPanel();renderStage();
+</script>
+</body>
+</html>
