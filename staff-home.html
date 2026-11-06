@@ -37,22 +37,22 @@
   .main-title h1{ font-size:clamp(20px,2.6vw,28px); margin:0 0 6px; }
   .main-title p{ font-size:13px; color:var(--ink-soft); margin:0; }
 
-  .box-grid{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,32px); max-width:760px; width:100%; }
+  .box-grid{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,32px); max-width:960px; width:100%; }
   @media (max-width:620px){ .box-grid{ grid-template-columns:1fr; } }
   .box{
     background:#fff; border:2px solid var(--line); border-radius:26px;
-    padding:clamp(28px,4vw,44px) clamp(22px,3vw,32px);
+    min-height:clamp(220px,32vh,300px); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;
     cursor:pointer; position:relative; overflow:hidden;
     transition:transform .15s ease, box-shadow .15s ease;
-    text-align:left;
+    text-align:center;
   }
   .box:hover{ transform:translateY(-4px); box-shadow:0 14px 34px rgba(28,35,33,0.08); }
   .box:active{ transform:translateY(0); }
   .box-accent{ position:absolute; top:0; left:0; right:0; height:8px; }
   .box.gold .box-accent{ background:linear-gradient(90deg, #C9971F, #E8B84B); }
   .box.blue .box-accent{ background:linear-gradient(90deg, var(--blue), #7EB3F7); }
-  .box-icon{ font-size:clamp(38px,5vw,52px); margin-bottom:14px; }
-  .box-title{ font-weight:900; font-size:clamp(19px,2.4vw,24px); letter-spacing:-0.01em; }
+  .box-icon{ font-size:clamp(64px,8vw,92px); line-height:1; margin-bottom:18px; }
+  .box-title{ font-weight:900; font-size:clamp(26px,3.4vw,38px); letter-spacing:-0.01em; }
   .box-desc{ font-size:13px; color:var(--ink-soft); margin-top:8px; font-weight:600; }
 </style>
 </head>
@@ -67,36 +67,26 @@
 </div>
 
 <div class="main">
-  <div class="main-title">
-    <div class="icon">🎟️</div>
-    <h1>For Staff</h1>
-    <p>이용하실 항목을 선택해주세요</p>
-  </div>
-
   <div class="box-grid">
     <div class="box gold" id="box-coupon">
       <div class="box-accent"></div>
       <div class="box-icon">🎟️</div>
       <div class="box-title">쿠폰함</div>
-      <div class="box-desc">LTE · Wow 쿠폰 지급 / 사용 내역</div>
     </div>
     <div class="box blue" id="box-mr">
       <div class="box-accent"></div>
       <div class="box-icon">📊</div>
       <div class="box-title">Monthly Report</div>
-      <div class="box-desc">상담 시스템 캡처로 월간 성적표 만들기</div>
     </div>
     <div class="box gold" id="box-cr">
       <div class="box-accent"></div>
       <div class="box-icon">📝</div>
       <div class="box-title">상담 기록 작성</div>
-      <div class="box-desc">상담 내용 입력하면 기록지로 정리</div>
     </div>
     <div class="box blue" id="box-jt">
       <div class="box-accent"></div>
       <div class="box-icon">🧮</div>
       <div class="box-title">Jr. Test 성적</div>
-      <div class="box-desc">반별 성적 입력 · 종합 성적판 (최저 60점)</div>
     </div>
   </div>
 </div>
