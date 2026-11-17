@@ -221,6 +221,30 @@
   .fl::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);margin-right:7px}
   .field textarea{border:1.5px solid #C9CFD2!important}
   .field textarea:focus{border-color:var(--teal)!important}
+
+  /* 마무리 상담 전용 */
+  .field input[type=time],.field input[type=number]{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px;color:var(--ink);background:#fff;color-scheme:light}
+  .field input[type=time]:focus,.field input[type=number]:focus{outline:2px solid var(--teal);outline-offset:1px}
+  .chips.sel button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .sub{margin:6px 0 0 10px;padding-left:10px;border-left:2px solid var(--teal-soft)}
+  .sub .lab{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:5px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .score{display:flex;align-items:center;gap:6px}.score b{width:28px;font-size:12.5px;color:var(--ink-soft)}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:18px}
+  .head h1{margin:0;font-size:19px;font-weight:800}.head .meta{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+  .memo{border:1.5px solid var(--teal);border-radius:12px;overflow:hidden;margin-bottom:18px}
+  .memo-h{background:var(--teal);color:#fff;font-weight:800;font-size:14px;padding:9px 16px}
+  table.rec2{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.rec2 th,table.rec2 td{border-top:1px solid var(--line);padding:10px 14px;vertical-align:top;line-height:1.6}
+  table.rec2 tr:first-child th,table.rec2 tr:first-child td{border-top:none}
+  table.rec2 th{background:#F1F3F4;width:30%;font-weight:800;text-align:left;white-space:nowrap}
+  table.rec2 td.empty{color:#B5BBBE}
+  .tag.red{background:var(--accent-soft);color:var(--accent)}.tag.blue{background:var(--pblue-soft);color:var(--pblue)}
+  .sc{display:inline-block;margin-right:12px}.sc b{color:var(--ink-soft);font-weight:700;margin-right:3px}
+  .lvl{font-size:16px;font-weight:800;color:var(--teal)}
+  .copybox{width:100%;max-width:720px;font-size:12px;color:var(--ink-soft)}
+  .copybox pre{background:#fff;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-family:inherit;white-space:pre-wrap;color:var(--ink);margin:6px 0 0;font-size:12.5px;line-height:1.7;user-select:text}
+  @media print{.copybox{display:none}}
 </style>
 </head>
 <body>
@@ -240,8 +264,75 @@ const TYPES={
  '개강 상담':[T('a1',A[0]),T('a2',A[1]),T('a3','온라인 숙제 안내 (빅박스, 톡트리, 북퀴즈)'),T('a4','교재 숙제 안내'),T('a5','Speaking Top 안내')],
  '1차 성적 상담':[T('a1',A[0]),T('a2',A[1]),R('a3','온라인 숙제 성취도',HW),R('a4','교재 숙제 성취도',HW),R('a5','Speaking Top 진행 여부 및 완료',SP),T('a6','기타 상담 내용')],
  '2차 성적 상담':[T('a1',A[0]),T('a2',A[1]),R('a3','온라인 숙제 성취도',HW),R('a4','교재 숙제 성취도',HW),R('a5','Speaking Top 진행 여부 및 완료',SP)],
- '마무리 상담':[T('a1',A[0]),T('a2',A[1]),R('a3','온라인 숙제 성취도',HW),R('a4','교재 숙제 성취도',HW),R('a5','Speaking Top 진행 여부 및 완료',SP),T('a6','Jr. Test 성적 안내 및 성취도 상담')]
+ '마무리 상담':[]
 };
+const FIN='마무리 상담';
+const LEVELS=['Wind 1','Wind 2','Island 1','Island 2','Island 3','Island 4','Nation 1','Nation 2','Nation 3','Nation 4','Globe 1','Globe 2','Globe 3','Globe 4'];
+const DAYS=['월','화','수','목','금'];
+const WHO=['부','모','조부','조모','기타'];
+const ONL=['톡트리','빅박스','북퀴즈'];
+const LV3=['잘함','보통','안함'];
+const newFin=()=>({lvl:'',days:[],time:'',phone:'',who:'',whoEtc:'',s:{},globe:false,onl:'',onlGood:[],book:'',note:''});
+const fin=newFin();
+const t12=t=>{if(!t)return '';const[h,m]=t.split(':').map(Number);return `${h<12?'오전':'오후'} ${h%12||12}:${String(m).padStart(2,'0')}`};
+const subj=()=>fin.globe?['GW','RA','AD']:['LF','FW','NS'];
+const chips=(arr,sel,k)=>`<div class="chips sel" data-k="${k}">${arr.map(v=>`<button type="button" data-v="${v}" class="${(Array.isArray(sel)?sel.includes(v):sel===v)?'on':''}">${v}</button>`).join('')}</div>`;
+const fWho=()=>fin.who==='기타'?(fin.whoEtc||'기타'):fin.who;
+const fDays=()=>fin.days.length?fin.days.join('·')+'요일':'';
+const fPhone=()=>[fDays(),t12(fin.time),fin.phone].filter(Boolean).join(' / ');
+const fScore=()=>subj().map(s=>`${s} ${fin.s[s]===''||fin.s[s]==null?'-':fin.s[s]}`).join(' / ');
+const fOnl=()=>{const a=[];if(fin.onl)a.push('온라인 '+fin.onl+(fin.onl==='잘함'&&fin.onlGood.length?` (${fin.onlGood.join(', ')})`:''));if(fin.book)a.push('교재 숙제 '+fin.book);return a.join(' / ')};
+function finPanel(){
+  return `
+  <div class="field"><span class="fl">1. 다음 학기 레벨</span><select data-f="lvl"><option value="">선택</option>${LEVELS.map(l=>`<option ${fin.lvl===l?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="field"><span class="fl">2. 전화영어 진행 시간</span>
+    <div class="sub"><div class="lab">요일 <small>(여러 개 선택)</small></div>${chips(DAYS,fin.days,'days')}
+    <div class="row2"><div class="field"><label>시간</label><input type="time" data-f="time" value="${fin.time}"></div><div class="field"><label>진행 번호</label><input type="text" data-f="phone" value="${esc(fin.phone)}" placeholder="010-0000-0000"></div></div></div></div>
+  <div class="field"><span class="fl">3. 주상담자</span>${chips(WHO,fin.who,'who')}${fin.who==='기타'?`<input type="text" data-f="whoEtc" value="${esc(fin.whoEtc)}" placeholder="예: 이모, 삼촌">`:''}</div>
+  <div class="field"><span class="fl">4. 지난 학기 주테 성적</span>
+    <div class="chips sel" data-k="globe"><button type="button" data-v="0" class="${!fin.globe?'on':''}">LF / FW / NS</button><button type="button" data-v="1" class="${fin.globe?'on':''}">Globe (GW / RA / AD)</button></div>
+    <div class="row3">${subj().map(s=>`<div class="score"><b>${s}</b><input type="number" min="0" max="100" data-s="${s}" value="${fin.s[s]??''}" placeholder="점수"></div>`).join('')}</div></div>
+  <div class="field"><span class="fl">5. 온라인 학습 특이</span>
+    <div class="sub"><div class="lab">온라인 학습</div>${chips(LV3,fin.onl,'onl')}
+    ${fin.onl==='잘함'?`<div class="lab">그 중 특히 잘하는 것 <small>(여러 개 선택)</small></div>${chips(ONL,fin.onlGood,'onlGood')}`:''}
+    <div class="lab">교재 숙제</div>${chips(LV3,fin.book,'book')}</div></div>
+  <div class="field"><span class="fl">6. 학생 특이사항</span><textarea data-f="note">${esc(fin.note)}</textarea></div>`;
+}
+function bindFin(){
+  document.querySelectorAll('#items [data-f]').forEach(el=>el.oninput=()=>{fin[el.dataset.f]=el.value;renderStage()});
+  document.querySelectorAll('#items [data-s]').forEach(el=>el.oninput=()=>{fin.s[el.dataset.s]=el.value===''?'':+el.value;renderStage()});
+  document.querySelectorAll('#items .chips.sel').forEach(c=>c.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    const k=c.dataset.k,v=b.dataset.v;
+    if(k==='days'||k==='onlGood'){const a=fin[k];const i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);if(k==='days')fin.days.sort((x,y)=>DAYS.indexOf(x)-DAYS.indexOf(y))}
+    else if(k==='globe'){fin.globe=v==='1'}
+    else fin[k]=fin[k]===v?'':v;
+    renderPanel();renderStage();}));
+}
+function finText(){
+  return `[마무리 상담] ${fmt(st.date)}\n학생: ${st.student||'-'}${st.cls?' ('+st.cls+')':''} · 담당: ${st.teacher||'-'}\n\n[다음학기 선생님께]\n\n1. 다음 학기 레벨: ${fin.lvl||'-'}\n2. 전화영어 진행 시간: ${fPhone()||'-'}\n3. 주상담자: ${fWho()||'-'}\n4. 지난 학기 주테 성적: ${fScore()}\n5. 온라인 학습 특이: ${fOnl()||'-'}\n6. 학생 특이사항:\n${fin.note.trim()||'-'}`;
+}
+function finStage(){
+  const cell=(v,html)=>v?`<td>${html}</td>`:`<td class="empty">아직 입력 전</td>`;
+  const col=v=>({잘함:'',보통:'blue',안함:'red'}[v]||'');
+  const tagOnl=()=>{let h='';if(fin.onl){h+=`<span class="tag ${col(fin.onl)}">온라인 ${fin.onl}</span>`;if(fin.onl==='잘함'&&fin.onlGood.length)h+=`<span style="color:var(--ink-soft)">(${esc(fin.onlGood.join(', '))})</span> `}if(fin.book)h+=` <span class="tag ${col(fin.book)}">교재 숙제 ${fin.book}</span>`;return h};
+  return `
+  <div class="page-label">미리보기 · ${FIN}</div>
+  <div class="page"><div class="page-content">
+    <div class="head"><div><h1>상담 기록 <span class="typebadge">${FIN}</span></h1><div class="meta">${fmt(st.date)} · 담당 ${esc(st.teacher||'-')} · ${esc(st.campus)}</div></div>
+      <div style="text-align:right"><div style="font-size:17px;font-weight:800">${esc(st.student||'학생 이름')}</div><div class="meta">${esc(st.cls||'반')}</div></div></div>
+    <div class="memo"><div class="memo-h">[다음학기 선생님께]</div>
+    <table class="rec2">
+      <tr><th>1. 다음 학기 레벨</th>${cell(fin.lvl,`<span class="lvl">${esc(fin.lvl)}</span>`)}</tr>
+      <tr><th>2. 전화영어 진행 시간</th>${cell(fPhone(),[fDays()&&`<span class="tag">${fDays()}</span>`,fin.time&&`<span class="tag">${t12(fin.time)}</span>`,fin.phone&&`<span style="font-weight:700">${esc(fin.phone)}</span>`].filter(Boolean).join(' '))}</tr>
+      <tr><th>3. 주상담자</th>${cell(fWho(),`<span class="tag">${esc(fWho())}</span>`)}</tr>
+      <tr><th>4. 지난 학기 주테 성적</th><td>${subj().map(s=>`<span class="sc"><b>${s}</b>${fin.s[s]===''||fin.s[s]==null?'<span style="color:#B5BBBE">-</span>':`<strong>${fin.s[s]}</strong>`}</span>`).join('')}</td></tr>
+      <tr><th>5. 온라인 학습 특이</th>${cell(fOnl(),tagOnl())}</tr>
+      <tr><th>6. 학생 특이사항</th>${cell(fin.note.trim(),`<div style="white-space:pre-wrap">${esc(fin.note.trim())}</div>`)}</tr>
+    </table></div>
+    <div class="sign"><div>담당 <span>${esc(st.teacher||'')}</span></div><div>원장 <span></span></div></div>
+  </div></div>
+  <div class="copybox">📋 [텍스트 복사] 버튼을 누르면 아래 글이 그대로 복사돼요<pre>${esc(finText())}</pre></div>`;
+}
 function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 const savedCampus=sessionStorage.getItem('staff_campus');
 const st={type:'개강 상담',date:today(),student:'',cls:'',teacher:sessionStorage.getItem('staff_name')||'',
@@ -273,8 +364,8 @@ function renderPanel(){
     <div class="field"><label>담당 선생님</label><input type="text" id="teacher" value="${esc(st.teacher)}"></div>
   </div>
   <div class="field"><select id="campus">${CAMPUSES.map(c=>`<option ${st.campus===c?'selected':''}>${c}</option>`).join('')}</select></div>
-  <div class="section-title">${st.type} 내용</div>
-  <div id="items">${itemsPanel()}</div>
+  <div class="section-title">${st.type===FIN?'다음학기 선생님께':st.type+' 내용'}</div>
+  <div id="items">${st.type===FIN?finPanel():itemsPanel()}</div>
   <div class="actions">
     <button class="btn btn-primary" id="printBtn" type="button">🖨️ 인쇄하기</button>
     <button class="btn btn-secondary" id="pdfBtn" type="button">⬇️ PDF로 저장</button>
@@ -287,6 +378,7 @@ function bind(){
   ['date','student','cls','teacher'].forEach(id=>document.getElementById(id).oninput=e=>{st[id]=e.target.value;renderStage()});
   document.getElementById('campus').onchange=e=>{st.campus=e.target.value;renderStage()};
   document.querySelectorAll('#typeSeg button').forEach(b=>b.onclick=()=>{st.type=b.dataset.v;renderPanel();renderStage()});
+  if(st.type===FIN)bindFin(); else
   document.querySelectorAll('#items textarea').forEach(t=>t.oninput=()=>{st.ans[t.dataset.k]=t.value;renderStage()});
   document.querySelectorAll('#items .rate').forEach(r=>r.querySelectorAll('button').forEach(b=>b.onclick=()=>{
     const n=+b.dataset.v; st.ans[r.dataset.k]= st.ans[r.dataset.k]===n?undefined:n;
@@ -294,15 +386,17 @@ function bind(){
   document.getElementById('printBtn').onclick=()=>window.print();
   document.getElementById('pdfBtn').onclick=exportPDF;
   document.getElementById('copyBtn').onclick=copyText;
-  document.getElementById('newBtn').onclick=()=>{st.date=today();st.student='';st.cls='';st.ans={};renderPanel();renderStage()};
+  document.getElementById('newBtn').onclick=()=>{st.date=today();st.student='';st.cls='';st.ans={};Object.assign(fin,newFin());renderPanel();renderStage()};
 }
 function recText(){
+  if(st.type===FIN)return finText();
   const body=TYPES[st.type].map((it,i)=>{const v=st.ans[key(it)];
     const val=it.t==='rate'?(v===undefined?'-':it.o[v]):(v&&v.trim()?v.trim():'-');
     return `${i+1}. ${it.l}\n${val}`}).join('\n\n');
   return `[${st.type}] ${fmt(st.date)}\n학생: ${st.student||'-'}${st.cls?' ('+st.cls+')':''}\n\n${body}`;
 }
 function renderStage(){
+  if(st.type===FIN){document.getElementById('stage').innerHTML=finStage();return}
   document.getElementById('stage').innerHTML=`
   <div class="page-label">미리보기 · ${st.type} <span style="font-weight:600">— 아래 글을 드래그하거나 [텍스트 복사] 버튼으로 한 번에 가져가세요</span></div>
   <div class="page"><div class="page-content">
