@@ -37,8 +37,10 @@
   .main-title h1{ font-size:clamp(20px,2.6vw,28px); margin:0 0 6px; }
   .main-title p{ font-size:13px; color:var(--ink-soft); margin:0; }
 
-  .box-grid{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,32px); max-width:960px; width:100%; }
-  @media (max-width:620px){ .box-grid{ grid-template-columns:1fr; } }
+  .box-grid{ display:flex; flex-wrap:wrap; justify-content:center; gap:clamp(18px,3vw,28px); max-width:1180px; width:100%; }
+  .box-grid .box{ flex:0 1 calc((100% - 2*clamp(18px,3vw,28px))/3); }
+  @media (max-width:900px){ .box-grid .box{ flex-basis:calc((100% - clamp(18px,3vw,28px))/2); } }
+  @media (max-width:620px){ .box-grid .box{ flex-basis:100%; } }
   .box{
     background:#fff; border:2px solid var(--line); border-radius:26px;
     min-height:clamp(220px,32vh,300px); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;
@@ -88,6 +90,11 @@
       <div class="box-icon">🧮</div>
       <div class="box-title">Jr. Test 성적</div>
     </div>
+    <div class="box gold" id="box-cs">
+      <div class="box-accent"></div>
+      <div class="box-icon">📺</div>
+      <div class="box-title">수업 화면</div>
+    </div>
   </div>
 </div>
 
@@ -109,6 +116,7 @@
   };
   document.getElementById('box-cr').onclick = () => { window.location.href = 'counseling-record.html'; };
   document.getElementById('box-jt').onclick = () => { window.location.href = 'jrtest.html'; };
+  document.getElementById('box-cs').onclick = () => { window.location.href = 'class-screen.html'; };
   document.getElementById('box-mr').onclick = () => {
     window.location.href = 'monthly-report.html';
   };
