@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>정이조 주니어 | 핸드북 문제은행</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Nunito:wght@600;700;800;900&display=swap">
+<style>
+:root{color-scheme:light;--bg:#EEF1EE;--ink:#1D2420;--soft:#5E6A62;--line:#D9E0DA;--g:#8DCB86;--g-d:#4E9A47;--g-s:#EAF5E8;--red:#E8373A;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Nunito','Noto Sans KR',sans-serif}
+.wrap{max-width:1360px;margin:0 auto;padding-block:20px 60px;padding-inline:16px}
+button{font-family:inherit;color:var(--ink)}
+#top{display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;margin-bottom:14px}
+.brand{display:flex;flex-direction:column;gap:2px;flex:1;min-width:260px}.brand b{font:900 20px 'Noto Sans KR'}.brand span{font:500 12.5px 'Noto Sans KR';color:var(--soft)}
+.days{display:flex;gap:6px}
+.days button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:7px 14px;font:900 15px 'Nunito';cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.days button small{font:600 11px 'Noto Sans KR';color:var(--soft)}
+.days button.on{border-color:var(--g-d);background:var(--g-s)}
+.ask{width:100%;background:#FFF5E3;border:1px solid #F0D49A;border-radius:10px;padding:9px 12px;font:600 13px 'Noto Sans KR';display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ask button{border:0;background:var(--g-d);color:#fff;border-radius:8px;padding:5px 12px;font:700 12.5px 'Noto Sans KR';cursor:pointer}.ask button.g{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.main{display:grid;grid-template-columns:300px minmax(0,1fr) 280px;gap:16px;align-items:start}
+.col{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
+#cats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--g-s);border-radius:10px;padding:4px;margin-bottom:12px}
+#cats button{border:0;background:none;border-radius:8px;padding:8px 2px;font:800 13px 'Noto Sans KR';cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
+#cats button small{font:700 10.5px 'Nunito';color:var(--soft)}
+#cats button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);color:var(--g-d)}
+#types{display:flex;flex-direction:column;gap:6px}
+.tcard{text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;cursor:pointer;display:flex;flex-direction:column;gap:2px;position:relative}
+.tcard b{font:800 14px 'Noto Sans KR'}.tcard span{font:600 11.5px 'Nunito';color:var(--soft)}
+.tcard em{font:600 11px 'Noto Sans KR';color:#B07A1E;font-style:normal}
+.tcard i{position:absolute;right:9px;top:9px;font:800 10.5px 'Noto Sans KR';font-style:normal;background:var(--g-d);color:#fff;border-radius:8px;padding:1px 7px}
+.tcard.on{border-color:var(--g-d);background:var(--g-s)}
+.tcard.dis{opacity:.5;cursor:default}
+.pv-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px}
+.pv-t{font:900 17px 'Noto Sans KR'}.pv-s{font:500 12.5px 'Noto Sans KR';color:var(--soft)}
+.pv-c{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font:600 12.5px 'Noto Sans KR'}
+.pv-c select{border:1px solid var(--line);border-radius:7px;padding:4px 6px;font:700 13px inherit;margin-left:4px}
+.pv-c button,.pr{border:0;background:var(--g-d);color:#fff;border-radius:9px;padding:8px 12px;font:700 13px 'Noto Sans KR';cursor:pointer}
+.pv-c button.g,button.g{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.pv-b{font-size:15px;line-height:1.6}
+.pv-b details{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}
+.pv-b summary{cursor:pointer;font:700 12.5px 'Noto Sans KR';color:var(--soft)}
+#basket{position:sticky;top:12px}
+#basket.fl{animation:fl .6s}@keyframes fl{0%{box-shadow:0 0 0 0 rgba(78,154,71,.6)}100%{box-shadow:0 0 0 14px rgba(78,154,71,0)}}
+.bk-h{display:flex;align-items:center;gap:8px;margin-bottom:10px}.bk-h b{font:900 15px 'Noto Sans KR'}.bk-h span{font:600 12px 'Noto Sans KR';color:var(--soft);flex:1}
+.sm{padding:4px 9px;border-radius:7px;font:700 11.5px 'Noto Sans KR';cursor:pointer}
+.bk-i{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:9px;padding:6px 8px;margin-bottom:6px}
+.bk-i .nm{flex:1;font:700 13px 'Noto Sans KR';min-width:0}.bk-i small{color:var(--soft);font-weight:500}
+.bk-i .lt{width:22px;height:22px;font-size:12px;border-width:1.5px}
+.ic{border:0;background:var(--g-s);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px}.ic:disabled{opacity:.35;cursor:default}
+.bk-e{font:500 12.5px/1.6 'Noto Sans KR';color:var(--soft);padding:8px 0}
+.pr{width:100%;margin-top:8px;padding:10px}.pr:disabled{opacity:.45}
+#sheets{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px;overflow-x:auto}
+.cap{width:210mm;max-width:100%;font:800 13px 'Noto Sans KR';color:var(--soft);margin-top:8px}
+.opts{display:flex;flex-wrap:wrap;gap:4px 18px;margin:2px 0 4px}.opts.vert{flex-direction:column;gap:1px}
+.letters{font-weight:800;letter-spacing:.04em}.hintk{font:500 .85em 'Noto Sans KR';color:var(--soft)}
+.wbox{display:inline-block;width:32mm;border-bottom:1.3px solid var(--ink);margin-left:10px;height:1em;vertical-align:-2px}
+.fix{margin:2px 0 2px}.fl{font-weight:800;letter-spacing:.05em}
+s{text-decoration-color:var(--red);text-decoration-thickness:2px}
+.wsw{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+table.ws{border-collapse:collapse;font:800 1em 'Nunito'}table.ws td{width:7.5mm;height:7.5mm;text-align:center;border:1px solid #C9D1CB}
+table.ws td.hit{background:#FDE2E2;color:var(--red)}
+.clues{display:flex;flex-direction:column;gap:4px;font:600 .95em 'Noto Sans KR'}
+.ans{white-space:nowrap}
+/* ---- A4 ---- */
+.paper{width:210mm;min-height:297mm;font-size:12pt;background:#fff;box-shadow:0 4px 18px rgba(30,50,35,.12);padding:11mm 14mm 11mm;border:6px solid var(--g);position:relative;line-height:1.55;flex:none}
+.ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--g);padding-bottom:6px;margin-bottom:10px;gap:12px}
+.pk{font:900 13px 'Nunito';color:var(--g-d);letter-spacing:.06em;text-transform:uppercase}
+.anskey .pk{color:var(--red)}
+.pt{font:900 30px 'Nunito';color:var(--red)}.pt span{color:var(--g-d);font-size:20px}
+.pinfo{display:flex;flex-direction:column;gap:5px;font:700 12px 'Nunito'}
+.pinfo div{display:flex;gap:6px;align-items:flex-end}.pinfo i{display:inline-block;width:42mm;border-bottom:1px solid var(--ink)}
+.sec{margin-bottom:11px;break-inside:avoid}
+.sh{display:flex;gap:9px;align-items:flex-start;margin-bottom:4px}
+.lt{flex:none;width:26px;height:26px;border:2px solid var(--ink);border-radius:6px;display:flex;align-items:center;justify-content:center;font:900 15px 'Nunito';background:#F3F3F3}
+.se{font:800 15px 'Nunito'}.sk{font:500 10.5px 'Noto Sans KR';color:#8A928C}
+.box{border:1.5px solid var(--ink);padding:6px 12px;text-align:center;margin:4px 0 8px;font-size:1em;line-height:1.9}
+.box .sep{display:inline-block;width:22px}
+ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li::marker{font-weight:900}
+.blank{display:inline-block;width:30mm;border-bottom:1.3px solid var(--ink);height:1em;vertical-align:-2px}
+.blank.num{position:relative}.blank.num::before{content:"(" attr(data-n) ")";position:absolute;left:0;top:-3px;font-size:9pt;font-weight:800}
+.blank.num{width:26mm}
+.psg{margin:4px 0 0;line-height:1.85;font-size:1em}
+.chunks em{color:#9AA19C;font-style:normal}
+.wline{border-bottom:1px solid var(--ink);height:24px;margin-bottom:4px}
+.hint{font:600 10.5pt 'Nunito';color:var(--g-d)}
+.match{display:flex;justify-content:space-between;gap:20mm;padding:2px 8mm}
+.match ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px;flex:1}
+.match .ml{counter-reset:m}.match .ml li{counter-increment:m;display:flex;justify-content:space-between}
+.match .ml li span::before{content:counter(m) ". ";font-weight:900}
+.match .mr li{display:flex;gap:10px}
+.match i{font-style:normal;font-size:18px;line-height:1}
+.ox li{display:flex;justify-content:space-between;gap:12px}.oxb{font-weight:900;white-space:nowrap;letter-spacing:.1em}
+.ev li{list-style:none;display:flex;gap:9px;align-items:center;margin-left:-20px}
+.nbox{flex:none;width:24px;height:24px;border:1.5px solid var(--ink);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-weight:900}
+.red{color:var(--red);font-weight:800}.nbox.red{border-color:var(--red)}
+.ans-line{line-height:2;font-weight:800;color:var(--red)}.ans-line small{color:var(--soft);font-weight:600}
+.pf{position:absolute;bottom:5mm;right:15mm;font:600 9pt 'Nunito';color:#A3ABA5}
+
+.pf::after{content:attr(data-pg)}
+@media (max-width:1100px){.main{grid-template-columns:260px minmax(0,1fr)}#basket{grid-column:1/-1;position:static}}
+@media (max-width:700px){.main{grid-template-columns:1fr}}
+@media print{@page{size:A4;margin:0}body{background:#fff}.wrap{padding:0;max-width:none}#top,.main,.cap{display:none}#sheets{margin:0;gap:0;display:block}
+ .paper{box-shadow:none;margin:0;border-width:4px}.anskey{break-before:page}.pf::after{content:''}}
+
+.ttl{color:var(--g-d);font-size:.8em}
+.backbtn,.fsbtn{border:1px solid var(--line);background:#fff;border-radius:20px;padding:8px 14px;font:700 13px 'Noto Sans KR';cursor:pointer;text-decoration:none;color:var(--soft);white-space:nowrap}
+.plv{font:800 11px 'Nunito';color:var(--soft);letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+#home{max-width:1100px;margin:0 auto}
+.hh{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:14px 0 16px}
+.hh .brand b{font-size:24px}
+#q{border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font:600 14px 'Noto Sans KR';min-width:240px;flex:0 1 320px;background:#fff}
+#q:focus{outline:2px solid var(--g-d);outline-offset:1px}
+.lvls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.lvls button{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:7px 12px;font:900 13.5px 'Nunito';cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:84px}
+.lvls button small{font:600 10.5px 'Noto Sans KR';color:var(--soft)}
+.lvls button.on{border-color:var(--g-d);background:var(--g-s)}
+.lvls button:disabled{opacity:.45;cursor:default}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.dcard{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-height:96px;font-family:inherit;color:var(--ink)}
+.dcard:hover{border-color:var(--g-d);box-shadow:0 4px 14px rgba(78,154,71,.15)}
+.dcard .dn{font:900 18px 'Nunito';color:var(--red)}.dcard .dt{font:800 14px 'Nunito';color:var(--g-d)}.dcard .dm{font:600 11.5px 'Noto Sans KR';color:var(--soft);margin-top:auto}
+.dcard.off{background:transparent;border-style:dashed;cursor:default}.dcard.off .dn{color:#B8C0BA}.dcard.off .dt{color:#B8C0BA;font-family:'Noto Sans KR';font-weight:600;font-size:12.5px}
+@media print{#home{display:none}}
+</style></head><body>
+<script>if(!sessionStorage.getItem('staff_id'))location.href='coupon-hub.html';</script>
+<div class="wrap">
+ <div id="home" hidden></div>
+ <div id="bank" hidden>
+  <div id="top"></div>
+  <div class="main">
+   <div class="col"><div id="cats"></div><div id="types"></div></div>
+   <div class="col" id="pv"></div>
+   <div class="col" id="basket"></div>
+  </div>
+  <div id="sheets"></div>
+ </div>
+</div>
+<script src="handbook/data.js"></script>
+<script>
+// 과거형 ↔ 원형 (동사 모양 바꾸기 · 틀린 곳 고치기용)
+const PAST={stole:'steal',hid:'hide',took:'take',invited:'invite',gave:'give',rolled:'roll',came:'come',struck:'strike',gazed:'gaze',
+ shivered:'shiver',sat:'sit',sold:'sell',went:'go',looked:'look',filled:'fill',bought:'buy',tripped:'trip',fell:'fall',started:'start',
+ walked:'walk',heard:'hear',saw:'see',muttered:'mutter',held:'hold',shouted:'shout',lived:'live',disappeared:'disappear',felt:'feel'};
+const STOP=new Set('the a an and but or so to of in on at by for with was were is are be been her his him she he they them their it its this that these those i you we my your our had have has did do not no as then there what who whose when why would like will can just one only'.split(' '));
+function pool(D){ // 문장 재료: 핸드북 문장 + 본문 문장
+  const out=[...D.sentences.map(s=>({e:s.e,k:s.k}))];const seen=new Set(out.map(s=>s.e));
+  (D.passage||[]).forEach(p=>p.split(/(?<=[.!?])(?:”)?\s+(?=[“A-Z])/).forEach(x=>{x=x.trim();const n=x.split(' ').length;if(n>=5&&n<=16&&!seen.has(x)&&!/^“/.test(x)){seen.add(x);out.push({e:x})}}));
+  return out;
+}
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let R=rng(1);
+const shuf=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const take=(a,n)=>shuf(a).slice(0,n);
+const NUM='①②③④⑤';const AL='abcdefghij';
+const red=s=>`<b class="red">${s}</b>`;
+const mcHtml=opts=>`<div class="opts">${opts.map((o,i)=>`<span>${NUM[i]} ${esc(o)}</span>`).join('')}</div>`;
+const single=D=>D.vocab.filter(v=>!v.w.includes(' '));
+const wre=w=>new RegExp('\\b'+w.replace(/ /g,'\\s+')+'\\b','i');
+const ol=(items,cls='')=>`<ol class="ql ${cls}">${items.map(x=>`<li>${x}</li>`).join('')}</ol>`;
+
+/* ===================== 문제 유형 ===================== */
+const CATS=[
+ {k:'word',t:'단어',ic:'📘'},{k:'sent',t:'문장',ic:'✏️'},{k:'blank',t:'빈칸',ic:'🔲'},{k:'read',t:'독해',ic:'📖'}];
+const TYPES=[
+ /* ---------- 단어 ---------- */
+ {k:'v_en2ko',c:'word',t:'영어 보고 뜻 고르기',en:'Choose the correct meaning.',ko:'단어의 알맞은 뜻을 고르세요.',def:5,max:8,
+  gen(D,n){const v=take(D.vocab,n);const it=v.map(x=>{const o=shuf([x.k,...take(D.vocab.filter(y=>y!==x),3).map(y=>y.k)]);return{x,o,a:o.indexOf(x.k)}});
+   return{q:ol(it.map(i=>`<b>${esc(i.x.w)}</b>${mcHtml(i.o)}`)),a:ol(it.map(i=>`${esc(i.x.w)} → ${red(NUM[i.a]+' '+esc(i.x.k))}`))}}},
+ {k:'v_ko2en',c:'word',t:'뜻 보고 영어 단어 고르기',en:'Choose the correct word.',ko:'뜻에 알맞은 영어 단어를 고르세요.',def:5,max:8,
+  gen(D,n){const v=take(D.vocab,n);const it=v.map(x=>{const o=shuf([x.w,...take(D.vocab.filter(y=>y!==x),3).map(y=>y.w)]);return{x,o,a:o.indexOf(x.w)}});
+   return{q:ol(it.map(i=>`<b>${esc(i.x.k)}</b>${mcHtml(i.o)}`)),a:ol(it.map(i=>`${esc(i.x.k)} → ${red(NUM[i.a]+' '+esc(i.x.w))}`))}}},
+ {k:'v_scr',c:'word',t:'섞인 철자 바로 쓰기',en:'Unscramble the letters.',ko:'섞인 철자를 바르게 배열해 단어를 쓰세요.',def:5,max:6,
+  gen(D,n){const v=take(single(D),n);const it=v.map(x=>{let s;let g=0;do{s=shuf(x.w.split(''));g++}while(s.join('')===x.w&&g<20);return{x,s}});
+   return{q:ol(it.map(i=>`<span class="letters">${i.s.map(esc).join(' · ')}</span> <span class="hintk">(${esc(i.x.k)})</span><span class="wbox"></span>`),'scr'),a:ol(it.map(i=>red(esc(i.x.w))+` <span class="hintk">(${esc(i.x.k)})</span>`))}}},
+ {k:'v_miss',c:'word',t:'빠진 글자 채우기',en:'Fill in the missing letters.',ko:'빠진 글자를 채워 단어를 완성하세요.',def:5,max:6,
+  gen(D,n){const v=take(single(D),n);const it=v.map(x=>{const L=x.w.split('');const idx=shuf(L.map((_,i)=>i).slice(1)).slice(0,Math.max(1,Math.round(L.length*.4)));
+    return{x,q:L.map((c,i)=>idx.includes(i)?'<u>&nbsp;&nbsp;</u>':c).join(' '),a:L.map((c,i)=>idx.includes(i)?red(c):c).join(' ')}});
+   return{q:ol(it.map(i=>`<span class="letters">${i.q}</span> <span class="hintk">(${esc(i.x.k)})</span>`)),a:ol(it.map(i=>`<span class="letters">${i.a}</span>`))}}},
+ {k:'v_def',c:'word',t:'영어 풀이 보고 단어 쓰기',en:'Read and write the word.',ko:'영어 풀이를 읽고 알맞은 단어를 쓰세요.',def:4,max:6,
+  gen(D,n){const v=take(D.vocab,n);
+   return{q:ol(v.map(x=>`${esc(x.d)}. <span class="ans">→ ${esc(x.w[0])}<span class="blank"></span></span>`)),a:ol(v.map(x=>`${esc(x.d)}. → ${red(esc(x.w))}`))}}},
+ {k:'v_search',c:'word',t:'단어 찾기 퍼즐',en:'Find the words in the puzzle.',ko:'뜻을 보고 영어 단어를 퍼즐에서 찾아 동그라미 하세요.',def:6,max:6,
+  gen(D,n){const v=take(single(D),n);const N=10,G=Array.from({length:N},()=>Array(N).fill(''));const mark=new Set();
+   v.forEach(x=>{const w=x.w.toUpperCase();for(let t=0;t<200;t++){const h=R()<.5,r=Math.floor(R()*(h?N:N-w.length+1)),c=Math.floor(R()*(h?N-w.length+1:N));
+     let ok=true;for(let i=0;i<w.length;i++){const rr=h?r:r+i,cc=h?c+i:c;if(G[rr][cc]&&G[rr][cc]!==w[i]){ok=false;break}}
+     if(ok){for(let i=0;i<w.length;i++){const rr=h?r:r+i,cc=h?c+i:c;G[rr][cc]=w[i];mark.add(rr+','+cc)}break}}});
+   const A='ABCDEFGHIJKLMNOPRSTUVWY';const filled=G.map(row=>row.map(ch=>ch||A[Math.floor(R()*A.length)]));
+   const grid=hl=>`<table class="ws">${filled.map((row,r)=>`<tr>${row.map((ch,c)=>`<td class="${hl&&mark.has(r+','+c)?'hit':''}">${ch}</td>`).join('')}</tr>`).join('')}</table>`;
+   const clue=`<div class="clues">${v.map(x=>`<span>□ ${esc(x.k)}</span>`).join('')}</div>`;
+   return{q:`<div class="wsw">${grid(false)}${clue}</div>`,a:`<div class="wsw">${grid(true)}<div class="clues">${v.map(x=>`<span>${esc(x.k)} = ${red(esc(x.w))}</span>`).join('')}</div></div>`}}},
+ /* ---------- 문장 ---------- */
+ {k:'s_word',c:'sent',t:'단어 순서 배열',en:'Put the words in order.',ko:'단어를 순서대로 배열해 문장을 쓰세요.',def:3,max:5,
+  gen(D,n){const ss=take(pool(D).filter(s=>s.e.split(' ').length<=11),n);const it=ss.map(s=>{const end=(s.e.match(/[.!?]”?$/)||[''])[0];const w=s.e.slice(0,s.e.length-end.length).replace(/,/g,'').split(' ');
+    let sh;let g=0;do{sh=shuf(w);g++}while(sh.join(' ')===w.join(' ')&&g<20);return{s,sh,end}});
+   return{q:ol(it.map(i=>`<div class="chunks">${i.sh.map(esc).join(' <em>/</em> ')} <em>( ${esc(i.end)} )</em></div><div class="wline"></div>`)),a:ol(it.map(i=>red(esc(i.s.e))))}}},
+ {k:'s_err',c:'sent',t:'틀린 곳 찾아 고치기',en:'Find the mistake and correct it.',ko:'틀린 부분에 밑줄을 긋고 바르게 고쳐 쓰세요.',def:4,max:5,
+  gen(D,n){const cand=pool(D).map(s=>{const w=s.e.split(' ').find(x=>PAST[x.replace(/[^a-z]/gi,'').toLowerCase()]);return w?{s,w}:null}).filter(Boolean);
+   const it=take(cand,n).map(({s,w})=>{const core=w.replace(/[^a-z]/gi,'');const base=PAST[core.toLowerCase()];return{s,core,base,wrong:s.e.replace(new RegExp('\\b'+core+'\\b'),base)}});
+   return{q:ol(it.map(i=>`${esc(i.wrong)}<div class="fix">→ <span class="blank"></span></div>`)),a:ol(it.map(i=>`${esc(i.wrong).replace(new RegExp('\\b'+i.base+'\\b'),m=>`<s>${m}</s>`)} → ${red(esc(i.core))}`))}}},
+ {k:'s_trans',c:'sent',t:'알맞은 해석 고르기',en:'Choose the correct meaning.',ko:'영어 문장의 알맞은 해석을 고르세요.',def:3,max:5,
+  gen(D,n){const ks=D.sentences;const it=take(ks,n).map(s=>{const o=shuf([s.k,...take(ks.filter(y=>y!==s),3).map(y=>y.k)]);return{s,o,a:o.indexOf(s.k)}});
+   return{q:ol(it.map(i=>`<b>${esc(i.s.e)}</b><div class="opts vert">${i.o.map((x,j)=>`<span>${NUM[j]} ${esc(x)}</span>`).join('')}</div>`)),a:ol(it.map(i=>`${esc(i.s.e)}<br>${red(NUM[i.a]+' '+esc(i.s.k))}`))}}},
+ {k:'s_half',c:'sent',t:'문장 앞뒤 연결하기',en:'Match the two parts.',ko:'문장의 앞부분과 뒷부분을 알맞게 연결하세요.',def:4,max:6,
+  gen(D,n){const sp=pool(D).map(s=>{let m=s.e.match(/^(.+?,)\s(.+)$/)||s.e.match(/^(.+?)\s((?:and|so|because|as)\s.+)$/);
+     if(!m){const w=s.e.split(' ');if(w.length<6)return null;const h=Math.ceil(w.length/2);m=[0,w.slice(0,h).join(' '),w.slice(h).join(' ')]}return{s,l:m[1],r:m[2]}}).filter(Boolean);
+   const it=take(sp,n);const rs=shuf(it);
+   return{q:`<div class="match"><ol class="ml">${it.map(x=>`<li><span>${esc(x.l)}</span><i>•</i></li>`).join('')}</ol><ol class="mr">${rs.map((x,i)=>`<li><i>•</i><span>${AL[i]}. ${esc(x.r)}</span></li>`).join('')}</ol></div>`,
+    a:ol(it.map(x=>`${esc(x.l)} ${red(AL[rs.indexOf(x)]+'. '+esc(x.r))}`))}}},
+ {k:'s_k2e',c:'sent',t:'우리말 → 영작',en:'Write the sentences in English.',ko:'힌트 단어를 이용해 영어 문장으로 쓰세요.',def:3,max:5,
+  gen(D,n){const it=take(D.sentences,n).map(s=>{const w=s.e.replace(/[.,!?“”"]/g,'').split(' ').filter(x=>x.length>3&&!STOP.has(x.toLowerCase()));return{s,h:take(w,Math.min(3,w.length)).map(x=>x.toLowerCase())}});
+   return{q:ol(it.map(i=>`${esc(i.s.k)}<div class="hint">힌트: ${i.h.map(esc).join(', ')}</div><div class="wline"></div>`)),a:ol(it.map(i=>`${esc(i.s.k)}<br>${red(esc(i.s.e))}`))}}},
+ /* ---------- 빈칸 ---------- */
+ {k:'b_mc',c:'blank',t:'4지선다 빈칸',en:'Choose the word for the blank.',ko:'빈칸에 알맞은 단어를 고르세요.',def:5,max:8,
+  gen(D,n){const it=take(D.vocab,n).map(x=>{const s=x.s[Math.floor(R()*x.s.length)];const o=shuf([x.w,...take(D.vocab.filter(y=>y!==x),3).map(y=>y.w)]);return{x,s,o,a:o.indexOf(x.w)}});
+   return{q:ol(it.map(i=>`${esc(i.s).replace(wre(i.x.w),'<span class="blank"></span>')}${mcHtml(i.o)}`)),a:ol(it.map(i=>`${esc(i.s).replace(wre(i.x.w),m=>red(esc(m)))} &nbsp;(${NUM[i.a]})`))}}},
+ {k:'b_verb',c:'blank',t:'동사 모양 바꿔 쓰기',en:'Write the correct form of the word.',ko:'괄호 안의 단어를 알맞은 모양으로 바꿔 쓰세요.',def:5,max:6,
+  gen(D,n){const cand=pool(D).map(s=>{const w=s.e.split(' ').map(x=>x.replace(/[^a-z]/gi,'')).find(x=>PAST[x.toLowerCase()]);return w?{s,w}:null}).filter(Boolean);
+   const it=take(cand,n);
+   return{q:ol(it.map(i=>esc(i.s.e).replace(new RegExp('\\b'+i.w+'\\b'),`<span class="blank"></span> (${PAST[i.w.toLowerCase()]})`))),a:ol(it.map(i=>esc(i.s.e).replace(new RegExp('\\b'+i.w+'\\b'),m=>red(m))))}}},
+ {k:'b_first',c:'blank',t:'첫 글자 힌트 빈칸',en:'Complete the sentences.',ko:'첫 글자를 보고 빈칸에 알맞은 단어를 쓰세요.',def:5,max:6,
+  gen(D,n){const it=take(pool(D),n).map(s=>{const ws=s.e.split(' ').map(x=>x.replace(/[^a-z’']/gi,'')).filter(x=>x.length>3&&!STOP.has(x.toLowerCase())&&!x.includes('’'));const w=ws[Math.floor(R()*ws.length)];return w?{s,w}:null}).filter(Boolean);
+   return{q:ol(it.map(i=>esc(i.s.e).replace(new RegExp('\\b'+i.w+'\\b'),`<span class="fl">${esc(i.w[0])}${'_'.repeat(i.w.length-1).split('').join(' ')}</span>`))),a:ol(it.map(i=>esc(i.s.e).replace(new RegExp('\\b'+i.w+'\\b'),m=>red(m))))}}},
+ {k:'b_story',c:'blank',t:'본문 빈칸 (보기 없음)',en:'Fill in the blanks in the story.',ko:'이야기를 떠올리며 빈칸에 알맞은 단어를 쓰세요.',def:6,max:8,need:'passage',
+  gen(D,n){const p=D.passage[Math.floor(R()*D.passage.length)];const words=[...new Set(p.split(/\s+/).map(x=>x.replace(/[^a-z]/gi,'')).filter(x=>x.length>3&&!STOP.has(x.toLowerCase())))];
+   const pick=take(words,n).map(w=>({w,i:p.search(new RegExp('\\b'+w+'\\b'))})).sort((a,b)=>a.i-b.i);let q=esc(p),a=esc(p);
+   pick.slice().reverse().forEach((x,k)=>{const no=pick.length-k,re=new RegExp('\\b'+x.w+'\\b');q=q.replace(re,`<span class="blank num" data-n="${no}"></span>`);a=a.replace(re,red(`(${no}) ${x.w}`))});
+   return{q:`<p class="psg">${q}</p>`,a:`<p class="psg">${a}</p>`}}},
+ /* ---------- 독해 ---------- */
+ {k:'r_ox',c:'read',t:'내용 O/X',en:'Read and circle O or X.',ko:'내용과 맞으면 O, 틀리면 X에 동그라미 하세요.',def:5,max:8,
+  gen(D,n){const o=take(D.ox,Math.min(n,D.ox.length));return{q:ol(o.map(x=>`<span>${esc(x[0])}</span><span class="oxb">O &nbsp; X</span>`),'ox'),a:ol(o.map(x=>`<span>${esc(x[0])}</span>${red(x[1]?'O':'X')}`),'ox')}}},
+ {k:'r_qa',c:'read',t:'내용 질문에 답하기',en:'Answer the questions.',ko:'질문을 읽고 영어로 답하세요.',def:3,max:5,
+  gen(D,n){const q=take(D.qa,Math.min(n,D.qa.length));return{q:ol(q.map(x=>`${esc(x[0])}<div class="wline"></div>`)),a:ol(q.map(x=>`${esc(x[0])}<br>${red(esc(x[1]))}`))}}},
+ {k:'r_order',c:'read',t:'이야기 순서 맞추기',en:'Put the events in order.',ko:'이야기 순서대로 번호를 쓰세요.',def:6,max:6,need:'events',fixed:true,
+  gen(D){const sh=shuf(D.events.map((e,i)=>({e,i})));return{q:ol(sh.map(x=>`<span class="nbox"></span>${esc(x.e)}`),'ev'),a:ol(sh.map(x=>`<span class="nbox red">${x.i+1}</span>${esc(x.e)}`),'ev')}}},
+ {k:'r_mc',c:'read',t:'내용 고르기 (제목·인물·장소)',en:'Choose the best answer.',ko:'알맞은 답을 고르세요.',def:3,max:3,
+  gen(D,n){const it=take(D.mc,Math.min(n,D.mc.length)).map(m=>{const o=shuf(m[1]);return{m,o,a:o.indexOf(m[1][m[2]])}});
+   return{q:ol(it.map(i=>`${esc(i.m[0])}<div class="opts vert">${i.o.map((x,j)=>`<span>${NUM[j]} ${esc(x)}</span>`).join('')}</div>`)),a:ol(it.map(i=>`${esc(i.m[0])} → ${red(NUM[i.a]+' '+esc(i.o[i.a]))}`))}}}
+];
+const TY=Object.fromEntries(TYPES.map(t=>[t.k,t]));
+
+/* ===================== 화면 ===================== */
+let LV=null,day=null,cat='word',sel='v_en2ko',pvSeed=1,pvN=TY.v_en2ko.def,basket=[],nextSeed=100,askHome=false,homeLv=null;
+const CUR=()=>HB.levels[LV].days[day];
+const LEVELS=['W1','W2','I1','I2','I3','I4','N1','N2','N3','N4','G1','G2','G3','G4'];
+const LVNAME={W1:'Wind 1',W2:'Wind 2',I1:'Island 1',I2:'Island 2',I3:'Island 3',I4:'Island 4',N1:'Nation 1',N2:'Nation 2',N3:'Nation 3',N4:'Nation 4',G1:'Globe 1',G2:'Globe 2',G3:'Globe 3',G4:'Globe 4'};
+const MAXDAY=24;
+function renderHome(){
+  $('#home').hidden=false;$('#bank').hidden=true;
+  const have=LEVELS.filter(l=>HB.levels[l]);if(!homeLv)homeLv=have[0];
+  const L=HB.levels[homeLv],ds=L?L.days:{};
+  const cnt=l=>HB.levels[l]?Object.keys(HB.levels[l].days).length:0;
+  $('#home').innerHTML=`
+   <div class="hh"><a class="fsbtn" href="staff-home.html">← For Staff</a><div class="brand"><b>핸드북 문제은행</b><span>레벨과 Day를 고르면 그 Day의 핸드북 내용으로만 문제를 만들어요</span></div>
+     <input id="q" placeholder="Day 번호나 이야기 제목 검색" value="${esc(homeQ)}"></div>
+   <div class="lvls">${LEVELS.map(l=>`<button data-lv="${l}" class="${l===homeLv?'on':''}" ${cnt(l)?'':'disabled'}>${LVNAME[l]}<small>${cnt(l)?cnt(l)+'일':'준비 중'}</small></button>`).join('')}</div>
+   <div class="dgrid">${Array.from({length:MAXDAY},(_,i)=>i+1).filter(d=>{if(!homeQ)return true;const t=(ds[d]&&ds[d].title)||'';return String(d)===homeQ.trim()||t.toLowerCase().includes(homeQ.trim().toLowerCase())}).map(d=>{const D=ds[d];
+     return D?`<button class="dcard" data-d="${d}"><span class="dn">Day ${d}</span><span class="dt">${esc(D.title)}</span><span class="dm">단어 ${D.vocab.length} · 문장 ${D.sentences.length}${D.passage?' · 본문':''}</span></button>`
+             :`<div class="dcard off"><span class="dn">Day ${d}</span><span class="dt">준비 중</span></div>`}).join('')}</div>`;
+  document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{homeLv=b.dataset.lv;renderHome()});
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>openDay(homeLv,+b.dataset.d));
+  const q=$('#q');q.oninput=()=>{homeQ=q.value;const p=q.selectionStart;renderHome();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
+}
+let homeQ='';
+function openDay(l,d){LV=l;day=d;basket=[];cat='word';sel='v_en2ko';pvN=TY.v_en2ko.def;pvSeed++;try{history.replaceState(null,'','#'+l+'-'+d)}catch(e){}render();window.scrollTo(0,0)}
+function goHome(){LV=null;day=null;basket=[];askHome=false;try{history.replaceState(null,'','#')}catch(e){}render()}
+function gen(t,n,seed){R=rng(seed*131+day);return TY[t].gen(CUR(),n)}
+function avail(t){const T=TY[t];return !T.need||CUR()[T.need]}
+function render(){
+  if(!LV){renderHome();return}
+  $('#home').hidden=true;$('#bank').hidden=false;
+  const L=HB.levels[LV];
+  $('#top').innerHTML=`
+   <button class="backbtn" id="toHome">← Day 목록</button>
+   <div class="brand"><b>${esc(L.name)} · Day ${day} <span class="ttl">${esc(CUR().title)}</span></b><span>항목 → 문제 유형을 눌러 담으면 문제지 · 답지가 만들어져요</span></div>
+   ${askHome?`<div class="ask">Day 목록으로 가면 담은 문제 ${basket.length}개가 비워져요. <button id="askY">나가기</button><button id="askN" class="g">취소</button></div>`:''}`;
+  $('#cats').innerHTML=CATS.map(c=>`<button data-cat="${c.k}" class="${c.k===cat?'on':''}">${c.ic} ${c.t}<small>${TYPES.filter(t=>t.c===c.k).length}</small></button>`).join('');
+  $('#types').innerHTML=TYPES.filter(t=>t.c===cat).map(t=>{const ok=avail(t.k),inB=basket.filter(b=>b.t===t.k).length;
+    return `<button class="tcard ${t.k===sel?'on':''} ${ok?'':'dis'}" data-t="${t.k}" ${ok?'':'disabled'}><b>${t.t}</b><span>${esc(t.en)}</span>${ok?'':'<em>이 Day엔 본문 자료 없음</em>'}${inB?`<i>담음 ${inB}</i>`:''}</button>`}).join('');
+  renderPreview();renderBasket();renderSheets();bind();
+}
+function renderPreview(){
+  const T=TY[sel];if(!avail(sel)){$('#pv').innerHTML='';return}
+  const r=gen(sel,pvN,pvSeed);
+  $('#pv').innerHTML=`<div class="pv-h"><div><div class="pv-t">${T.t}</div><div class="pv-s">${esc(T.ko)}</div></div>
+    <div class="pv-c">${T.fixed?'':`<label>문제 수 <select id="pvN">${Array.from({length:T.max},(_,i)=>i+1).map(n=>`<option ${n===pvN?'selected':''}>${n}</option>`).join('')}</select></label>`}
+    <button class="g" id="pvRe">🔀 다른 문제</button><button id="pvAdd">＋ 문제지에 담기</button></div></div>
+    <div class="pv-b"><div class="pv-q">${r.q}</div><details><summary>정답 보기</summary><div class="pv-a">${r.a}</div></details></div>`;
+}
+function renderBasket(){
+  $('#basket').innerHTML=`<div class="bk-h"><b>담은 문제</b><span>Day ${day} · ${basket.length}개 묶음</span>${basket.length?'<button class="g sm" id="bkClr">비우기</button>':''}</div>
+   ${basket.length?basket.map((b,i)=>`<div class="bk-i"><span class="lt">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i]}</span><span class="nm">${TY[b.t].t} <small>${TY[b.t].fixed?'':b.n+'문제'}</small></span>
+     <button class="ic" data-up="${i}" ${i?'':'disabled'} title="위로">↑</button><button class="ic" data-re="${i}" title="다른 문제로">🔀</button><button class="ic" data-rm="${i}" title="빼기">✕</button></div>`).join(''):'<div class="bk-e">왼쪽에서 유형을 고르고 [＋ 문제지에 담기]를 눌러요.</div>'}
+   <button class="pr" id="pr" ${basket.length?'':'disabled'}>🖨️ 문제지 + 답지 인쇄</button>`;
+}
+function sheet(ans){
+  const D=CUR();
+  return `<div class="paper${ans?' anskey':''}"><div class="ph"><div><div class="pk">${ans?'ANSWER KEY · 답지':'Handbook Review'}</div><div class="pt">Day ${day} <span>· ${esc(D.title)}</span></div><div class="plv">${esc(HB.levels[LV].name)}</div></div>
+   ${ans?'':'<div class="pinfo"><div>Class <i></i></div><div>Name <i></i></div><div>Date <i></i></div></div>'}</div>
+   ${basket.map((b,i)=>{const T=TY[b.t],r=gen(b.t,b.n,b.seed);return `<section class="sec"><div class="sh"><span class="lt">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i]}</span><div><div class="se">${esc(T.en)}</div><div class="sk">${esc(T.ko)}</div></div></div>${ans?r.a:r.q}</section>`}).join('')}
+   <div class="pf">${esc(HB.levels[LV].name)} · Day ${day} · ${esc(D.title)}</div></div>`;
+}
+function renderSheets(){
+  if(!basket.length){$('#sheets').innerHTML='';return}
+  $('#sheets').innerHTML=`<div class="cap">문제지 미리보기</div>${sheet(false)}<div class="cap">답지</div>${sheet(true)}`;fit();
+}
+function fit(){const H=297*3.7795;document.querySelectorAll('.paper').forEach(p=>{let f=12;p.style.fontSize=f+'pt';while(p.scrollHeight>H-2&&f>10){f-=.25;p.style.fontSize=f+'pt'}
+  p.querySelector('.pf').dataset.pg=p.scrollHeight>H-2?' · 2장으로 인쇄돼요':''})}
+function bind(){
+  if($('#toHome'))$('#toHome').onclick=()=>{if(basket.length){askHome=true;render()}else goHome()};
+  if($('#askY'))$('#askY').onclick=goHome;
+  if($('#askN'))$('#askN').onclick=()=>{askHome=false;render()};
+  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{cat=b.dataset.cat;const f=TYPES.find(t=>t.c===cat&&avail(t.k));if(f){sel=f.k;pvN=f.def;pvSeed++}render()});
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{sel=b.dataset.t;pvN=TY[sel].def;pvSeed++;render()});
+  if($('#pvN'))$('#pvN').onchange=e=>{pvN=+e.target.value;renderPreview();bind()};
+  if($('#pvRe'))$('#pvRe').onclick=()=>{pvSeed++;renderPreview();bind()};
+  if($('#pvAdd'))$('#pvAdd').onclick=()=>{basket.push({t:sel,n:pvN,seed:pvSeed});pvSeed++;render();flash()};
+  document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{basket.splice(+b.dataset.rm,1);render()});
+  document.querySelectorAll('[data-re]').forEach(b=>b.onclick=()=>{basket[+b.dataset.re].seed=nextSeed++;render()});
+  document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const i=+b.dataset.up;[basket[i-1],basket[i]]=[basket[i],basket[i-1]];render()});
+  if($('#bkClr'))$('#bkClr').onclick=()=>{basket=[];render()};
+  if($('#pr'))$('#pr').onclick=()=>{try{window.print()}catch(e){}};
+}
+function fixSel(){if(!avail(sel)){const f=TYPES.find(t=>t.c===cat&&avail(t.k))||TYPES[0];sel=f.k;pvN=f.def}}
+function flash(){const e=$('#basket');e.classList.remove('fl');void e.offsetWidth;e.classList.add('fl')}
+// 주소 #I3-17 로 바로 열기
+(function(){const m=(location.hash||'').match(/^#([A-Z]\d)-(\d+)$/);if(m&&HB.levels[m[1]]&&HB.levels[m[1]].days[+m[2]]){homeLv=m[1];openDay(m[1],+m[2])}else render()})();
+
+</script></body></html>
