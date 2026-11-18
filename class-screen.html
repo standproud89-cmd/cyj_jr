@@ -42,8 +42,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',-
 .ctl button:hover{background:rgba(255,255,255,.22)}
 .ctl #pNum{min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
 .ctl .file{margin-left:auto;font-weight:500;color:#8FB0BF;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.studs{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:8px}
-.st{border:0;background:var(--navy-s);border-radius:10px;padding:7px 4px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:inherit;color:var(--ink);transition:transform .12s,box-shadow .12s;position:relative;min-height:84px}
+.studs{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:var(--sth,100px);align-content:start;gap:8px}
+.st{border:0;background:var(--navy-s);border-radius:10px;padding:7px 4px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:inherit;color:var(--ink);transition:transform .12s,box-shadow .12s;position:relative;min-height:0;overflow:hidden}
 .st:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(23,96,127,.18)}
 .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
 .st .nm{font-size:13.5px;font-weight:800}
@@ -165,6 +165,7 @@ table.t tbody tr:hover{background:var(--navy-s)}
 .form textarea{width:100%;resize:vertical;line-height:1.6}
 .form input:focus,.form textarea:focus,.form select:focus{outline:2px solid var(--navy);outline-offset:1px}
 .fbtn{display:flex;gap:8px;margin-top:12px}
+.demo-note{margin-top:10px;background:#FFF6E5;border:1px solid #F2D9A6;color:#7A5410;border-radius:10px;padding:9px 14px;font-size:13px}
 .tv:fullscreen{border-radius:0;padding:14px;overflow:auto;background:#fff}
 .tv:fullscreen .tv-grid{height:100%}
 .tv:fullscreen .frame{width:min(100%,calc((100vh - 140px)*4/3));margin:0 auto}
@@ -240,10 +241,12 @@ async function apiPost(b){const r=await fetch(API,{method:'POST',headers:{'Conte
 let CLASSES=[];            // 명단 전체
 const LOGS={};             // 반명 → 기록 배열
 const myClasses=()=>IS_DIR?CLASSES:CLASSES.filter(c=>c.teacherId===ME.id);
-const getCls=n=>CLASSES.find(c=>c.cls===n);
+// 명단 등록 전에도 화면을 볼 수 있게 쓰는 샘플 반 (기록은 저장되지 않음)
+const DEMO={cls:'샘플 반',days:'MWF',teacherId:ME.id,teacherName:ME.name,demo:true,students:Array.from({length:18},(_,i)=>'학생 '+(i+1))};
+const getCls=n=>n===DEMO.cls?DEMO:CLASSES.find(c=>c.cls===n);
 function av(c,s){const i=Math.max(0,(getCls(c)?.students||[]).indexOf(s));return `<span class="av" style="background:${COLORS[i%COLORS.length]}">${esc(s[0]||'?')}</span>`}
 async function loadRoster(){const d=await apiGet({type:'roster'});CLASSES=d.classes||[]}
-async function loadLogs(c,force){if(!c)return[];if(!LOGS[c]||force){const d=await apiGet({type:'logs',cls:c});LOGS[c]=d.logs||[]}return LOGS[c]}
+async function loadLogs(c,force){if(!c)return[];if(c===DEMO.cls){LOGS[c]=LOGS[c]||[];return LOGS[c]}if(!LOGS[c]||force){const d=await apiGet({type:'logs',cls:c});LOGS[c]=d.logs||[]}return LOGS[c]}
 
 $('#who').innerHTML=`<b>${esc(ME.name)}</b> ${IS_DIR?'원장님 · 전체 반':'선생님 · 내 반'}`;
 let view='tv';
@@ -263,13 +266,12 @@ function studCards(){
     return `<button class="st" data-s="${esc(s)}">${av(tvCls,s)}<span class="nm">${esc(s)}</span><span class="pt ${cls3(t)}">${sgn(t)}</span></button>`}).join('');
 }
 function renderTV(){
-  const mine=myClasses();
-  if(!mine.length){$('#tvView').innerHTML=`<div class="mg"><div class="empty-big">아직 등록된 반이 없어요.<br><button class="btn" id="goRo">③ 반 · 학생 명단에서 반 만들기 →</button></div></div>`;
-    $('#goRo').onclick=()=>document.querySelector('#tabs button[data-v=ro]').click();return}
+  const mine=myClasses().length?myClasses():[DEMO];
   if(!mine.some(c=>c.cls===tvCls))tvCls=mine[0].cls;
   if($('#tv')){ // 이미 화면이 있으면 PPT는 그대로 두고 학생/창만 다시 그림
     $('#tvCls').innerHTML=mine.map(c=>`<option ${c.cls===tvCls?'selected':''}>${esc(c.cls)}</option>`).join('');
     $('#studs').innerHTML=studCards();$('#modalSlot').innerHTML=modal?modalHtml():'';bindTV();
+    $('#demoNote').hidden=!getCls(tvCls)?.demo;
     if(!LOGS[tvCls])loadLogs(tvCls).then(()=>{$('#studs').innerHTML=studCards();bindTV()}).catch(err=>toast('기록을 불러오지 못했어요: '+err.message,1));return}
   const d=new Date();
   $('#tvView').innerHTML=`
@@ -280,9 +282,9 @@ function renderTV(){
       <div class="ppt">
         <div class="frame" id="frame"></div>
         <div class="ctl">
-          <button id="pPrev" title="이전 (←)">◀</button>
+          <button id="pPrev" title="이전 페이지">◀</button>
           <span id="pNum">-</span>
-          <button id="pNext" title="다음 (→ · 스페이스 · 클릭)">▶</button>
+          <button id="pNext" title="다음 페이지">▶</button>
           <select id="deckSel">${Object.entries(DECKS).map(([k,v])=>`<option value="${k}" ${k===deckKey?'selected':''}>${esc(v.name)}</option>`).join('')}</select>
           <button id="fsBtn" class="fs" title="TV 전체 화면">⛶ 전체 화면</button>
         </div>
@@ -291,27 +293,38 @@ function renderTV(){
     </div>
     <div id="modalSlot"></div>
   </div>
-  <div class="cap"><b>PPT 넘기기</b>: 슬라이드 클릭 · → · 스페이스 · ▶ 버튼. 지금은 샘플 PPT 1개만 들어 있어요 (PPT 끌어다 넣기는 다음 단계).<br>
+  <div class="demo-note" id="demoNote" ${getCls(tvCls)?.demo?'':'hidden'}>학생 명단 등록 전이라 <b>샘플 반(학생 1~18)</b>으로 보여드리고 있어요. 샘플 반에서 누른 기록은 저장되지 않아요.</div>
+  <div class="cap"><b>PPT</b>: 슬라이드 클릭 · → · 스페이스 = 애니메이션 하나씩 / 아래 ◀ ▶ 버튼 = 페이지 통째로 이동 (마우스 휠로는 넘어가지 않아요). 지금은 샘플 PPT 1개만 들어 있어요 (PPT 끌어다 넣기는 다음 단계).<br>
   학생을 누르면 기록 창이 떠요. 누를 때마다 바로 저장되고, TV에는 <b>이름 · 포인트 합계</b>만 보여요.</div>`;
   $('#tvCls').onchange=async e=>{tvCls=e.target.value;$('#studs').innerHTML='<div class="empty-st">불러오는 중…</div>';
     try{await loadLogs(tvCls)}catch(err){toast('기록을 불러오지 못했어요: '+err.message,1)}renderTV()};
   $('#deckSel').onchange=e=>{deckKey=e.target.value;mountDeck()};
   $('#fsBtn').onclick=()=>{const t=$('#tv');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else t.requestFullscreen&&t.requestFullscreen().catch(()=>toast('전체 화면을 열 수 없어요',1))};
-  $('#pNext').onclick=()=>{const w=deckWin();if(w){w.dispatchEffects(1);focusDeck()}};
-  $('#pPrev').onclick=()=>{const w=deckWin();if(w){w.aSlideShow.rewindEffect();focusDeck()}};
-  mountDeck();bindTV();
+  $('#pNext').onclick=()=>{const w=deckWin();if(w){if(w.nCurSlide<w.theMetaDoc.nNumberOfSlides-1)w.switchSlide(1,false);focusDeck()}};
+  $('#pPrev').onclick=()=>{const w=deckWin();if(w){if(w.nCurSlide>0)w.switchSlide(-1,false);focusDeck()}};
+  mountDeck();bindTV();sizeStuds();
   if(!LOGS[tvCls])loadLogs(tvCls).then(()=>{$('#studs').innerHTML=studCards();bindTV()}).catch(err=>toast('기록을 불러오지 못했어요: '+err.message,1));
 }
 /* --- PPT --- */
 let audio=null,deckTimer=null,lastSlide=-1;
 function deckWin(){const f=$('#deck');try{return f&&f.contentWindow&&f.contentWindow.aSlideShow?f.contentWindow:null}catch(e){return null}}
+// 마우스 휠로 슬라이드가 넘어가지 않게 막기
+function noWheel(){const f=$('#deck');try{const w=f.contentWindow;
+  if(w.mouseHandlerDict&&w.SLIDE_MODE!==undefined&&w.MOUSE_WHEEL!==undefined)w.mouseHandlerDict[w.SLIDE_MODE][w.MOUSE_WHEEL]=()=>true;
+  w.onmousewheel=null;
+  ['wheel','mousewheel','DOMMouseScroll'].forEach(t=>w.addEventListener(t,e=>{e.stopImmediatePropagation();e.preventDefault()},{capture:true,passive:false}));
+}catch(e){}}
+// 학생 칸 크기 고정: 18명(6줄) 기준 높이로 계산해서 인원이 적어도 칸 크기가 같게
+function sizeStuds(){const el=$('#studs'),fr=$('#frame'),ct=document.querySelector('.ctl');if(!el||!fr||!ct)return;
+  const h=fr.getBoundingClientRect().height+ct.getBoundingClientRect().height;if(h>100)el.style.setProperty('--sth',Math.max(64,Math.floor((h-5*8)/6))+'px')}
+window.addEventListener('resize',sizeStuds);
 function focusDeck(){try{$('#deck').contentWindow.focus()}catch(e){}}
 function mountDeck(){
   const D=DECKS[deckKey],fr=$('#frame');lastSlide=-1;if(audio){audio.pause();audio=null}
   clearInterval(deckTimer);
-  if(!D.src){fr.innerHTML=`<div class="loading">PPT 없이 학생 기록만 사용 중이에요</div>`;$('#pNum').textContent='-';return}
+  if(!D.src){fr.innerHTML=`<div class="loading">PPT 없이 학생 기록만 사용 중이에요</div>`;$('#pNum').textContent='-';sizeStuds();return}
   fr.innerHTML=`<iframe id="deck" src="${D.src}" title="PPT"></iframe><button class="snd" id="snd" hidden aria-label="소리 재생"></button><div class="loading" id="loading">PPT 불러오는 중…</div>`;
-  $('#deck').onload=()=>{const l=$('#loading');if(l)l.remove();focusDeck()};
+  $('#deck').onload=()=>{const l=$('#loading');if(l)l.remove();noWheel();sizeStuds();focusDeck()};
   $('#snd').onclick=()=>{const i=lastSlide,src=D.sound&&D.sound[i];if(!src)return;
     if(audio&&!audio.paused&&audio.dataset.i==i){audio.pause();$('#snd').classList.remove('on');return}
     if(audio)audio.pause();audio=new Audio(src);audio.dataset.i=i;
@@ -348,12 +361,14 @@ async function addLog(item){
   (LOGS[c]=LOGS[c]||[]).push(l);lastId=l.id;renderTV();
   const card=document.querySelector(`.st[data-s="${CSS.escape(s)}"]`);if(card){card.classList.add('flash');if(l.pt<0)card.classList.add('neg')}
   toast(`${s} ${l.pt?sgn(l.pt):'기록'} · ${item}`);
+  if(getCls(c)?.demo)return;
   try{await apiPost({action:'log',...l})}
   catch(err){LOGS[c]=LOGS[c].filter(x=>x.id!==l.id);if(lastId===l.id)lastId=null;renderTV();toast('저장 실패 — 다시 눌러주세요 ('+err.message+')',1)}
 }
 async function undo(){
   const c=tvCls,arr=LOGS[c]||[],i=arr.findIndex(l=>l.id===lastId);if(i<0)return;
   const l=arr.splice(i,1)[0];lastId=null;renderTV();toast(`취소됨 · ${l.stu} ${l.item}`);
+  if(getCls(c)?.demo)return;
   try{await apiPost({action:'undo',id:l.id})}catch(err){arr.push(l);renderTV();toast('취소 실패: '+err.message,1)}
 }
 
@@ -508,7 +523,7 @@ function bindForm(){
   };
 }
 
-document.addEventListener('fullscreenchange',()=>{(document.fullscreenElement||document.body).appendChild($('#toast'))});
+document.addEventListener('fullscreenchange',()=>{(document.fullscreenElement||document.body).appendChild($('#toast'));setTimeout(sizeStuds,60)});
 /* ===== 시작 ===== */
 (async()=>{
   $('#tvView').innerHTML='<div class="mg"><div class="empty-big">불러오는 중…</div></div>';
