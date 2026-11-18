@@ -230,11 +230,15 @@ const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY)
 const BUCKET='ppt';
 const OFFICE=u=>'https://view.officeapps.live.com/op/embed.aspx?src='+encodeURIComponent(u);
 const DECKS={
-  none:{name:'— PPT 선택 / 끌어다 놓기 —'},
-  sample:{name:'샘플 · I3 FW U9-1 (미리 변환본)',src:'ppt/sample/slides.svg',
-    sound:{8:'ppt/sample/a1.mp3',9:'ppt/sample/a2.mp3',10:'ppt/sample/a3.mp3'},
-    soundPos:{8:[11.32,2.68,6.67,8.89],9:[10.83,2.57,6.67,8.89],10:[11.32,2.23,6.67,8.89]}}
+  none:{name:'— 수업 PPT 고르기 —'},
 };
+// 변환한 PPT 목록: ppt/decks.json 에서 불러옴 (새 PPT는 폴더 + decks.json 만 올리면 목록에 생김)
+async function loadDecks(){
+  try{const r=await fetch('ppt/decks.json',{cache:'no-store'});if(!r.ok)return;const list=await r.json();
+    list.forEach(d=>{DECKS['d:'+d.id]={name:d.name,src:d.src,sound:d.sound||{},soundPos:d.soundPos||{}}});
+    const sel=$('#deckSel');if(sel)sel.innerHTML=deckOptions();
+  }catch(e){}
+}
 
 /* ===== 공통 ===== */
 const API='/api/classlog';
@@ -310,7 +314,7 @@ function renderTV(){
     <div id="modalSlot"></div>
   </div>
   <div class="demo-note" id="demoNote" ${getCls(tvCls)?.demo?'':'hidden'}>학생 명단 등록 전이라 <b>샘플 반(학생 1~18)</b>으로 보여드리고 있어요. 샘플 반에서 누른 기록은 저장되지 않아요.</div>
-  <div class="cap"><b>PPT</b>: PPT 파일을 왼쪽 화면에 끌어다 놓거나 [📂 PPT 열기]로 열어요. 저장되지 않아요 — 다른 PPT를 열거나 창을 닫으면 지워져요.<br>
+  <div class="cap"><b>PPT</b>: 아래 목록에서 수업 PPT를 골라요 (고화질 변환본). 슬라이드 클릭 · → · 스페이스 = 애니메이션 하나씩 / ◀ ▶ = 페이지 이동. 목록에 없는 PPT는 끌어다 놓으면 임시로 열려요 (화질 낮음, 저장 안 됨).<br>
   학생을 누르면 기록 창이 떠요. 누를 때마다 바로 저장되고, TV에는 <b>이름 · 포인트 합계</b>만 보여요.</div>`;
   $('#tvCls').onchange=async e=>{tvCls=e.target.value;$('#studs').innerHTML='<div class="empty-st">불러오는 중…</div>';
     try{await loadLogs(tvCls)}catch(err){toast('기록을 불러오지 못했어요: '+err.message,1)}renderTV()};
@@ -321,7 +325,7 @@ function renderTV(){
   ['dragenter','dragover'].forEach(t=>cell.addEventListener(t,e=>{e.preventDefault();cell.classList.add('drag')}));
   ['dragleave','drop'].forEach(t=>cell.addEventListener(t,e=>{e.preventDefault();if(t==='dragleave'&&cell.contains(e.relatedTarget))return;cell.classList.remove('drag')}));
   cell.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)uploadPPT(f)});
-  loadMyDecks();
+  loadMyDecks();loadDecks();
   $('#fsBtn').onclick=()=>{const t=$('#tv');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else t.requestFullscreen&&t.requestFullscreen().catch(()=>toast('전체 화면을 열 수 없어요',1))};
   $('#pNext').onclick=()=>{const w=deckWin();if(w){if(w.nCurSlide<w.theMetaDoc.nNumberOfSlides-1)w.switchSlide(1,false);focusDeck()}};
   $('#pPrev').onclick=()=>{const w=deckWin();if(w){if(w.nCurSlide>0)w.switchSlide(-1,false);focusDeck()}};
