@@ -119,6 +119,18 @@ ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li
 .dcard:hover{border-color:var(--g-d);box-shadow:0 4px 14px rgba(78,154,71,.15)}
 .dcard .dn{font:900 18px 'Nunito';color:var(--red)}.dcard .dt{font:800 14px 'Nunito';color:var(--g-d)}.dcard .dm{font:600 11.5px 'Noto Sans KR';color:var(--soft);margin-top:auto}
 .dcard.off{background:transparent;border-style:dashed;cursor:default}.dcard.off .dn{color:#B8C0BA}.dcard.off .dt{color:#B8C0BA;font-family:'Noto Sans KR';font-weight:600;font-size:12.5px}
+.crumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 4px;font:700 13px 'Noto Sans KR';color:var(--soft)}
+.cr{border:0;background:none;font:800 13.5px 'Noto Sans KR';color:var(--g-d);cursor:pointer;padding:4px 6px;border-radius:6px}.cr:hover{background:var(--g-s)}
+.crumb .fsbtn{margin-right:8px}
+.gate-h{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;margin:40px 0 24px}
+.gate-h b{font:900 28px 'Noto Sans KR'}.gate-h span{font:600 14px 'Noto Sans KR';color:var(--soft)}
+.gates{display:grid;gap:18px;max-width:900px;margin:0 auto}.gates.two{grid-template-columns:repeat(2,minmax(0,1fr))}.gates.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.gate{border:2px solid var(--line);background:#fff;border-radius:18px;padding:36px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-family:inherit;color:var(--ink);transition:transform .12s,box-shadow .12s,border-color .12s}
+.gate:hover{transform:translateY(-3px);border-color:var(--g-d);box-shadow:0 10px 26px rgba(78,154,71,.18)}
+.gate .gt{font:900 34px 'Nunito';color:var(--g-d)}.gate .gd{font:600 13.5px 'Noto Sans KR';color:var(--soft);text-align:center}
+.gate .gc.z{background:#E4E8E5;color:var(--soft)}
+.gate .gc{font:800 12px 'Noto Sans KR';color:#fff;background:var(--g-d);border-radius:12px;padding:3px 11px;margin-top:6px}
+@media (max-width:700px){.gates.two,.gates.three{grid-template-columns:1fr}}
 @media print{#home{display:none}}
 </style></head><body>
 <script>if(!sessionStorage.getItem('staff_id'))location.href='coupon-hub.html';</script>
@@ -241,39 +253,59 @@ const TYPES=[
 const TY=Object.fromEntries(TYPES.map(t=>[t.k,t]));
 
 /* ===================== 화면 ===================== */
-let LV=null,day=null,cat='word',sel='v_en2ko',pvSeed=1,pvN=TY.v_en2ko.def,basket=[],nextSeed=100,askHome=false,homeLv=null;
-const CUR=()=>HB.levels[LV].days[day];
-const LEVELS=['W1','W2','I1','I2','I3','I4','N1','N2','N3','N4','G1','G2','G3','G4'];
-const LVNAME={W1:'Wind 1',W2:'Wind 2',I1:'Island 1',I2:'Island 2',I3:'Island 3',I4:'Island 4',N1:'Nation 1',N2:'Nation 2',N3:'Nation 3',N4:'Nation 4',G1:'Globe 1',G2:'Globe 2',G3:'Globe 3',G4:'Globe 4'};
+let BK=null,SB=null,LV=null,day=null,cat='word',sel='v_en2ko',pvSeed=1,pvN=TY.v_en2ko.def,basket=[],nextSeed=100,askHome=false,homeLv=null,homeQ='';
+const BOOKS=[{k:'Discover',d:'Discover 교재'},{k:'Miracle',d:'Miracle 교재'}];
+const SUBJ=[{k:'LF',t:'LF / GW',d:'문법 중심 · 문장 배열 · 패턴 드릴'},{k:'FW',t:'FW / RA',d:'단어 · 문장 · 빈칸 · 독해'},{k:'NS',t:'NS / AD',d:'단어 · 문장 · 빈칸 · 독해'}];
+const SBT=k=>(SUBJ.find(x=>x.k===k)||{t:k}).t;
+const LEVELS=['I3','I4','N1','N2','N3','N4','G1','G2','G3','G4'];   // Wind · Island 1 · Island 2 는 제외 (Globe는 GW/RA/AD)
+const LVNAME={I3:'Island 3',I4:'Island 4',N1:'Nation 1',N2:'Nation 2',N3:'Nation 3',N4:'Nation 4',G1:'Globe 1',G2:'Globe 2',G3:'Globe 3',G4:'Globe 4'};
 const MAXDAY=24;
+const lvData=(b,s,l)=>(((HB.books||{})[b]||{})[s]||{})[l];
+const CUR=()=>lvData(BK,SB,LV).days[day];
+const nDays=(b,s,l)=>{const L=lvData(b,s,l);return L?Object.keys(L.days).length:0};
+const nSub=(b,s)=>LEVELS.reduce((a,l)=>a+nDays(b,s,l),0);
+const nBook=b=>SUBJ.reduce((a,s)=>a+nSub(b,s.k),0);
+const crumb=()=>`<div class="crumb"><a class="fsbtn" href="staff-home.html">← For Staff</a>
+  <button class="cr" data-go="0">문제은행</button>${BK?`<span>›</span><button class="cr" data-go="1">${BK}</button>`:''}${SB?`<span>›</span><button class="cr" data-go="2">${SBT(SB)}</button>`:''}</div>`;
 function renderHome(){
   $('#home').hidden=false;$('#bank').hidden=true;
-  const have=LEVELS.filter(l=>HB.levels[l]);if(!homeLv)homeLv=have[0];
-  const L=HB.levels[homeLv],ds=L?L.days:{};
-  const cnt=l=>HB.levels[l]?Object.keys(HB.levels[l].days).length:0;
-  $('#home').innerHTML=`
-   <div class="hh"><a class="fsbtn" href="staff-home.html">← For Staff</a><div class="brand"><b>핸드북 문제은행</b><span>레벨과 Day를 고르면 그 Day의 핸드북 내용으로만 문제를 만들어요</span></div>
-     <input id="q" placeholder="Day 번호나 이야기 제목 검색" value="${esc(homeQ)}"></div>
-   <div class="lvls">${LEVELS.map(l=>`<button data-lv="${l}" class="${l===homeLv?'on':''}" ${cnt(l)?'':'disabled'}>${LVNAME[l]}<small>${cnt(l)?cnt(l)+'일':'준비 중'}</small></button>`).join('')}</div>
-   <div class="dgrid">${Array.from({length:MAXDAY},(_,i)=>i+1).filter(d=>{if(!homeQ)return true;const t=(ds[d]&&ds[d].title)||'';return String(d)===homeQ.trim()||t.toLowerCase().includes(homeQ.trim().toLowerCase())}).map(d=>{const D=ds[d];
-     return D?`<button class="dcard" data-d="${d}"><span class="dn">Day ${d}</span><span class="dt">${esc(D.title)}</span><span class="dm">단어 ${D.vocab.length} · 문장 ${D.sentences.length}${D.passage?' · 본문':''}</span></button>`
-             :`<div class="dcard off"><span class="dn">Day ${d}</span><span class="dt">준비 중</span></div>`}).join('')}</div>`;
+  let h=crumb();
+  if(!BK){
+    h+=`<div class="gate-h"><b>핸드북 문제은행</b><span>교재를 골라주세요</span></div>
+    <div class="gates two">${BOOKS.map(x=>`<button class="gate" data-bk="${x.k}"><span class="gt">${x.k}</span><span class="gd">${x.d}</span><span class="gc ${nBook(x.k)?'':'z'}">${nBook(x.k)?'준비된 Day '+nBook(x.k)+'개':'준비 중'}</span></button>`).join('')}</div>`;
+  }else if(!SB){
+    h+=`<div class="gate-h"><b>${BK}</b><span>과목을 골라주세요</span></div>
+    <div class="gates three">${SUBJ.map(x=>`<button class="gate" data-sb="${x.k}"><span class="gt">${x.t}</span><span class="gd">${x.d}</span><span class="gc ${nSub(BK,x.k)?'':'z'}">${nSub(BK,x.k)?'준비된 Day '+nSub(BK,x.k)+'개':'준비 중'}</span></button>`).join('')}</div>`;
+  }else{
+    const have=LEVELS.filter(l=>nDays(BK,SB,l));if(!homeLv||!LEVELS.includes(homeLv))homeLv=have[0]||LEVELS[0];
+    const L=lvData(BK,SB,homeLv),ds=L?L.days:{};const q=homeQ.trim().toLowerCase();
+    h+=`<div class="hh"><div class="brand"><b>${BK} · ${SBT(SB)}</b><span>레벨과 Day를 고르면 그 Day 핸드북 내용으로만 문제를 만들어요</span></div>
+     <input id="q" placeholder="Day 번호나 제목 검색" value="${esc(homeQ)}"></div>
+     <div class="lvls">${LEVELS.map(l=>{const n=nDays(BK,SB,l);return `<button data-lv="${l}" class="${l===homeLv?'on':''}" ${n?'':'disabled'}>${LVNAME[l]}<small>${n?n+'일':'준비 중'}</small></button>`}).join('')}</div>
+     <div class="dgrid">${Array.from({length:MAXDAY},(_,i)=>i+1).filter(d=>!q||String(d)===q||((ds[d]&&ds[d].title)||'').toLowerCase().includes(q)).map(d=>{const D=ds[d];
+      return D?`<button class="dcard" data-d="${d}"><span class="dn">Day ${d}</span><span class="dt">${esc(D.title)}</span><span class="dm">단어 ${D.vocab.length} · 문장 ${D.sentences.length}${D.passage?' · 본문':''}</span></button>`
+              :`<div class="dcard off"><span class="dn">Day ${d}</span><span class="dt">준비 중</span></div>`}).join('')}</div>`;
+  }
+  $('#home').innerHTML=h;
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const g=+b.dataset.go;if(g<1)BK=null;if(g<2)SB=null;homeQ='';setHash();renderHome()});
+  document.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>{BK=b.dataset.bk;setHash();renderHome()});
+  document.querySelectorAll('[data-sb]').forEach(b=>b.onclick=()=>{SB=b.dataset.sb;homeLv=null;homeQ='';setHash();renderHome()});
   document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{homeLv=b.dataset.lv;renderHome()});
   document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>openDay(homeLv,+b.dataset.d));
-  const q=$('#q');q.oninput=()=>{homeQ=q.value;const p=q.selectionStart;renderHome();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
+  const qi=$('#q');if(qi)qi.oninput=()=>{homeQ=qi.value;const p=qi.selectionStart;renderHome();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
 }
-let homeQ='';
-function openDay(l,d){LV=l;day=d;basket=[];cat='word';sel='v_en2ko';pvN=TY.v_en2ko.def;pvSeed++;try{history.replaceState(null,'','#'+l+'-'+d)}catch(e){}render();window.scrollTo(0,0)}
-function goHome(){LV=null;day=null;basket=[];askHome=false;try{history.replaceState(null,'','#')}catch(e){}render()}
+function setHash(){try{history.replaceState(null,'','#'+[BK,SB,LV,day].filter(Boolean).join('-'))}catch(e){}}
+function openDay(l,d){LV=l;day=d;basket=[];cat='word';sel='v_en2ko';pvN=TY.v_en2ko.def;pvSeed++;setHash();render();window.scrollTo(0,0)}
+function goHome(){LV=null;day=null;basket=[];askHome=false;setHash();render()}
 function gen(t,n,seed){R=rng(seed*131+day);return TY[t].gen(CUR(),n)}
 function avail(t){const T=TY[t];return !T.need||CUR()[T.need]}
 function render(){
   if(!LV){renderHome();return}
   $('#home').hidden=true;$('#bank').hidden=false;
-  const L=HB.levels[LV];
+  const L={name:LVNAME[LV]};
   $('#top').innerHTML=`
    <button class="backbtn" id="toHome">← Day 목록</button>
-   <div class="brand"><b>${esc(L.name)} · Day ${day} <span class="ttl">${esc(CUR().title)}</span></b><span>항목 → 문제 유형을 눌러 담으면 문제지 · 답지가 만들어져요</span></div>
+   <div class="brand"><b>${BK} · ${SBT(SB)} · ${esc(L.name)} · Day ${day} <span class="ttl">${esc(CUR().title)}</span></b><span>항목 → 문제 유형을 눌러 담으면 문제지 · 답지가 만들어져요</span></div>
    ${askHome?`<div class="ask">Day 목록으로 가면 담은 문제 ${basket.length}개가 비워져요. <button id="askY">나가기</button><button id="askN" class="g">취소</button></div>`:''}`;
   $('#cats').innerHTML=CATS.map(c=>`<button data-cat="${c.k}" class="${c.k===cat?'on':''}">${c.ic} ${c.t}<small>${TYPES.filter(t=>t.c===c.k).length}</small></button>`).join('');
   $('#types').innerHTML=TYPES.filter(t=>t.c===cat).map(t=>{const ok=avail(t.k),inB=basket.filter(b=>b.t===t.k).length;
@@ -296,10 +328,10 @@ function renderBasket(){
 }
 function sheet(ans){
   const D=CUR();
-  return `<div class="paper${ans?' anskey':''}"><div class="ph"><div><div class="pk">${ans?'ANSWER KEY · 답지':'Handbook Review'}</div><div class="pt">Day ${day} <span>· ${esc(D.title)}</span></div><div class="plv">${esc(HB.levels[LV].name)}</div></div>
+  return `<div class="paper${ans?' anskey':''}"><div class="ph"><div><div class="pk">${ans?'ANSWER KEY · 답지':'Handbook Review'}</div><div class="pt">Day ${day} <span>· ${esc(D.title)}</span></div><div class="plv">${BK} · ${SBT(SB)} · ${LVNAME[LV]}</div></div>
    ${ans?'':'<div class="pinfo"><div>Class <i></i></div><div>Name <i></i></div><div>Date <i></i></div></div>'}</div>
    ${basket.map((b,i)=>{const T=TY[b.t],r=gen(b.t,b.n,b.seed);return `<section class="sec"><div class="sh"><span class="lt">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i]}</span><div><div class="se">${esc(T.en)}</div><div class="sk">${esc(T.ko)}</div></div></div>${ans?r.a:r.q}</section>`}).join('')}
-   <div class="pf">${esc(HB.levels[LV].name)} · Day ${day} · ${esc(D.title)}</div></div>`;
+   <div class="pf">${BK} ${SBT(SB)} · ${LVNAME[LV]} · Day ${day} · ${esc(D.title)}</div></div>`;
 }
 function renderSheets(){
   if(!basket.length){$('#sheets').innerHTML='';return}
@@ -325,6 +357,8 @@ function bind(){
 function fixSel(){if(!avail(sel)){const f=TYPES.find(t=>t.c===cat&&avail(t.k))||TYPES[0];sel=f.k;pvN=f.def}}
 function flash(){const e=$('#basket');e.classList.remove('fl');void e.offsetWidth;e.classList.add('fl')}
 // 주소 #I3-17 로 바로 열기
-(function(){const m=(location.hash||'').match(/^#([A-Z]\d)-(\d+)$/);if(m&&HB.levels[m[1]]&&HB.levels[m[1]].days[+m[2]]){homeLv=m[1];openDay(m[1],+m[2])}else render()})();
+(function(){const p=decodeURIComponent((location.hash||'').slice(1)).split('-').filter(Boolean);
+  if(BOOKS.some(b=>b.k===p[0]))BK=p[0];if(BK&&SUBJ.some(x=>x.k===p[1]))SB=p[1];
+  if(SB&&lvData(BK,SB,p[2])&&lvData(BK,SB,p[2]).days[+p[3]]){homeLv=p[2];openDay(p[2],+p[3])}else{if(SB&&LEVELS.includes(p[2]))homeLv=p[2];render()}})();
 
 </script></body></html>

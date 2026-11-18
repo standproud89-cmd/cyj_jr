@@ -121,6 +121,13 @@ HB_I3[17].mc=[
  ['When does the story happen?',['on the last evening of the year','on a hot summer day','on her birthday','in the morning'],0],
  ['Where did she sit and shiver?',['by the steps','in the house','on the cart','at the table'],0]];
 
-window.HB={levels:{
-  I3:{name:'Island 3',days:HB_I3}
+/* 구조: HB.books[교재][과목][레벨] = { days: { Day번호: {...} } }
+   교재: Discover / Miracle · 과목: LF(=GW) / FW(=RA) / NS(=AD) · 레벨: I3 I4 N1~N4 G1~G4 */
+window.HB={books:{
+  Discover:{
+    FW:{ I3:{days:HB_I3} },
+    NS:{},
+    LF:{}
+  },
+  Miracle:{ FW:{}, NS:{}, LF:{} }
 }};
