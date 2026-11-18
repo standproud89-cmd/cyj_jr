@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>정이조 주니어 | 수업 화면</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap">
 <style>
 :root{
@@ -30,7 +31,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',-
 .bar select{background:transparent;color:#fff;border:0;font:800 19px inherit;font-family:inherit;text-align:center;cursor:pointer;max-width:100%}
 .bar select option{color:var(--ink)}
 .ppt{background:#0E2C3A;border-radius:8px;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.frame{position:relative;width:100%;aspect-ratio:4/3;background:#000}
+.frame{position:relative;width:100%;aspect-ratio:4/3;background:#0E2C3A}
 .frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#CFE3EC;font-weight:700;background:#0E2C3A}
 .snd{position:absolute;border:0;background:transparent;cursor:pointer;border-radius:10px;padding:0}
@@ -165,6 +166,14 @@ table.t tbody tr:hover{background:var(--navy-s)}
 .form textarea{width:100%;resize:vertical;line-height:1.6}
 .form input:focus,.form textarea:focus,.form select:focus{outline:2px solid var(--navy);outline-offset:1px}
 .fbtn{display:flex;gap:8px;margin-top:12px}
+.frame iframe#office{background:#fff}
+.drop{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#CFE3EC;text-align:center;padding:20px}
+.drop::before{content:"";position:absolute;inset:18px;border:2.5px dashed rgba(207,227,236,.35);border-radius:12px}
+.drop-i{font-size:54px}.drop-t{font-size:20px;font-weight:800;color:#fff}.drop-s{font-size:13px;color:#8FB0BF}
+.ppt.drag .frame{outline:4px solid #F2A541;outline-offset:-4px}
+.ppt.drag .frame::after{content:"여기에 놓으면 PPT가 열려요";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,44,58,.75);color:#fff;font-size:22px;font-weight:800;z-index:5}
+.frame .loading small{display:block;margin-top:6px;font-weight:500}
+.frame .loading{flex-direction:column}
 .demo-note{margin-top:10px;background:#FFF6E5;border:1px solid #F2D9A6;color:#7A5410;border-radius:10px;padding:9px 14px;font-size:13px}
 .tv:fullscreen{border-radius:0;padding:14px;overflow:auto;background:#fff}
 .tv:fullscreen .tv-grid{height:100%}
@@ -213,10 +222,16 @@ const GROUPS=[
 ];
 const PT={};GROUPS.forEach(g=>g.items.forEach(([n,p])=>PT[n]=p));
 
-/* ===== PPT (지금은 샘플 1개) ===== */
+/* ===== PPT =====
+   선생님이 끌어다 놓은 PPT → Supabase Storage 'ppt' 버킷(공개)에 올림 → 마이크로소프트 웹 PowerPoint 뷰어로 재생 */
+const SUPABASE_URL="https://nqrtnxpqxtglwhdvtsxf.supabase.co";
+const SUPABASE_KEY="sb_publishable_Yxuoe98BlUlZRidr1QsA-A_AS3-UwRW";
+const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null;
+const BUCKET='ppt';
+const OFFICE=u=>'https://view.officeapps.live.com/op/embed.aspx?src='+encodeURIComponent(u);
 const DECKS={
-  none:{name:'PPT 없음'},
-  sample:{name:'샘플 · I3 FW U9-1 (The Elves and the Shoemaker)',src:'ppt/sample/slides.svg',
+  none:{name:'— PPT 선택 / 끌어다 놓기 —'},
+  sample:{name:'샘플 · I3 FW U9-1 (미리 변환본)',src:'ppt/sample/slides.svg',
     sound:{8:'ppt/sample/a1.mp3',9:'ppt/sample/a2.mp3',10:'ppt/sample/a3.mp3'},
     soundPos:{8:[11.32,2.68,6.67,8.89],9:[10.83,2.57,6.67,8.89],10:[11.32,2.23,6.67,8.89]}}
 };
@@ -257,7 +272,7 @@ function render(){$('#tvView').hidden=view!=='tv';$('#mgView').hidden=view!=='mg
 /* =====================================================
    ① 수업 화면 (TV)
    ===================================================== */
-let tvCls=null,deckKey='sample',modal=null,lastId=null;
+let tvCls=null,deckKey='none',modal=null,lastId=null;
 function total(c,s){return(LOGS[c]||[]).filter(l=>l.stu===s).reduce((a,l)=>a+l.pt,0)}
 function studCards(){
   const c=getCls(tvCls);if(!c)return '';
@@ -285,7 +300,8 @@ function renderTV(){
           <button id="pPrev" title="이전 페이지">◀</button>
           <span id="pNum">-</span>
           <button id="pNext" title="다음 페이지">▶</button>
-          <select id="deckSel">${Object.entries(DECKS).map(([k,v])=>`<option value="${k}" ${k===deckKey?'selected':''}>${esc(v.name)}</option>`).join('')}</select>
+          <select id="deckSel">${deckOptions()}</select>
+          <button id="openBtn" class="fs" title="PPT 파일 열기">📂 PPT 열기</button><input type="file" id="pptFile" accept=".pptx,.ppt,.ppsx,.pps" hidden>
           <button id="fsBtn" class="fs" title="TV 전체 화면">⛶ 전체 화면</button>
         </div>
       </div>
@@ -294,11 +310,18 @@ function renderTV(){
     <div id="modalSlot"></div>
   </div>
   <div class="demo-note" id="demoNote" ${getCls(tvCls)?.demo?'':'hidden'}>학생 명단 등록 전이라 <b>샘플 반(학생 1~18)</b>으로 보여드리고 있어요. 샘플 반에서 누른 기록은 저장되지 않아요.</div>
-  <div class="cap"><b>PPT</b>: 슬라이드 클릭 · → · 스페이스 = 애니메이션 하나씩 / 아래 ◀ ▶ 버튼 = 페이지 통째로 이동 (마우스 휠로는 넘어가지 않아요). 지금은 샘플 PPT 1개만 들어 있어요 (PPT 끌어다 넣기는 다음 단계).<br>
+  <div class="cap"><b>PPT</b>: PPT 파일을 왼쪽 화면에 끌어다 놓거나 [📂 PPT 열기]로 열어요. 저장되지 않아요 — 다른 PPT를 열거나 창을 닫으면 지워져요.<br>
   학생을 누르면 기록 창이 떠요. 누를 때마다 바로 저장되고, TV에는 <b>이름 · 포인트 합계</b>만 보여요.</div>`;
   $('#tvCls').onchange=async e=>{tvCls=e.target.value;$('#studs').innerHTML='<div class="empty-st">불러오는 중…</div>';
     try{await loadLogs(tvCls)}catch(err){toast('기록을 불러오지 못했어요: '+err.message,1)}renderTV()};
   $('#deckSel').onchange=e=>{deckKey=e.target.value;mountDeck()};
+  $('#openBtn').onclick=()=>$('#pptFile').click();
+  $('#pptFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)uploadPPT(f)};
+  const cell=document.querySelector('.ppt');
+  ['dragenter','dragover'].forEach(t=>cell.addEventListener(t,e=>{e.preventDefault();cell.classList.add('drag')}));
+  ['dragleave','drop'].forEach(t=>cell.addEventListener(t,e=>{e.preventDefault();if(t==='dragleave'&&cell.contains(e.relatedTarget))return;cell.classList.remove('drag')}));
+  cell.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)uploadPPT(f)});
+  loadMyDecks();
   $('#fsBtn').onclick=()=>{const t=$('#tv');if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else t.requestFullscreen&&t.requestFullscreen().catch(()=>toast('전체 화면을 열 수 없어요',1))};
   $('#pNext').onclick=()=>{const w=deckWin();if(w){if(w.nCurSlide<w.theMetaDoc.nNumberOfSlides-1)w.switchSlide(1,false);focusDeck()}};
   $('#pPrev').onclick=()=>{const w=deckWin();if(w){if(w.nCurSlide>0)w.switchSlide(-1,false);focusDeck()}};
@@ -319,10 +342,46 @@ function sizeStuds(){const el=$('#studs'),fr=$('#frame'),ct=document.querySelect
   const h=fr.getBoundingClientRect().height+ct.getBoundingClientRect().height;if(h>100)el.style.setProperty('--sth',Math.max(64,Math.floor((h-5*8)/6))+'px')}
 window.addEventListener('resize',sizeStuds);
 function focusDeck(){try{$('#deck').contentWindow.focus()}catch(e){}}
+function deckOptions(){return Object.entries(DECKS).map(([k,v])=>`<option value="${esc(k)}" ${k===deckKey?'selected':''}>${esc(v.name)}</option>`).join('')}
+function nameMap(){try{return JSON.parse(localStorage.getItem('ppt_names')||'{}')}catch(e){return{}}}
+function saveName(path,name){try{const m=nameMap();m[path]=name;localStorage.setItem('ppt_names',JSON.stringify(m))}catch(e){}}
+function upName(path,created){const m=nameMap();if(m[path])return m[path];const d=created?new Date(created):null;
+  return d?`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} 올린 PPT`:path.split('/').pop()}
+function addDeck(path,name){const url=sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;DECKS['up:'+path]={name:'📄 '+name,office:url};return 'up:'+path}
+// 저장하지 않는 방식: 화면을 열 때 / 새 PPT를 올릴 때 내가 예전에 올린 임시 파일을 모두 지움
+async function clearMyTemp(keep){
+  if(!sb)return;
+  try{const{data}=await sb.storage.from(BUCKET).list(ME.id,{limit:100});
+    const del=(data||[]).filter(o=>o.name&&!o.name.startsWith('.')).map(o=>ME.id+'/'+o.name).filter(p=>p!==keep);
+    if(del.length)await sb.storage.from(BUCKET).remove(del);
+  }catch(e){}
+}
+async function loadMyDecks(){clearMyTemp()}
+let curTemp=null;
+async function uploadPPT(file){
+  if(!/\.(pptx|ppt|ppsx|pps)$/i.test(file.name)){toast('PPT 파일(.pptx)만 올릴 수 있어요',1);return}
+  if(!sb){toast('업로드 도구를 불러오지 못했어요. 새로고침 해주세요',1);return}
+  if(file.size>50*1024*1024){toast('50MB 이하 PPT만 올릴 수 있어요',1);return}
+  const fr=$('#frame');fr.innerHTML=`<div class="loading">PPT 올리는 중… <small style="opacity:.7">${esc(file.name)}</small></div>`;
+  const ext=file.name.split('.').pop().toLowerCase();
+  const path=`${ME.id}/${Date.now()}.${ext}`;
+  const{error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type||'application/vnd.openxmlformats-officedocument.presentationml.presentation',upsert:false});
+  if(error){mountDeck();
+    const m=String(error.message||error);
+    toast(/row-level|policy|Unauthorized|JWT|not found|Bucket/i.test(m)?'PPT 저장소 설정이 아직 안 됐거나 로그인이 만료됐어요 ('+m+')':'PPT 올리기 실패: '+m,1);return}
+  const nm=file.name.replace(/\.[^.]+$/,'');
+  Object.keys(DECKS).filter(k=>k.startsWith('up:')).forEach(k=>delete DECKS[k]);
+  curTemp=path;clearMyTemp(path);
+  deckKey=addDeck(path,nm);$('#deckSel').innerHTML=deckOptions();mountDeck();toast('PPT를 열었어요');
+}
 function mountDeck(){
-  const D=DECKS[deckKey],fr=$('#frame');lastSlide=-1;if(audio){audio.pause();audio=null}
+  const D=DECKS[deckKey]||DECKS.none,fr=$('#frame');lastSlide=-1;if(audio){audio.pause();audio=null}
   clearInterval(deckTimer);
-  if(!D.src){fr.innerHTML=`<div class="loading">PPT 없이 학생 기록만 사용 중이에요</div>`;$('#pNum').textContent='-';sizeStuds();return}
+  const own=!!D.src;['pPrev','pNext','pNum'].forEach(id=>{const e=$('#'+id);if(e)e.hidden=!own});
+  if(D.office){
+    fr.innerHTML=`<iframe id="office" src="${OFFICE(D.office)}" title="PPT" allowfullscreen></iframe><div class="loading" id="loading">PPT 여는 중… (처음엔 몇 초 걸려요)</div>`;
+    $('#office').onload=()=>{const l=$('#loading');if(l)l.remove();sizeStuds()};sizeStuds();return}
+  if(!D.src){fr.innerHTML=`<div class="drop"><div class="drop-i">📂</div><div class="drop-t">PPT 파일을 여기에 끌어다 놓으세요</div><div class="drop-s">.pptx 파일 · 또는 아래 [📂 PPT 열기]</div></div>`;sizeStuds();return}
   fr.innerHTML=`<iframe id="deck" src="${D.src}" title="PPT"></iframe><button class="snd" id="snd" hidden aria-label="소리 재생"></button><div class="loading" id="loading">PPT 불러오는 중…</div>`;
   $('#deck').onload=()=>{const l=$('#loading');if(l)l.remove();noWheel();sizeStuds();focusDeck()};
   $('#snd').onclick=()=>{const i=lastSlide,src=D.sound&&D.sound[i];if(!src)return;
@@ -523,6 +582,11 @@ function bindForm(){
   };
 }
 
+// 창을 닫을 때 임시 PPT 지우기 (못 지운 건 다음에 화면을 열 때 지워짐)
+window.addEventListener('pagehide',()=>{if(!curTemp||!sb)return;try{
+  const tok=JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>/^sb-.*-auth-token$/.test(k))||'')||'null')?.access_token;
+  fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`,{method:'DELETE',keepalive:true,headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,...(tok?{Authorization:'Bearer '+tok}:{})},body:JSON.stringify({prefixes:[curTemp]})});
+}catch(e){}});
 document.addEventListener('fullscreenchange',()=>{(document.fullscreenElement||document.body).appendChild($('#toast'));setTimeout(sizeStuds,60)});
 /* ===== 시작 ===== */
 (async()=>{
