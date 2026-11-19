@@ -1,5 +1,5 @@
 /* 핸드북 문제은행 목록 (자동 생성) — 키: 교재-과목-레벨 · 실제 문제 데이터는 같은 폴더의 키.js 파일 */
-window.HB_VER="202611191328";
+window.HB_VER="202611191349";
 window.HB_INDEX={
  "Miracle-FW-I3": {
   "days": {
@@ -336,6 +336,174 @@ window.HB_INDEX={
   },
   "none": {
    "19": "Jr. Test 복습 Day"
+  }
+ },
+ "Miracle-NS-I3": {
+  "days": {
+   "1": {
+    "title": "Weather",
+    "v": 10,
+    "s": 15,
+    "p": true,
+    "hb": true
+   },
+   "2": {
+    "title": "Picasso",
+    "v": 9,
+    "s": 15,
+    "p": true,
+    "hb": true
+   },
+   "3": {
+    "title": "Animal Shelters",
+    "v": 10,
+    "s": 12,
+    "p": true,
+    "hb": true
+   },
+   "4": {
+    "title": "Earning Money",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "5": {
+    "title": "Exercise",
+    "v": 10,
+    "s": 15,
+    "p": true,
+    "hb": true
+   },
+   "6": {
+    "title": "Danny’s Birthday",
+    "v": 10,
+    "s": 10,
+    "p": true,
+    "hb": true
+   },
+   "7": {
+    "title": "Units 1–6 복습",
+    "v": 8,
+    "s": 15,
+    "p": false,
+    "hb": true
+   },
+   "8": {
+    "title": "Sign Language",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "9": {
+    "title": "Helping Jobs",
+    "v": 10,
+    "s": 18,
+    "p": true,
+    "hb": true
+   },
+   "10": {
+    "title": "Tall and Short",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "11": {
+    "title": "Milton Hershey",
+    "v": 10,
+    "s": 11,
+    "p": true,
+    "hb": true
+   },
+   "12": {
+    "title": "Photography",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "13": {
+    "title": "Money",
+    "v": 10,
+    "s": 15,
+    "p": true,
+    "hb": true
+   },
+   "14": {
+    "title": "Floating Magnets",
+    "v": 10,
+    "s": 11,
+    "p": true,
+    "hb": true
+   },
+   "15": {
+    "title": "Units 7–13 복습",
+    "v": 8,
+    "s": 15,
+    "p": false,
+    "hb": true
+   },
+   "16": {
+    "title": "Bottle Music",
+    "v": 7,
+    "s": 14,
+    "p": true,
+    "hb": true
+   },
+   "17": {
+    "title": "Plastic Straws",
+    "v": 9,
+    "s": 14,
+    "p": true,
+    "hb": true
+   },
+   "18": {
+    "title": "Art and Dreams",
+    "v": 10,
+    "s": 10,
+    "p": true,
+    "hb": true
+   },
+   "19": {
+    "title": "Jr. Test 단어 복습",
+    "v": 15,
+    "s": 0,
+    "p": false,
+    "hb": true
+   },
+   "21": {
+    "title": "Seeing Sound",
+    "v": 10,
+    "s": 17,
+    "p": true,
+    "hb": true
+   },
+   "22": {
+    "title": "Units 16–21 복습",
+    "v": 11,
+    "s": 15,
+    "p": false,
+    "hb": true
+   },
+   "23": {
+    "title": "Fish from the Sky",
+    "v": 10,
+    "s": 12,
+    "p": true,
+    "hb": true
+   },
+   "24": {
+    "title": "Unit 19 · 단어 (핸드북 숙제 없음)",
+    "v": 10,
+    "s": 0,
+    "p": false,
+    "hb": false
+   }
+  },
+  "none": {
+   "20": "Jr. Test Day (핸드북 숙제 없음)"
   }
  }
 };

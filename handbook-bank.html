@@ -399,7 +399,8 @@ async function openDay(l,d){
 function goHome(){LV=null;day=null;basket=[];askHome=false;setHash();render()}
 function gen(t,n,seed){R=rng(seed*131+day);return TY[t].gen(CUR(),n)}
 const hasPast=D=>pool(D).some(s=>s.e.split(' ').some(x=>PAST[x.replace(/[^a-z]/gi,'').toLowerCase()]));
-const REQ={s_err:hasPast,b_verb:hasPast,v_def:D=>D.vocab.some(x=>x.d),s_trans:D=>D.sentences.filter(x=>x.k).length>=4,s_k2e:D=>D.sentences.some(x=>x.k),r_ox:D=>D.ox&&D.ox.length,r_qa:D=>D.qa&&D.qa.length,r_mc:D=>D.mc&&D.mc.length,r_order:D=>D.events&&D.events.length,b_story:D=>D.passage&&D.passage.length};
+const hasS=D=>D.sentences&&D.sentences.length>0;
+const REQ={s_word:hasS,s_half:hasS,b_first:hasS,b_mc:hasS,s_err:hasPast,b_verb:hasPast,v_def:D=>D.vocab.some(x=>x.d),s_trans:D=>D.sentences.filter(x=>x.k).length>=4,s_k2e:D=>D.sentences.some(x=>x.k),r_ox:D=>D.ox&&D.ox.length,r_qa:D=>D.qa&&D.qa.length,r_mc:D=>D.mc&&D.mc.length,r_order:D=>D.events&&D.events.length,b_story:D=>D.passage&&D.passage.length};
 function avail(t){const D=CUR();const r=REQ[t]||LF_REQ[t];return r?!!r(D):true}
 function render(){
   if(!LV){renderHome();return}
