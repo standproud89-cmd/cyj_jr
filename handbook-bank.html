@@ -118,6 +118,7 @@ ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li
 .dcard{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-height:96px;font-family:inherit;color:var(--ink)}
 .dcard:hover{border-color:var(--g-d);box-shadow:0 4px 14px rgba(78,154,71,.15)}
 .dcard .dn{font:900 18px 'Nunito';color:var(--red)}.dcard .dt{font:800 14px 'Nunito';color:var(--g-d)}.dcard .dm{font:600 11.5px 'Noto Sans KR';color:var(--soft);margin-top:auto}
+.loadmsg{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:9px 18px;font:700 13px 'Noto Sans KR';z-index:9}
 .dcard.none{border-style:solid;background:#F4F5F4}.dcard.none .dm{color:#A3ABA5;font-weight:500}
 .dcard.off{background:transparent;border-style:dashed;cursor:default}.dcard.off .dn{color:#B8C0BA}.dcard.off .dt{color:#B8C0BA;font-family:'Noto Sans KR';font-weight:600;font-size:12.5px}
 .crumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 4px;font:700 13px 'Noto Sans KR';color:var(--soft)}
@@ -147,7 +148,7 @@ ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li
   <div id="sheets"></div>
  </div>
 </div>
-<script src="handbook/data.js"></script>
+<script src="handbook/index.js"></script>
 <script>
 // 과거형 ↔ 원형 (동사 모양 바꾸기 · 틀린 곳 고치기용)
 const PAST={stole:'steal',hid:'hide',took:'take',invited:'invite',gave:'give',rolled:'roll',came:'come',struck:'strike',gazed:'gaze',
@@ -200,7 +201,7 @@ const TYPES=[
   gen(D,n){const v=take(D.vocab.filter(x=>x.d),n);
    return{q:ol(v.map(x=>`${esc(x.d)}. <span class="ans">→ ${esc(x.w[0])}<span class="blank"></span></span>`)),a:ol(v.map(x=>`${esc(x.d)}. → ${red(esc(x.w))}`))}}},
  {k:'v_search',c:'word',t:'단어 찾기 퍼즐',en:'Find the words in the puzzle.',ko:'뜻을 보고 영어 단어를 퍼즐에서 찾아 동그라미 하세요.',def:6,max:6,
-  gen(D,n){const v=take(single(D),n);const N=10,G=Array.from({length:N},()=>Array(N).fill(''));const mark=new Set();
+  gen(D,n){const v=take(single(D),n);const N=Math.max(10,...v.map(x=>x.w.length)),G=Array.from({length:N},()=>Array(N).fill(''));const mark=new Set();
    v.forEach(x=>{const w=x.w.toUpperCase();for(let t=0;t<200;t++){const h=R()<.5,r=Math.floor(R()*(h?N:N-w.length+1)),c=Math.floor(R()*(h?N-w.length+1:N));
      let ok=true;for(let i=0;i<w.length;i++){const rr=h?r:r+i,cc=h?c+i:c;if(G[rr][cc]&&G[rr][cc]!==w[i]){ok=false;break}}
      if(ok){for(let i=0;i<w.length;i++){const rr=h?r:r+i,cc=h?c+i:c;G[rr][cc]=w[i];mark.add(rr+','+cc)}break}}});
@@ -267,8 +268,12 @@ const SBT=k=>(SUBJ.find(x=>x.k===k)||{t:k}).t;
 const LEVELS=['I3','I4','N1','N2','N3','N4','G1','G2','G3','G4'];   // Wind · Island 1 · Island 2 는 제외 (Globe는 GW/RA/AD)
 const LVNAME={I3:'Island 3',I4:'Island 4',N1:'Nation 1',N2:'Nation 2',N3:'Nation 3',N4:'Nation 4',G1:'Globe 1',G2:'Globe 2',G3:'Globe 3',G4:'Globe 4'};
 const MAXDAY=24;
-const lvData=(b,s,l)=>(((HB.books||{})[b]||{})[s]||{})[l];
-const CUR=()=>lvData(BK,SB,LV).days[day];
+const KEY=(b,s,l)=>`${b}-${s}-${l}`;
+const lvData=(b,s,l)=>(window.HB_INDEX||{})[KEY(b,s,l)];
+const CUR=()=>window.HB_PACK[KEY(BK,SB,LV)][day];
+// 레벨 데이터는 고를 때만 불러옴 (데이터가 많아져도 첫 화면은 가벼움)
+function loadPack(key){window.HB_PACK=window.HB_PACK||{};if(window.HB_PACK[key])return Promise.resolve();
+  return new Promise((ok,no)=>{const sc=document.createElement('script');sc.src=`handbook/${key}.js?v=${window.HB_VER||''}`;sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
 const nDays=(b,s,l)=>{const L=lvData(b,s,l);return L?Object.keys(L.days).length:0};
 const nSub=(b,s)=>LEVELS.reduce((a,l)=>a+nDays(b,s,l),0);
 const nBook=b=>SUBJ.reduce((a,s)=>a+nSub(b,s.k),0);
@@ -291,7 +296,7 @@ function renderHome(){
      <div class="lvls">${LEVELS.map(l=>{const n=nDays(BK,SB,l);return `<button data-lv="${l}" class="${l===homeLv?'on':''}" ${n?'':'disabled'}>${LVNAME[l]}<small>${n?n+'일':'준비 중'}</small></button>`}).join('')}</div>
      <div class="dgrid">${Array.from({length:MAXDAY},(_,i)=>i+1).filter(d=>!q||String(d)===q||((ds[d]&&ds[d].title)||'').toLowerCase().includes(q)).map(d=>{const D=ds[d];
       const no=L&&L.none&&L.none[d];if(!D&&no)return `<div class="dcard off none"><span class="dn">Day ${d}</span><span class="dt">자료 없음</span><span class="dm">${esc(no)}</span></div>`;
-      return D?`<button class="dcard" data-d="${d}"><span class="dn">Day ${d}</span><span class="dt">${esc(D.title)}</span><span class="dm">단어 ${D.vocab.length} · 문장 ${D.sentences.length}${D.passage?' · 본문':''}</span></button>`
+      return D?`<button class="dcard" data-d="${d}"><span class="dn">Day ${d}</span><span class="dt">${esc(D.title)}</span><span class="dm">단어 ${D.v} · 문장 ${D.s}${D.p?' · 본문':''}${D.hb===false?' · 핸드북 전':''}</span></button>`
               :`<div class="dcard off"><span class="dn">Day ${d}</span><span class="dt">준비 중</span></div>`}).join('')}</div>`;
   }
   $('#home').innerHTML=h;
@@ -303,10 +308,15 @@ function renderHome(){
   const qi=$('#q');if(qi)qi.oninput=()=>{homeQ=qi.value;const p=qi.selectionStart;renderHome();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
 }
 function setHash(){try{history.replaceState(null,'','#'+[BK,SB,LV,day].filter(Boolean).join('-'))}catch(e){}}
-function openDay(l,d){LV=l;day=d;basket=[];cat='word';sel='v_en2ko';pvN=TY.v_en2ko.def;pvSeed++;setHash();render();window.scrollTo(0,0)}
+async function openDay(l,d){
+  const k=KEY(BK,SB,l);
+  if(!(window.HB_PACK||{})[k]){$('#home').insertAdjacentHTML('beforeend','<div class="loadmsg" id="loadmsg">불러오는 중…</div>');
+    try{await loadPack(k)}catch(e){const m=$('#loadmsg');if(m)m.textContent='데이터를 불러오지 못했어요. 새로고침 해주세요.';return}}
+  LV=l;day=d;basket=[];cat='word';sel='v_en2ko';pvN=TY.v_en2ko.def;pvSeed++;setHash();render();window.scrollTo(0,0)}
 function goHome(){LV=null;day=null;basket=[];askHome=false;setHash();render()}
 function gen(t,n,seed){R=rng(seed*131+day);return TY[t].gen(CUR(),n)}
-const REQ={v_def:D=>D.vocab.some(x=>x.d),s_trans:D=>D.sentences.filter(x=>x.k).length>=4,s_k2e:D=>D.sentences.some(x=>x.k),r_ox:D=>D.ox&&D.ox.length,r_qa:D=>D.qa&&D.qa.length,r_mc:D=>D.mc&&D.mc.length,r_order:D=>D.events&&D.events.length,b_story:D=>D.passage&&D.passage.length};
+const hasPast=D=>pool(D).some(s=>s.e.split(' ').some(x=>PAST[x.replace(/[^a-z]/gi,'').toLowerCase()]));
+const REQ={s_err:hasPast,b_verb:hasPast,v_def:D=>D.vocab.some(x=>x.d),s_trans:D=>D.sentences.filter(x=>x.k).length>=4,s_k2e:D=>D.sentences.some(x=>x.k),r_ox:D=>D.ox&&D.ox.length,r_qa:D=>D.qa&&D.qa.length,r_mc:D=>D.mc&&D.mc.length,r_order:D=>D.events&&D.events.length,b_story:D=>D.passage&&D.passage.length};
 function avail(t){const D=CUR();return REQ[t]?!!REQ[t](D):true}
 function render(){
   if(!LV){renderHome();return}
@@ -368,6 +378,6 @@ function flash(){const e=$('#basket');e.classList.remove('fl');void e.offsetWidt
 // 주소 #I3-17 로 바로 열기
 (function(){const p=decodeURIComponent((location.hash||'').slice(1)).split('-').filter(Boolean);
   if(BOOKS.some(b=>b.k===p[0]))BK=p[0];if(BK&&SUBJ.some(x=>x.k===p[1]))SB=p[1];
-  if(SB&&lvData(BK,SB,p[2])&&lvData(BK,SB,p[2]).days[+p[3]]){homeLv=p[2];openDay(p[2],+p[3])}else{if(SB&&LEVELS.includes(p[2]))homeLv=p[2];render()}})();
+  if(SB&&lvData(BK,SB,p[2])&&lvData(BK,SB,p[2]).days[p[3]]){homeLv=p[2];openDay(p[2],+p[3])}else{if(SB&&LEVELS.includes(p[2]))homeLv=p[2];render()}})();
 
 </script></body></html>
