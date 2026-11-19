@@ -1,5 +1,5 @@
 /* 핸드북 문제은행 목록 (자동 생성) — 키: 교재-과목-레벨 · 실제 문제 데이터는 같은 폴더의 키.js 파일 */
-window.HB_VER="202611191349";
+window.HB_VER="202611191436";
 window.HB_INDEX={
  "Miracle-FW-I3": {
   "days": {
@@ -491,6 +491,492 @@ window.HB_INDEX={
     "title": "Fish from the Sky",
     "v": 10,
     "s": 12,
+    "p": true,
+    "hb": true
+   },
+   "24": {
+    "title": "Unit 19 · 단어 (핸드북 숙제 없음)",
+    "v": 10,
+    "s": 0,
+    "p": false,
+    "hb": false
+   }
+  },
+  "none": {
+   "20": "Jr. Test Day (핸드북 숙제 없음)"
+  }
+ },
+ "Miracle-FW-I4": {
+  "days": {
+   "1": {
+    "title": "Cinderella",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "2": {
+    "title": "Cinderella",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "3": {
+    "title": "Cinderella",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "4": {
+    "title": "The Three Sillies",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "5": {
+    "title": "The Three Sillies",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "6": {
+    "title": "The Three Sillies",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "8": {
+    "title": "Hans Brinker",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "9": {
+    "title": "Hans Brinker",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "10": {
+    "title": "Hans Brinker",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "11": {
+    "title": "Beauty and the Beast",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "12": {
+    "title": "Beauty and the Beast",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "13": {
+    "title": "Beauty and the Beast",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "15": {
+    "title": "The Brave Tin Soldier",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "16": {
+    "title": "The Brave Tin Soldier",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "17": {
+    "title": "The Brave Tin Soldier",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "18": {
+    "title": "The Ha-Ha Powder",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "21": {
+    "title": "Why the Dog Hates the Cat",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "22": {
+    "title": "Why the Dog Hates the Cat",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "23": {
+    "title": "Hans in Luck",
+    "v": 12,
+    "s": 13,
+    "p": false,
+    "hb": true
+   },
+   "24": {
+    "title": "Hans in Luck",
+    "v": 12,
+    "s": 12,
+    "p": false,
+    "hb": false
+   }
+  },
+  "none": {
+   "7": "핸드북 숙제 없음 (Correction Notes)",
+   "14": "핸드북 숙제 없음 (Correction Notes)",
+   "19": "복습 Day (Days 19 & 20 리뷰 핸드북)",
+   "20": "복습 Day (Days 19 & 20 리뷰 핸드북)"
+  }
+ },
+ "Miracle-LF-I4": {
+  "days": {
+   "1": {
+    "title": "Unit 1 · 특정 행동에 대한 방법을 알고 있는지 묻고 대답",
+    "v": 10,
+    "s": 7,
+    "p": false,
+    "hb": true
+   },
+   "2": {
+    "title": "Unit 2 · 해야 할 일에 대해 묻고 대답",
+    "v": 8,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "3": {
+    "title": "Unit 2 · 특정 행동을 해야 하는지 묻고 대답",
+    "v": 8,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "4": {
+    "title": "Units 1-2 복습 (ICSW)",
+    "v": 0,
+    "s": 4,
+    "p": false,
+    "hb": true
+   },
+   "5": {
+    "title": "Unit 3 · 언제 할 예정인지 묻고 대답",
+    "v": 10,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "6": {
+    "title": "Unit 4 · 어디가 아픈지 표현",
+    "v": 8,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "7": {
+    "title": "Unit 4 · 아픈 증상에 대해 어떻게 해야 하는지 조언",
+    "v": 16,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "8": {
+    "title": "Units 3-4 복습 (ICSW)",
+    "v": 0,
+    "s": 4,
+    "p": false,
+    "hb": true
+   },
+   "9": {
+    "title": "Unit 5 · 특정 행동을 얼마나 자주 하는지 묻고 대답",
+    "v": 19,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "10": {
+    "title": "Unit 6 · 과거의 일에 대해 묻고 대답",
+    "v": 8,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "11": {
+    "title": "Unit 6 · 기분이 어땠는지 묻고 대답",
+    "v": 8,
+    "s": 7,
+    "p": false,
+    "hb": true
+   },
+   "12": {
+    "title": "Units 5-6 복습 (ICSW)",
+    "v": 0,
+    "s": 4,
+    "p": false,
+    "hb": true
+   },
+   "13": {
+    "title": "Unit 7 · 특정 장소가 어디에 있는지 묻고 대답",
+    "v": 15,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "14": {
+    "title": "Unit 8 · 자유 시간에 무엇을 하는지 묻고 대답",
+    "v": 8,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "15": {
+    "title": "Unit 8 · 특정 행동을 얼마나 오랫동안 하는지 묻고 대답",
+    "v": 13,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "16": {
+    "title": "Units 8 복습 (ICSW)",
+    "v": 0,
+    "s": 4,
+    "p": false,
+    "hb": true
+   },
+   "17": {
+    "title": "Unit 9 · 어떤 과목을 가장 좋아하는지 묻고 대답",
+    "v": 9,
+    "s": 7,
+    "p": false,
+    "hb": true
+   },
+   "18": {
+    "title": "Unit 10 · 최상급으로 묻고 대답",
+    "v": 7,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "20": {
+    "title": "복습",
+    "v": 0,
+    "s": 4,
+    "p": false,
+    "hb": true
+   },
+   "21": {
+    "title": "Unit 10 · 최상급으로 묻고 대답",
+    "v": 7,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "22": {
+    "title": "Units 9-10 복습 (ICSW)",
+    "v": 0,
+    "s": 4,
+    "p": false,
+    "hb": true
+   },
+   "23": {
+    "title": "Unit 11 · 특정 감정을 느끼는 이유를 묻고 대답",
+    "v": 10,
+    "s": 8,
+    "p": false,
+    "hb": true
+   },
+   "24": {
+    "title": "Unit 11 · 이유와 결과를 이야기",
+    "v": 10,
+    "s": 0,
+    "p": false,
+    "hb": false
+   }
+  },
+  "none": {
+   "19": "Jr. Test 복습 Day"
+  }
+ },
+ "Miracle-NS-I4": {
+  "days": {
+   "1": {
+    "title": "Ancient Egypt",
+    "v": 10,
+    "s": 15,
+    "p": true,
+    "hb": true
+   },
+   "2": {
+    "title": "Space Trash",
+    "v": 10,
+    "s": 14,
+    "p": true,
+    "hb": true
+   },
+   "3": {
+    "title": "Penguins",
+    "v": 10,
+    "s": 10,
+    "p": true,
+    "hb": true
+   },
+   "4": {
+    "title": "The Longest Tennis Match",
+    "v": 10,
+    "s": 12,
+    "p": true,
+    "hb": true
+   },
+   "5": {
+    "title": "Weather Forecasts",
+    "v": 10,
+    "s": 14,
+    "p": true,
+    "hb": true
+   },
+   "6": {
+    "title": "A Garden for Bees",
+    "v": 10,
+    "s": 12,
+    "p": true,
+    "hb": true
+   },
+   "7": {
+    "title": "Units 1–6 복습",
+    "v": 9,
+    "s": 15,
+    "p": false,
+    "hb": true
+   },
+   "8": {
+    "title": "King Tut’s Tomb",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "9": {
+    "title": "The Theremin",
+    "v": 10,
+    "s": 15,
+    "p": true,
+    "hb": true
+   },
+   "10": {
+    "title": "Narwhals",
+    "v": 10,
+    "s": 14,
+    "p": true,
+    "hb": true
+   },
+   "11": {
+    "title": "The Popsicle",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "12": {
+    "title": "Firefighting Robots",
+    "v": 10,
+    "s": 16,
+    "p": true,
+    "hb": true
+   },
+   "13": {
+    "title": "Baseball Hand Signs",
+    "v": 10,
+    "s": 12,
+    "p": true,
+    "hb": true
+   },
+   "14": {
+    "title": "Pumpkins",
+    "v": 10,
+    "s": 9,
+    "p": true,
+    "hb": true
+   },
+   "15": {
+    "title": "Units 7–13 복습",
+    "v": 8,
+    "s": 15,
+    "p": false,
+    "hb": true
+   },
+   "16": {
+    "title": "Future Home Security",
+    "v": 10,
+    "s": 11,
+    "p": true,
+    "hb": true
+   },
+   "17": {
+    "title": "Dogs and Security",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "18": {
+    "title": "Red Cards",
+    "v": 10,
+    "s": 9,
+    "p": true,
+    "hb": true
+   },
+   "19": {
+    "title": "Jr. Test 단어 복습",
+    "v": 15,
+    "s": 0,
+    "p": false,
+    "hb": true
+   },
+   "21": {
+    "title": "Pet Tigers",
+    "v": 10,
+    "s": 13,
+    "p": true,
+    "hb": true
+   },
+   "22": {
+    "title": "Units 14–17 복습",
+    "v": 10,
+    "s": 15,
+    "p": false,
+    "hb": true
+   },
+   "23": {
+    "title": "The First Scales",
+    "v": 10,
+    "s": 15,
     "p": true,
     "hb": true
    },
