@@ -119,6 +119,7 @@ ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li
 .dcard:hover{border-color:var(--g-d);box-shadow:0 4px 14px rgba(78,154,71,.15)}
 .dcard .dn{font:900 18px 'Nunito';color:var(--red)}.dcard .dt{font:800 14px 'Nunito';color:var(--g-d)}.dcard .dm{font:600 11.5px 'Noto Sans KR';color:var(--soft);margin-top:auto}
 .paren{font-weight:800;white-space:nowrap}
+.model{font-size:.92em;color:#555;margin-bottom:2px}.model b{display:inline-block;border:1px solid #888;border-radius:4px;padding:0 5px;margin-right:6px;font-size:.85em;color:#333}
 .loadmsg{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:9px 18px;font:700 13px 'Noto Sans KR';z-index:9}
 .dcard.none{border-style:solid;background:#F4F5F4}.dcard.none .dm{color:#A3ABA5;font-weight:500}
 .dcard.off{background:transparent;border-style:dashed;cursor:default}.dcard.off .dn{color:#B8C0BA}.dcard.off .dt{color:#B8C0BA;font-family:'Noto Sans KR';font-weight:600;font-size:12.5px}
@@ -312,6 +313,9 @@ const LF_TYPES=[
   gen(D,n){const it=[];shuf(D.sentences).forEach(s=>{if(it.length>=n)return;const sp=gramSpots(D,s);if(!sp.length)return;const x=sp[Math.floor(R()*sp.length)];const wrong=shuf(x.opts.filter(o=>o.toLowerCase()!==x.core.toLowerCase()))[0];if(!wrong)return;
     const w=s.e.split(' '),tail=w[x.i].slice(x.core.length);const ws=[...w];ws[x.i]=wrong+tail;it.push({wrong:ws.join(' '),bad:wrong,good:x.core,i:x.i,ws})});
    return{q:ol(it.map(i=>`${esc(i.wrong)}<div class="fix">→ <span class="blank"></span></div>`)),a:ol(it.map(i=>`${i.ws.map((t,k)=>k===i.i?`<s>${esc(t)}</s>`:esc(t)).join(' ')} → ${red(esc(i.good))}`))}}},
+ {k:'l_sub',c:'lgram',t:'패턴 바꿔 쓰기',en:'Follow the pattern and rewrite.',ko:'보기 문장의 패턴을 따라 괄호 안의 말로 바꿔 쓰세요.',def:5,max:8,
+  gen(D,n){const pool=D.sentences.filter(s=>s.g&&s.c&&s.c.length);const it=[];shuf(pool).forEach(s=>{if(it.length>=n)return;const ms=D.sentences.filter(m=>m.g===s.g&&m.e!==s.e);if(!ms.length)return;it.push({s,m:ms[Math.floor(R()*ms.length)]})});
+   return{q:ol(it.map(i=>`<div class="model"><b>보기</b>${esc(i.m.e)}</div><b class="paren">( ${i.s.c.map(esc).join(' / ')} )</b><div class="wline"></div>`)),a:ol(it.map(i=>`<div class="model"><b>보기</b>${esc(i.m.e)}</div>${red(esc(i.s.e))}`))}}},
  {k:'l_subj',c:'lgram',t:'주어 바꿔 쓰기',en:'Change the subject and rewrite.',ko:'괄호 안의 주어로 바꿔 문장을 다시 쓰세요. (be동사도 알맞게)',def:4,max:6,
   gen(D,n){const it=[];shuf(D.sentences).forEach(s=>{if(it.length>=n)return;const r=subjSwap(s,R);if(r)it.push(r)});
    return{q:ol(it.map(i=>`${esc(i.s.e)} <b class="paren">( → ${esc(i.to)} )</b><div class="wline"></div>`)),a:ol(it.map(i=>`${esc(i.s.e)} → ${red(esc(i.a))}`))}}},
@@ -337,7 +341,7 @@ const LF_TYPES=[
   gen(D,n){const v=take(D.vocab,n);return{q:ol(v.map(x=>`${esc(x.k)} <span class="ans">→ ${esc(x.w[0])}<span class="blank"></span></span>`)),a:ol(v.map(x=>`${esc(x.k)} → ${red(esc(x.w))}`))}}}
 ];
 const LF_REQ={l_scr_ko:D=>D.sentences.filter(x=>x.k).length,l_choose:D=>D.sentences.some(s=>gramSpots(D,s).length),l_err:D=>D.sentences.some(s=>gramSpots(D,s).length),
- l_subj:D=>{R=rng(1);return D.sentences.some(s=>subjSwap(s,R))},l_blank:D=>D.sentences.some(x=>x.k),l_qa:D=>(D.qa||[]).length>=2,l_k2e:D=>D.sentences.some(x=>x.k),l_dict:D=>D.sentences.some(x=>x.k),
+ l_sub:D=>D.sentences.some(s=>s.g&&s.c&&D.sentences.some(m=>m!==s&&m.g===s.g)),l_subj:D=>{R=rng(1);return D.sentences.some(s=>subjSwap(s,R))},l_blank:D=>D.sentences.some(x=>x.k),l_qa:D=>(D.qa||[]).length>=2,l_k2e:D=>D.sentences.some(x=>x.k),l_dict:D=>D.sentences.some(x=>x.k),
  l_voc_ko:D=>D.vocab.length>=4,l_voc_en:D=>D.vocab.length>0,l_scr_word:D=>D.sentences.length,l_scr_chunk:D=>D.sentences.some(s=>s.e.split(' ').length>=4)};
 
 const TY=Object.fromEntries([...TYPES,...LF_TYPES].map(t=>[t.k,t]));
