@@ -65,7 +65,7 @@ table.ws td.hit{background:#FDE2E2;color:var(--red)}
 .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--g);padding-bottom:6px;margin-bottom:10px;gap:12px}
 .pk{font:900 13px 'Nunito';color:var(--g-d);letter-spacing:.06em;text-transform:uppercase}
 .anskey .pk{color:var(--red)}
-.pt{font:900 30px 'Nunito';color:var(--red)}.pt span{color:var(--g-d);font-size:20px}
+.pt{font:900 30px 'Nunito';color:var(--red);line-height:1.15}.pt span{color:var(--g-d);font-size:17px}
 .pinfo{display:flex;flex-direction:column;gap:5px;font:700 12px 'Nunito'}
 .pinfo div{display:flex;gap:6px;align-items:flex-end}.pinfo i{display:inline-block;width:42mm;border-bottom:1px solid var(--ink)}
 .sec{margin-bottom:11px;break-inside:avoid}
@@ -118,6 +118,7 @@ ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li
 .dcard{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-height:96px;font-family:inherit;color:var(--ink)}
 .dcard:hover{border-color:var(--g-d);box-shadow:0 4px 14px rgba(78,154,71,.15)}
 .dcard .dn{font:900 18px 'Nunito';color:var(--red)}.dcard .dt{font:800 14px 'Nunito';color:var(--g-d)}.dcard .dm{font:600 11.5px 'Noto Sans KR';color:var(--soft);margin-top:auto}
+.paren{font-weight:800;white-space:nowrap}
 .loadmsg{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:9px 18px;font:700 13px 'Noto Sans KR';z-index:9}
 .dcard.none{border-style:solid;background:#F4F5F4}.dcard.none .dm{color:#A3ABA5;font-weight:500}
 .dcard.off{background:transparent;border-style:dashed;cursor:default}.dcard.off .dn{color:#B8C0BA}.dcard.off .dt{color:#B8C0BA;font-family:'Noto Sans KR';font-weight:600;font-size:12.5px}
@@ -258,7 +259,89 @@ const TYPES=[
   gen(D,n){const it=take(D.mc,Math.min(n,D.mc.length)).map(m=>{const o=shuf(m[1]);return{m,o,a:o.indexOf(m[1][m[2]])}});
    return{q:ol(it.map(i=>`${esc(i.m[0])}<div class="opts vert">${i.o.map((x,j)=>`<span>${NUM[j]} ${esc(x)}</span>`).join('')}</div>`)),a:ol(it.map(i=>`${esc(i.m[0])} → ${red(NUM[i.a]+' '+esc(i.o[i.a]))}`))}}}
 ];
-const TY=Object.fromEntries(TYPES.map(t=>[t.k,t]));
+/* ===================== LF / GW 전용 (문법 · 문장 배열 · 패턴 드릴) ===================== */
+const LF_CATS=[{k:'lscr',t:'문장 배열',ic:'🔀'},{k:'lgram',t:'문법 드릴',ic:'⚙️'},{k:'lwrite',t:'영작',ic:'✏️'},{k:'lword',t:'단어',ic:'📘'}];
+const capF=(s,src)=>/^[A-Z]/.test(src)?s.charAt(0).toUpperCase()+s.slice(1):s;
+const toks=e=>e.match(/[A-Za-z0-9\u00C0-\u024F’'\-:]+(?:\.[a-z]\.)?|[.,?!]/g)||[];
+const join=t=>t.join(' ').replace(/\s+([.,?!])/g,'$1');
+const GG=[['am','is','are'],['was','were'],['do','does'],['don’t','doesn’t'],['isn’t','aren’t'],['wasn’t','weren’t'],['a','an'],['much','many']];
+function verbsOf(D){return new Set(D.vocab.filter(v=>/다$/.test(v.k.trim())).map(v=>v.w).filter(w=>/^[a-z]+$/.test(w)))}  // 뜻이 '~다'로 끝나는 동사만
+function gramSpots(D,s){ // 문장 안에서 문법 선택지를 만들 수 있는 자리
+  const w=s.e.split(' '),V=verbsOf(D),out=[];
+  w.forEach((raw,i)=>{const core=raw.replace(/[.,?!]+$/,''),lo=core.toLowerCase();
+    const g=GG.find(g=>g.includes(lo));if(g){out.push({i,core,opts:g.map(o=>capF(o,core))});return}
+    if(V.has(lo)&&i>0)out.push({i,core,opts:[core,core+(/(s|sh|ch|x|o)$/.test(core)?'es':'s')]});
+    else if(/s$/.test(lo)&&i>0){const b=lo.replace(/es$/,''),b2=lo.replace(/s$/,'');const base=V.has(b2)?b2:V.has(b)&&/(sh|ch|x|o)es$/.test(lo)?b:null;if(base)out.push({i,core,opts:[base,core]})}
+  });return out;
+}
+const PRON={i:['I','am','was','I’m'],he:['He','is','was','He’s'],she:['She','is','was','She’s'],it:['It','is','was','It’s'],you:['You','are','were','You’re'],they:['They','are','were','They’re'],we:['We','are','were','We’re']};
+function subjSwap(s,R){ // 주어 바꾸기: 대명사 + be동사 문장만
+  if(/\b(his|her|their|my|your|our|its|does|do|did)\b/i.test(s.e))return null;
+  const w=s.e.split(' ');const single=/\b(a|an)\b/i.test(s.e);
+  for(let j=0;j<w.length;j++){const c=w[j].replace(/[.,?!]+$/,''),lo=c.toLowerCase(),tail=w[j].slice(c.length);
+    const con=Object.entries(PRON).find(([k,v])=>v[3].toLowerCase()===lo);
+    const isP=PRON[lo],beN=(w[j+1]||'').replace(/[.,?!]+$/,'').toLowerCase(),beP=(w[j-1]||'').replace(/[.,?!]+$/,'').toLowerCase();
+    if(!con&&!(isP&&(['am','is','are','was','were'].includes(beN)||['am','is','are','was','were'].includes(beP))))continue;
+    const cur=con?con[0]:lo;const past=con?false:(['was','were'].includes(beN)||['was','were'].includes(beP));
+    const cand=Object.keys(PRON).filter(k=>k!==cur&&k!=='it'&&(!single||['i','he','she','you'].includes(k)));
+    const nw=cand[Math.floor(R()*cand.length)],P=PRON[nw];const out=[...w];
+    if(con){out[j]=(j===0?P[3]:P[3].replace(/^[A-Z]/,m=>nw==='i'?m:m.toLowerCase()))+tail}
+    else{const bi=['am','is','are','was','were'].includes(beN)?j+1:j-1;const bc=w[bi].replace(/[.,?!]+$/,''),bt=w[bi].slice(bc.length);
+      out[j]=(j===0||nw==='i'?P[0]:P[0].toLowerCase())+tail;out[bi]=capF(past?P[2]:P[1],bc)+bt;
+      if(nw==='i'&&bi===j+1&&/n’t$/.test(w[bi]))return null}
+    return{s,to:P[0],a:out.join(' ')};
+  }return null;
+}
+const GRAM=new Set('am is are was were do does did don’t doesn’t didn’t isn’t aren’t wasn’t must mustn’t not can can’t at in on to there much many any some than more most how what where when who why time long by good wearing'.split(' '));
+const LF_TYPES=[
+ {k:'l_scr_word',c:'lscr',t:'단어 순서 배열',en:'Put the words in the correct order.',ko:'단어를 알맞게 배열하여 문장을 쓰세요.',def:4,max:8,
+  gen(D,n){const it=take(D.sentences,n).map(s=>{const t=toks(s.e).map(x=>x);let sh,g=0;do{sh=shuf(t);g++}while(sh.join(' ')===t.join(' ')&&g<20);return{s,sh}});
+   return{q:ol(it.map(i=>`<div class="chunks">${i.sh.map(esc).join(' <em>/</em> ')}</div><div class="wline"></div>`)),a:ol(it.map(i=>red(esc(i.s.e))))}}},
+ {k:'l_scr_ko',c:'lscr',t:'우리말 보고 배열',en:'Read and put the words in order.',ko:'우리말 뜻에 맞게 단어를 배열하여 문장을 쓰세요.',def:4,max:6,
+  gen(D,n){const it=take(D.sentences.filter(x=>x.k),n).map(s=>{const t=toks(s.e);let sh,g=0;do{sh=shuf(t);g++}while(sh.join(' ')===t.join(' ')&&g<20);return{s,sh}});
+   return{q:ol(it.map(i=>`${esc(i.s.k)}<div class="chunks">${i.sh.map(esc).join(' <em>/</em> ')}</div><div class="wline"></div>`)),a:ol(it.map(i=>`${esc(i.s.k)}<br>${red(esc(i.s.e))}`))}}},
+ {k:'l_scr_chunk',c:'lscr',t:'덩어리 배열',en:'Unscramble.',ko:'덩어리를 순서에 맞게 배열하여 쓰세요.',def:4,max:8,
+  gen(D,n){const it=take(D.sentences.filter(s=>s.e.split(' ').length>=4),n).map(s=>{const w=s.e.split(' ');const k=Math.min(4,w.length);let cuts=new Set();while(cuts.size<k-1)cuts.add(1+Math.floor(R()*(w.length-1)));
+    cuts=[...cuts].sort((a,b)=>a-b);const c=[];let p=0;cuts.forEach(x=>{c.push(w.slice(p,x).join(' '));p=x});c.push(w.slice(p).join(' '));let sh,g=0;do{sh=shuf(c);g++}while(sh.join('|')===c.join('|')&&g<20);return{s,sh}});
+   return{q:ol(it.map(i=>`<div class="chunks">${i.sh.map(esc).join(' <em>/</em> ')}</div><div class="wline"></div>`)),a:ol(it.map(i=>red(esc(i.s.e))))}}},
+ {k:'l_choose',c:'lgram',t:'괄호 안 문법 고르기',en:'Circle the correct word.',ko:'괄호 안에서 알맞은 말에 동그라미 하세요.',def:5,max:8,
+  gen(D,n){const it=[];shuf(D.sentences).forEach(s=>{if(it.length>=n)return;const sp=gramSpots(D,s);if(!sp.length)return;const x=sp[Math.floor(R()*sp.length)];const w=s.e.split(' ');
+    const tail=w[x.i].slice(x.core.length);const o=shuf(x.opts.slice(0,3));it.push({q:[...w.slice(0,x.i),`<b class="paren">( ${o.map(esc).join(' / ')} )</b>${esc(tail)}`,...w.slice(x.i+1)].map((t,k)=>k===x.i?t:esc(t)).join(' '),a:[...w.slice(0,x.i),red(esc(x.core))+esc(tail),...w.slice(x.i+1)].map((t,k)=>k===x.i?t:esc(t)).join(' ')})});
+   return{q:ol(it.map(i=>i.q)),a:ol(it.map(i=>i.a))}}},
+ {k:'l_err',c:'lgram',t:'틀린 문법 고치기',en:'Find the mistake and correct it.',ko:'틀린 부분에 밑줄을 긋고 바르게 고쳐 쓰세요.',def:4,max:6,
+  gen(D,n){const it=[];shuf(D.sentences).forEach(s=>{if(it.length>=n)return;const sp=gramSpots(D,s);if(!sp.length)return;const x=sp[Math.floor(R()*sp.length)];const wrong=shuf(x.opts.filter(o=>o.toLowerCase()!==x.core.toLowerCase()))[0];if(!wrong)return;
+    const w=s.e.split(' '),tail=w[x.i].slice(x.core.length);const ws=[...w];ws[x.i]=wrong+tail;it.push({wrong:ws.join(' '),bad:wrong,good:x.core,i:x.i,ws})});
+   return{q:ol(it.map(i=>`${esc(i.wrong)}<div class="fix">→ <span class="blank"></span></div>`)),a:ol(it.map(i=>`${i.ws.map((t,k)=>k===i.i?`<s>${esc(t)}</s>`:esc(t)).join(' ')} → ${red(esc(i.good))}`))}}},
+ {k:'l_subj',c:'lgram',t:'주어 바꿔 쓰기',en:'Change the subject and rewrite.',ko:'괄호 안의 주어로 바꿔 문장을 다시 쓰세요. (be동사도 알맞게)',def:4,max:6,
+  gen(D,n){const it=[];shuf(D.sentences).forEach(s=>{if(it.length>=n)return;const r=subjSwap(s,R);if(r)it.push(r)});
+   return{q:ol(it.map(i=>`${esc(i.s.e)} <b class="paren">( → ${esc(i.to)} )</b><div class="wline"></div>`)),a:ol(it.map(i=>`${esc(i.s.e)} → ${red(esc(i.a))}`))}}},
+ {k:'l_blank',c:'lgram',t:'핵심 문법 빈칸',en:'Fill in the blanks.',ko:'우리말 뜻에 맞게 빈칸에 알맞은 말을 쓰세요.',def:4,max:6,
+  gen(D,n){const it=take(D.sentences.filter(x=>x.k),n).map(s=>{const w=s.e.split(' ');let idx=w.map((x,i)=>GRAM.has(x.replace(/[.,?!]+$/,'').toLowerCase())?i:-1).filter(i=>i>=0);
+    if(!idx.length)idx=w.map((_,i)=>i);idx=shuf(idx).slice(0,Math.min(3,idx.length)).sort((a,b)=>a-b);
+    return{s,q:w.map((x,i)=>{if(!idx.includes(i))return esc(x);const c=x.replace(/[.,?!]+$/,'');return '<span class="blank"></span>'+esc(x.slice(c.length))}).join(' '),
+      a:w.map((x,i)=>{if(!idx.includes(i))return esc(x);const c=x.replace(/[.,?!]+$/,'');return red(esc(c))+esc(x.slice(c.length))}).join(' ')}});
+   return{q:ol(it.map(i=>`${esc(i.s.k)}<div>${i.q}</div>`)),a:ol(it.map(i=>`${esc(i.s.k)}<div>${i.a}</div>`))}}},
+ {k:'l_qa',c:'lgram',t:'질문과 대답 연결',en:'Match the questions and answers.',ko:'질문에 알맞은 대답을 연결하세요.',def:3,max:4,
+  gen(D,n){const it=take(D.qa,n);const rs=shuf(it);
+   return{q:`<div class="match"><ol class="ml">${it.map(x=>`<li><span>${esc(x[0])}</span><i>•</i></li>`).join('')}</ol><ol class="mr">${rs.map((x,i)=>`<li><i>•</i><span>${AL[i]}. ${esc(x[1])}</span></li>`).join('')}</ol></div>`,
+    a:ol(it.map(x=>`${esc(x[0])} → ${red(AL[rs.indexOf(x)]+'. '+esc(x[1]))}`))}}},
+ {k:'l_k2e',c:'lwrite',t:'주어진 단어로 영작',en:'Write in English.',ko:'주어진 단어를 이용해 우리말 뜻과 같도록 문장을 쓰세요.',def:4,max:6,
+  gen(D,n){const it=take(D.sentences.filter(x=>x.k),n).map(s=>{let h=s.h;if(!h){const w=s.e.replace(/[.,?!]/g,'').split(' ').filter(x=>x.length>2);h=take(w,Math.min(2,w.length)).map(x=>x.toLowerCase())}return{s,h}});
+   return{q:ol(it.map(i=>`<b class="paren">( ${i.h.map(esc).join(', ')} )</b> ${esc(i.s.k)}<div class="wline"></div>`)),a:ol(it.map(i=>`${esc(i.s.k)}<br>${red(esc(i.s.e))}`))}}},
+ {k:'l_dict',c:'lwrite',t:'우리말 보고 통째로 쓰기',en:'Write the sentences in English.',ko:'힌트 없이 우리말 뜻에 맞는 영어 문장을 쓰세요.',def:3,max:6,
+  gen(D,n){const it=take(D.sentences.filter(x=>x.k),n);return{q:ol(it.map(s=>`${esc(s.k)}<div class="wline"></div>`)),a:ol(it.map(s=>`${esc(s.k)}<br>${red(esc(s.e))}`))}}},
+ {k:'l_voc_ko',c:'lword',t:'영어 보고 뜻 고르기',en:'Choose the correct meaning.',ko:'알맞은 뜻을 고르세요.',def:5,max:8,
+  gen(D,n){const v=take(D.vocab,n);const it=v.map(x=>{const o=shuf([x.k,...take(D.vocab.filter(y=>y!==x),3).map(y=>y.k)]);return{x,o,a:o.indexOf(x.k)}});
+   return{q:ol(it.map(i=>`<b>${esc(i.x.w)}</b>${mcHtml(i.o)}`)),a:ol(it.map(i=>`${esc(i.x.w)} → ${red(NUM[i.a]+' '+esc(i.x.k))}`))}}},
+ {k:'l_voc_en',c:'lword',t:'뜻 보고 영어 쓰기',en:'Write the words in English.',ko:'우리말 뜻을 보고 영어로 쓰세요.',def:5,max:8,
+  gen(D,n){const v=take(D.vocab,n);return{q:ol(v.map(x=>`${esc(x.k)} <span class="ans">→ ${esc(x.w[0])}<span class="blank"></span></span>`)),a:ol(v.map(x=>`${esc(x.k)} → ${red(esc(x.w))}`))}}}
+];
+const LF_REQ={l_scr_ko:D=>D.sentences.filter(x=>x.k).length,l_choose:D=>D.sentences.some(s=>gramSpots(D,s).length),l_err:D=>D.sentences.some(s=>gramSpots(D,s).length),
+ l_subj:D=>{R=rng(1);return D.sentences.some(s=>subjSwap(s,R))},l_blank:D=>D.sentences.some(x=>x.k),l_qa:D=>(D.qa||[]).length>=2,l_k2e:D=>D.sentences.some(x=>x.k),l_dict:D=>D.sentences.some(x=>x.k),
+ l_voc_ko:D=>D.vocab.length>=4,l_voc_en:D=>D.vocab.length>0,l_scr_word:D=>D.sentences.length,l_scr_chunk:D=>D.sentences.some(s=>s.e.split(' ').length>=4)};
+
+const TY=Object.fromEntries([...TYPES,...LF_TYPES].map(t=>[t.k,t]));
+const isLF=()=>SB==='LF';const cTYPES=()=>isLF()?LF_TYPES:TYPES;const cCATS=()=>isLF()?LF_CATS:CATS;
 
 /* ===================== 화면 ===================== */
 let BK=null,SB=null,LV=null,day=null,cat='word',sel='v_en2ko',pvSeed=1,pvN=TY.v_en2ko.def,basket=[],nextSeed=100,askHome=false,homeLv=null,homeQ='';
@@ -312,12 +395,12 @@ async function openDay(l,d){
   const k=KEY(BK,SB,l);
   if(!(window.HB_PACK||{})[k]){$('#home').insertAdjacentHTML('beforeend','<div class="loadmsg" id="loadmsg">불러오는 중…</div>');
     try{await loadPack(k)}catch(e){const m=$('#loadmsg');if(m)m.textContent='데이터를 불러오지 못했어요. 새로고침 해주세요.';return}}
-  LV=l;day=d;basket=[];cat='word';sel='v_en2ko';pvN=TY.v_en2ko.def;pvSeed++;setHash();render();window.scrollTo(0,0)}
+  LV=l;day=d;basket=[];const f0=cTYPES()[0];cat=f0.c;sel=f0.k;pvN=f0.def;fixSel();pvSeed++;setHash();render();window.scrollTo(0,0)}
 function goHome(){LV=null;day=null;basket=[];askHome=false;setHash();render()}
 function gen(t,n,seed){R=rng(seed*131+day);return TY[t].gen(CUR(),n)}
 const hasPast=D=>pool(D).some(s=>s.e.split(' ').some(x=>PAST[x.replace(/[^a-z]/gi,'').toLowerCase()]));
 const REQ={s_err:hasPast,b_verb:hasPast,v_def:D=>D.vocab.some(x=>x.d),s_trans:D=>D.sentences.filter(x=>x.k).length>=4,s_k2e:D=>D.sentences.some(x=>x.k),r_ox:D=>D.ox&&D.ox.length,r_qa:D=>D.qa&&D.qa.length,r_mc:D=>D.mc&&D.mc.length,r_order:D=>D.events&&D.events.length,b_story:D=>D.passage&&D.passage.length};
-function avail(t){const D=CUR();return REQ[t]?!!REQ[t](D):true}
+function avail(t){const D=CUR();const r=REQ[t]||LF_REQ[t];return r?!!r(D):true}
 function render(){
   if(!LV){renderHome();return}
   $('#home').hidden=true;$('#bank').hidden=false;
@@ -326,8 +409,8 @@ function render(){
    <button class="backbtn" id="toHome">← Day 목록</button>
    <div class="brand"><b>${BK} · ${SBT(SB)} · ${esc(L.name)} · Day ${day} <span class="ttl">${esc(CUR().title)}</span></b><span>항목 → 문제 유형을 눌러 담으면 문제지 · 답지가 만들어져요</span></div>
    ${askHome?`<div class="ask">Day 목록으로 가면 담은 문제 ${basket.length}개가 비워져요. <button id="askY">나가기</button><button id="askN" class="g">취소</button></div>`:''}`;
-  $('#cats').innerHTML=CATS.map(c=>`<button data-cat="${c.k}" class="${c.k===cat?'on':''}">${c.ic} ${c.t}<small>${TYPES.filter(t=>t.c===c.k).length}</small></button>`).join('');
-  $('#types').innerHTML=TYPES.filter(t=>t.c===cat).map(t=>{const ok=avail(t.k),inB=basket.filter(b=>b.t===t.k).length;
+  $('#cats').innerHTML=cCATS().map(c=>`<button data-cat="${c.k}" class="${c.k===cat?'on':''}">${c.ic} ${c.t}<small>${cTYPES().filter(t=>t.c===c.k).length}</small></button>`).join('');
+  $('#types').innerHTML=cTYPES().filter(t=>t.c===cat).map(t=>{const ok=avail(t.k),inB=basket.filter(b=>b.t===t.k).length;
     return `<button class="tcard ${t.k===sel?'on':''} ${ok?'':'dis'}" data-t="${t.k}" ${ok?'':'disabled'}><b>${t.t}</b><span>${esc(t.en)}</span>${ok?'':'<em>이 Day엔 이 유형에 쓸 자료가 없어요</em>'}${inB?`<i>담음 ${inB}</i>`:''}</button>`}).join('');
   renderPreview();renderBasket();renderSheets();bind();
 }
@@ -362,7 +445,7 @@ function bind(){
   if($('#toHome'))$('#toHome').onclick=()=>{if(basket.length){askHome=true;render()}else goHome()};
   if($('#askY'))$('#askY').onclick=goHome;
   if($('#askN'))$('#askN').onclick=()=>{askHome=false;render()};
-  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{cat=b.dataset.cat;const f=TYPES.find(t=>t.c===cat&&avail(t.k));if(f){sel=f.k;pvN=f.def;pvSeed++}render()});
+  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{cat=b.dataset.cat;const f=cTYPES().find(t=>t.c===cat&&avail(t.k));if(f){sel=f.k;pvN=f.def;pvSeed++}render()});
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{sel=b.dataset.t;pvN=TY[sel].def;pvSeed++;render()});
   if($('#pvN'))$('#pvN').onchange=e=>{pvN=+e.target.value;renderPreview();bind()};
   if($('#pvRe'))$('#pvRe').onclick=()=>{pvSeed++;renderPreview();bind()};
@@ -373,7 +456,7 @@ function bind(){
   if($('#bkClr'))$('#bkClr').onclick=()=>{basket=[];render()};
   if($('#pr'))$('#pr').onclick=()=>{try{window.print()}catch(e){}};
 }
-function fixSel(){if(!avail(sel)){const f=TYPES.find(t=>t.c===cat&&avail(t.k))||TYPES[0];sel=f.k;pvN=f.def}}
+function fixSel(){if(!avail(sel)){const f=cTYPES().find(t=>t.c===cat&&avail(t.k))||cTYPES().find(t=>avail(t.k))||cTYPES()[0];cat=f.c;sel=f.k;pvN=f.def}}
 function flash(){const e=$('#basket');e.classList.remove('fl');void e.offsetWidth;e.classList.add('fl')}
 // 주소 #I3-17 로 바로 열기
 (function(){const p=decodeURIComponent((location.hash||'').slice(1)).split('-').filter(Boolean);
