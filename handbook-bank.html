@@ -118,6 +118,7 @@ ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li
 .dcard{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-height:96px;font-family:inherit;color:var(--ink)}
 .dcard:hover{border-color:var(--g-d);box-shadow:0 4px 14px rgba(78,154,71,.15)}
 .dcard .dn{font:900 18px 'Nunito';color:var(--red)}.dcard .dt{font:800 14px 'Nunito';color:var(--g-d)}.dcard .dm{font:600 11.5px 'Noto Sans KR';color:var(--soft);margin-top:auto}
+.dcard.none{border-style:solid;background:#F4F5F4}.dcard.none .dm{color:#A3ABA5;font-weight:500}
 .dcard.off{background:transparent;border-style:dashed;cursor:default}.dcard.off .dn{color:#B8C0BA}.dcard.off .dt{color:#B8C0BA;font-family:'Noto Sans KR';font-weight:600;font-size:12.5px}
 .crumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 4px;font:700 13px 'Noto Sans KR';color:var(--soft)}
 .cr{border:0;background:none;font:800 13.5px 'Noto Sans KR';color:var(--g-d);cursor:pointer;padding:4px 6px;border-radius:6px}.cr:hover{background:var(--g-s)}
@@ -152,6 +153,11 @@ ol.ql{margin:0;padding-left:24px}ol.ql>li{margin:3px 0;padding-left:3px}ol.ql>li
 const PAST={stole:'steal',hid:'hide',took:'take',invited:'invite',gave:'give',rolled:'roll',came:'come',struck:'strike',gazed:'gaze',
  shivered:'shiver',sat:'sit',sold:'sell',went:'go',looked:'look',filled:'fill',bought:'buy',tripped:'trip',fell:'fall',started:'start',
  walked:'walk',heard:'hear',saw:'see',muttered:'mutter',held:'hold',shouted:'shout',lived:'live',disappeared:'disappear',felt:'feel'};
+// 현재형(3인칭 -s) ↔ 원형도 같이 (Miracle 교재는 현재 시제 이야기가 많음)
+Object.assign(PAST,{sings:'sing',makes:'make',finds:'find',sees:'see',cries:'cry',lives:'live',catches:'catch',keeps:'keep',loves:'love',gets:'get',hears:'hear',
+ thinks:'think',walks:'walk',needs:'need',breaks:'break',marries:'marry',puts:'put',tells:'tell',likes:'like',sends:'send',wants:'want',follows:'follow',kills:'kill',
+ says:'say',asks:'ask',goes:'go',takes:'take',comes:'come',meets:'meet',smiles:'smile',laughs:'laugh',falls:'fall',grows:'grow',stops:'stop',flies:'fly',fly:null});
+delete PAST.fly;
 const STOP=new Set('the a an and but or so to of in on at by for with was were is are be been her his him she he they them their it its this that these those i you we my your our had have has did do not no as then there what who whose when why would like will can just one only'.split(' '));
 function pool(D){ // 문장 재료: 핸드북 문장 + 본문 문장
   const out=[...D.sentences.map(s=>({e:s.e,k:s.k}))];const seen=new Set(out.map(s=>s.e));
@@ -191,7 +197,7 @@ const TYPES=[
     return{x,q:L.map((c,i)=>idx.includes(i)?'<u>&nbsp;&nbsp;</u>':c).join(' '),a:L.map((c,i)=>idx.includes(i)?red(c):c).join(' ')}});
    return{q:ol(it.map(i=>`<span class="letters">${i.q}</span> <span class="hintk">(${esc(i.x.k)})</span>`)),a:ol(it.map(i=>`<span class="letters">${i.a}</span>`))}}},
  {k:'v_def',c:'word',t:'영어 풀이 보고 단어 쓰기',en:'Read and write the word.',ko:'영어 풀이를 읽고 알맞은 단어를 쓰세요.',def:4,max:6,
-  gen(D,n){const v=take(D.vocab,n);
+  gen(D,n){const v=take(D.vocab.filter(x=>x.d),n);
    return{q:ol(v.map(x=>`${esc(x.d)}. <span class="ans">→ ${esc(x.w[0])}<span class="blank"></span></span>`)),a:ol(v.map(x=>`${esc(x.d)}. → ${red(esc(x.w))}`))}}},
  {k:'v_search',c:'word',t:'단어 찾기 퍼즐',en:'Find the words in the puzzle.',ko:'뜻을 보고 영어 단어를 퍼즐에서 찾아 동그라미 하세요.',def:6,max:6,
   gen(D,n){const v=take(single(D),n);const N=10,G=Array.from({length:N},()=>Array(N).fill(''));const mark=new Set();
@@ -212,7 +218,7 @@ const TYPES=[
    const it=take(cand,n).map(({s,w})=>{const core=w.replace(/[^a-z]/gi,'');const base=PAST[core.toLowerCase()];return{s,core,base,wrong:s.e.replace(new RegExp('\\b'+core+'\\b'),base)}});
    return{q:ol(it.map(i=>`${esc(i.wrong)}<div class="fix">→ <span class="blank"></span></div>`)),a:ol(it.map(i=>`${esc(i.wrong).replace(new RegExp('\\b'+i.base+'\\b'),m=>`<s>${m}</s>`)} → ${red(esc(i.core))}`))}}},
  {k:'s_trans',c:'sent',t:'알맞은 해석 고르기',en:'Choose the correct meaning.',ko:'영어 문장의 알맞은 해석을 고르세요.',def:3,max:5,
-  gen(D,n){const ks=D.sentences;const it=take(ks,n).map(s=>{const o=shuf([s.k,...take(ks.filter(y=>y!==s),3).map(y=>y.k)]);return{s,o,a:o.indexOf(s.k)}});
+  gen(D,n){const ks=D.sentences.filter(x=>x.k);const it=take(ks,n).map(s=>{const o=shuf([s.k,...take(ks.filter(y=>y!==s),3).map(y=>y.k)]);return{s,o,a:o.indexOf(s.k)}});
    return{q:ol(it.map(i=>`<b>${esc(i.s.e)}</b><div class="opts vert">${i.o.map((x,j)=>`<span>${NUM[j]} ${esc(x)}</span>`).join('')}</div>`)),a:ol(it.map(i=>`${esc(i.s.e)}<br>${red(NUM[i.a]+' '+esc(i.s.k))}`))}}},
  {k:'s_half',c:'sent',t:'문장 앞뒤 연결하기',en:'Match the two parts.',ko:'문장의 앞부분과 뒷부분을 알맞게 연결하세요.',def:4,max:6,
   gen(D,n){const sp=pool(D).map(s=>{let m=s.e.match(/^(.+?,)\s(.+)$/)||s.e.match(/^(.+?)\s((?:and|so|because|as)\s.+)$/);
@@ -221,12 +227,13 @@ const TYPES=[
    return{q:`<div class="match"><ol class="ml">${it.map(x=>`<li><span>${esc(x.l)}</span><i>•</i></li>`).join('')}</ol><ol class="mr">${rs.map((x,i)=>`<li><i>•</i><span>${AL[i]}. ${esc(x.r)}</span></li>`).join('')}</ol></div>`,
     a:ol(it.map(x=>`${esc(x.l)} ${red(AL[rs.indexOf(x)]+'. '+esc(x.r))}`))}}},
  {k:'s_k2e',c:'sent',t:'우리말 → 영작',en:'Write the sentences in English.',ko:'힌트 단어를 이용해 영어 문장으로 쓰세요.',def:3,max:5,
-  gen(D,n){const it=take(D.sentences,n).map(s=>{const w=s.e.replace(/[.,!?“”"]/g,'').split(' ').filter(x=>x.length>3&&!STOP.has(x.toLowerCase()));return{s,h:take(w,Math.min(3,w.length)).map(x=>x.toLowerCase())}});
+  gen(D,n){const it=take(D.sentences.filter(x=>x.k),n).map(s=>{const w=s.e.replace(/[.,!?“”"]/g,'').split(' ').filter(x=>x.length>3&&!STOP.has(x.toLowerCase()));return{s,h:take(w,Math.min(3,w.length)).map(x=>x.toLowerCase())}});
    return{q:ol(it.map(i=>`${esc(i.s.k)}<div class="hint">힌트: ${i.h.map(esc).join(', ')}</div><div class="wline"></div>`)),a:ol(it.map(i=>`${esc(i.s.k)}<br>${red(esc(i.s.e))}`))}}},
  /* ---------- 빈칸 ---------- */
  {k:'b_mc',c:'blank',t:'4지선다 빈칸',en:'Choose the word for the blank.',ko:'빈칸에 알맞은 단어를 고르세요.',def:5,max:8,
-  gen(D,n){const it=take(D.vocab,n).map(x=>{const s=x.s[Math.floor(R()*x.s.length)];const o=shuf([x.w,...take(D.vocab.filter(y=>y!==x),3).map(y=>y.w)]);return{x,s,o,a:o.indexOf(x.w)}});
-   return{q:ol(it.map(i=>`${esc(i.s).replace(wre(i.x.w),'<span class="blank"></span>')}${mcHtml(i.o)}`)),a:ol(it.map(i=>`${esc(i.s).replace(wre(i.x.w),m=>red(esc(m)))} &nbsp;(${NUM[i.a]})`))}}},
+  gen(D,n){const it=take(D.vocab.filter(x=>x.s&&x.s.length),n).map(x=>{const p=x.s[Math.floor(R()*x.s.length)];const s=Array.isArray(p)?p[0]:p,f=Array.isArray(p)?p[1]:x.w;
+    const o=shuf([f,...take(D.vocab.filter(y=>y!==x),3).map(y=>y.w)]);return{x,s,f,o,a:o.indexOf(f)}});
+   return{q:ol(it.map(i=>`${esc(i.s).replace(wre(i.f),'<span class="blank"></span>')}${mcHtml(i.o)}`)),a:ol(it.map(i=>`${esc(i.s).replace(wre(i.f),m=>red(esc(m)))} &nbsp;(${NUM[i.a]})`))}}},
  {k:'b_verb',c:'blank',t:'동사 모양 바꿔 쓰기',en:'Write the correct form of the word.',ko:'괄호 안의 단어를 알맞은 모양으로 바꿔 쓰세요.',def:5,max:6,
   gen(D,n){const cand=pool(D).map(s=>{const w=s.e.split(' ').map(x=>x.replace(/[^a-z]/gi,'')).find(x=>PAST[x.toLowerCase()]);return w?{s,w}:null}).filter(Boolean);
    const it=take(cand,n);
@@ -283,6 +290,7 @@ function renderHome(){
      <input id="q" placeholder="Day 번호나 제목 검색" value="${esc(homeQ)}"></div>
      <div class="lvls">${LEVELS.map(l=>{const n=nDays(BK,SB,l);return `<button data-lv="${l}" class="${l===homeLv?'on':''}" ${n?'':'disabled'}>${LVNAME[l]}<small>${n?n+'일':'준비 중'}</small></button>`}).join('')}</div>
      <div class="dgrid">${Array.from({length:MAXDAY},(_,i)=>i+1).filter(d=>!q||String(d)===q||((ds[d]&&ds[d].title)||'').toLowerCase().includes(q)).map(d=>{const D=ds[d];
+      const no=L&&L.none&&L.none[d];if(!D&&no)return `<div class="dcard off none"><span class="dn">Day ${d}</span><span class="dt">자료 없음</span><span class="dm">${esc(no)}</span></div>`;
       return D?`<button class="dcard" data-d="${d}"><span class="dn">Day ${d}</span><span class="dt">${esc(D.title)}</span><span class="dm">단어 ${D.vocab.length} · 문장 ${D.sentences.length}${D.passage?' · 본문':''}</span></button>`
               :`<div class="dcard off"><span class="dn">Day ${d}</span><span class="dt">준비 중</span></div>`}).join('')}</div>`;
   }
@@ -298,7 +306,8 @@ function setHash(){try{history.replaceState(null,'','#'+[BK,SB,LV,day].filter(Bo
 function openDay(l,d){LV=l;day=d;basket=[];cat='word';sel='v_en2ko';pvN=TY.v_en2ko.def;pvSeed++;setHash();render();window.scrollTo(0,0)}
 function goHome(){LV=null;day=null;basket=[];askHome=false;setHash();render()}
 function gen(t,n,seed){R=rng(seed*131+day);return TY[t].gen(CUR(),n)}
-function avail(t){const T=TY[t];return !T.need||CUR()[T.need]}
+const REQ={v_def:D=>D.vocab.some(x=>x.d),s_trans:D=>D.sentences.filter(x=>x.k).length>=4,s_k2e:D=>D.sentences.some(x=>x.k),r_ox:D=>D.ox&&D.ox.length,r_qa:D=>D.qa&&D.qa.length,r_mc:D=>D.mc&&D.mc.length,r_order:D=>D.events&&D.events.length,b_story:D=>D.passage&&D.passage.length};
+function avail(t){const D=CUR();return REQ[t]?!!REQ[t](D):true}
 function render(){
   if(!LV){renderHome();return}
   $('#home').hidden=true;$('#bank').hidden=false;
@@ -309,7 +318,7 @@ function render(){
    ${askHome?`<div class="ask">Day 목록으로 가면 담은 문제 ${basket.length}개가 비워져요. <button id="askY">나가기</button><button id="askN" class="g">취소</button></div>`:''}`;
   $('#cats').innerHTML=CATS.map(c=>`<button data-cat="${c.k}" class="${c.k===cat?'on':''}">${c.ic} ${c.t}<small>${TYPES.filter(t=>t.c===c.k).length}</small></button>`).join('');
   $('#types').innerHTML=TYPES.filter(t=>t.c===cat).map(t=>{const ok=avail(t.k),inB=basket.filter(b=>b.t===t.k).length;
-    return `<button class="tcard ${t.k===sel?'on':''} ${ok?'':'dis'}" data-t="${t.k}" ${ok?'':'disabled'}><b>${t.t}</b><span>${esc(t.en)}</span>${ok?'':'<em>이 Day엔 본문 자료 없음</em>'}${inB?`<i>담음 ${inB}</i>`:''}</button>`}).join('');
+    return `<button class="tcard ${t.k===sel?'on':''} ${ok?'':'dis'}" data-t="${t.k}" ${ok?'':'disabled'}><b>${t.t}</b><span>${esc(t.en)}</span>${ok?'':'<em>이 Day엔 이 유형에 쓸 자료가 없어요</em>'}${inB?`<i>담음 ${inB}</i>`:''}</button>`}).join('');
   renderPreview();renderBasket();renderSheets();bind();
 }
 function renderPreview(){
