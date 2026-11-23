@@ -66,6 +66,21 @@
   .msg-actions button{ flex:1; border:none; border-radius:9px; padding:10px; font-size:12.5px; font-weight:800; cursor:pointer; font-family:inherit; }
   .copy-btn{ background:var(--teal-soft); color:var(--teal); }
   .share-btn{ background:#FEE500; color:#3C1E1E; }
+  /* 보낸 반 표시 */
+  .msg-card{ transition:background .2s, border-color .2s; }
+  .msg-card.sent{ background:#EEF8EF; border:2px solid #4CAF6A; }
+  .msg-card.sent .msg-head{ background:#2E7D4A; }
+  .msg-card.sent pre.msg{ background:#F7FBF7; border-color:#CFE8D4; color:#5b6b5f; }
+  .sent-badge{ display:inline-flex; align-items:center; gap:4px; background:#fff; color:#2E7D4A; font-size:11.5px; font-weight:800; border-radius:20px; padding:3px 10px; margin-left:8px; vertical-align:2px; }
+  .undo-btn{ flex:0 0 auto !important; background:transparent; color:var(--ink-soft); border:1px solid var(--line) !important; font-weight:600 !important; }
+  .progress{ display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap; }
+  .progress .bar{ flex:1; min-width:160px; height:10px; background:var(--paper); border-radius:6px; overflow:hidden; }
+  .progress .bar i{ display:block; height:100%; background:#4CAF6A; transition:width .25s; }
+  .progress .txt{ font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .progress button{ border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; font-family:inherit; color:var(--ink-soft); }
+  .remember{ display:flex; align-items:flex-start; gap:8px; font-size:12.5px; margin-top:8px; cursor:pointer; line-height:1.5; }
+  .remember input{ margin-top:3px; }
+  .forget-btn{ width:100%; margin-top:6px; border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px; font-size:12px; cursor:pointer; font-family:inherit; color:var(--accent); }
 
   table.list{ width:100%; border-collapse:collapse; font-size:12.5px; }
   table.list th, table.list td{ border-bottom:1px solid var(--line); padding:8px 8px; text-align:left; }
@@ -115,9 +130,16 @@ const staffId = sessionStorage.getItem('staff_id');
 const staffName = sessionStorage.getItem('staff_name') || '';
 if(!staffId){ location.href = 'coupon-hub.html'; }
 
-/* 학생 명단은 서버·브라우저 어디에도 저장하지 않아요. 선생님이 올린 엑셀을 이 화면에서만 읽고, 창을 닫으면 사라져요. */
+/* 학생 명단은 서버에 절대 올라가지 않아요.
+   '이 노트북에 기억하기'를 켰을 때만 이 브라우저 안에 저장하고, 끄거나 For Staff에서 로그아웃하면 지워요. */
+const ROSTER_LS = 'cyj-staff-next-sem-roster-v1';
 let STUDENTS = [];   // {t, n, cur, nx, fin, st, why}
 let FILES = [];      // {name, count}
+let REMEMBER = false;
+let rosterSaved = null; try{ rosterSaved = JSON.parse(localStorage.getItem(ROSTER_LS)||'null'); }catch(e){}
+if(rosterSaved && Array.isArray(rosterSaved.students)){
+  STUDENTS = rosterSaved.students; FILES = rosterSaved.files || []; REMEMBER = true;
+}
 const DEFAULT_FOOTER = "반 명칭과 강의실은 변동될 수 있습니다.\n첫 수업에 모든 교재(핸드북 전체+과목교재) 지참할 수 있도록\n*11월 26일(목)*까지 구입을 완료해 주세요.\n\n★겨울캠프 얼리버드 혜택 이번주 토요일(11/28)까지!!\n\n★새학기 준비물\n연필, 지우개, 색깔펜, 형광펜, 개인 물병";
 /* 본사 Due Dates PDF 기준 겨울학기 개강일: 월수금 11/30(월), 화목 12/1(화) */
 const DEFAULT_START = { M:'2026-11-30', T:'2026-12-01' };
@@ -147,10 +169,24 @@ let state = {
   startT: saved.startT || DEFAULT_START.T,
   footer: saved.footer ?? DEFAULT_FOOTER,
   rooms: saved.rooms || {},     // classCode -> 강의실
-  fixes: {}      // teacher|name -> classCode (선생님이 직접 정한 반) — 저장 안 함
+  sent: saved.sent || {},       // '선생님|반코드' -> 'M/D HH:MM' (보낸 반 표시 · 학생 이름 없음)
+  fixes: (rosterSaved && rosterSaved.fixes) || {}      // teacher|name -> classCode (기억하기 켰을 때만 저장)
 };
+if(rosterSaved && rosterSaved.teacher) state.teacher = rosterSaved.teacher;
 /* 학생 정보가 들어가는 fixes·teacher는 저장하지 않고, 학기 정보·문구·강의실만 저장 */
-function persist(){ try{ localStorage.setItem(LS, JSON.stringify({semesterName:state.semesterName,startM:state.startM,startT:state.startT,footer:state.footer,rooms:state.rooms})); }catch(e){} }
+function persist(){
+  try{ localStorage.setItem(LS, JSON.stringify({semesterName:state.semesterName,startM:state.startM,startT:state.startT,footer:state.footer,rooms:state.rooms,sent:state.sent})); }catch(e){}
+  persistRoster();
+}
+function persistRoster(){
+  try{
+    if(REMEMBER && STUDENTS.length) localStorage.setItem(ROSTER_LS, JSON.stringify({students:STUDENTS, files:FILES, fixes:state.fixes, teacher:state.teacher, savedAt:Date.now()}));
+    else localStorage.removeItem(ROSTER_LS);
+  }catch(e){ if(REMEMBER) toast('이 브라우저에서는 저장할 수 없어요 (시크릿 창 등)'); }
+}
+const sentKey = c => state.teacher+'|'+c;
+function stampNow(){ const d=new Date(); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function markSent(c){ state.sent[sentKey(c)] = stampNow(); persist(); renderStage(); }
 
 /* ============== 유틸 ============== */
 function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -206,6 +242,7 @@ async function loadFiles(fileList){
   if(!ts.includes(state.teacher)){
     state.teacher = ts.find(t=>t.toLowerCase()===staffName.toLowerCase()) || (ts.length===1 ? ts[0] : '');
   }
+  persistRoster();
   renderAll();
 }
 
@@ -242,17 +279,17 @@ function buildMessage(code){
   lines.push(`강의실: ${room ? room+(/^\d+$/.test(room)?'번':'') : '○번'} 강의실`);
   return lines.join('\n') + (state.footer.trim() ? '\n\n' + state.footer.trim() : '');
 }
-async function copyText(text){
-  try{ await navigator.clipboard.writeText(text); toast('복사했어요'); }
-  catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('복사했어요'); }
+async function copyText(text, msg){
+  try{ await navigator.clipboard.writeText(text); toast(msg||'복사했어요'); return true; }
+  catch(e){ try{ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); if(ok){ toast(msg||'복사했어요'); return true; } }catch(_){} toast('복사하지 못했어요. 문자 칸을 직접 선택해 복사해 주세요'); return false; }
 }
 /* 폰에서만 공유창을 써요. PC(윈도우)의 공유창은 카카오톡 PC가 앞으로 안 올라오고 작업표시줄에서 깜빡이기만 해서,
    PC에서는 복사한 뒤 카카오톡에 붙여넣도록 안내해요. */
 const IS_MOBILE = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
   || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 async function shareText(text){
-  if(IS_MOBILE && navigator.share){ try{ await navigator.share({ text }); return; }catch(e){ if(e.name==='AbortError') return; } }
-  await copyText(text); toast('복사했어요 · 카카오톡 채팅방에서 Ctrl+V 로 붙여넣으세요');
+  if(IS_MOBILE && navigator.share){ try{ await navigator.share({ text }); return true; }catch(e){ if(e.name==='AbortError') return false; } }
+  return copyText(text, '복사했어요 · 카카오톡 채팅방에서 Ctrl+V 로 붙여넣으세요');
 }
 
 /* ============== 왼쪽 ============== */
@@ -269,7 +306,10 @@ function renderPanel(){
       <small>'상)최종반배정' 시트를 읽어요 · 여러 개 한 번에 가능 · 클릭해서 고르기</small></div>
     <input type="file" id="fileIn" accept=".xlsx,.xls" multiple hidden>
     ${FILES.length ? `<div class="files">${FILES.map(f=>`<div class="file"><b>${esc(f.teachers)}</b><span>${esc(f.name)}</span></div>`).join('')}</div>` : ''}
-    <div class="note" style="margin-top:8px;">🔒 학생 명단은 저장되지 않아요. 이 화면에서만 읽고, 창을 닫으면 사라져요.</div>
+    <label class="remember"><input type="checkbox" id="rememberChk" ${REMEMBER?'checked':''}>
+      <span><b>이 노트북에 명단 기억하기</b><br><small style="color:var(--ink-soft)">켜면 다음에 열 때 엑셀을 다시 올리지 않아도 돼요. 같이 쓰는 컴퓨터에서는 꺼 두세요.</small></span></label>
+    ${REMEMBER && STUDENTS.length ? '<button class="forget-btn" id="forgetBtn">🗑 기억한 명단 지우기</button>' : ''}
+    <div class="note" style="margin-top:8px;">🔒 명단은 서버로 올라가지 않아요. ${REMEMBER ? '지금은 이 노트북 브라우저에만 저장돼 있고, For Staff에서 로그아웃하면 지워져요.' : '기억하기를 켜지 않으면 창을 닫을 때 사라져요.'}</div>
 
     ${FILES.length ? `<div class="section-title">선생님 선택</div>
     <div class="t-grid">${teacherList().map(t=>{ const c=STUDENTS.filter(s=>s.t===t && s.st!=='out').length;
@@ -287,7 +327,7 @@ function renderPanel(){
     <div class="field"><textarea id="footer">${esc(state.footer)}</textarea></div>
     <button class="t-btn" id="resetFooter" style="width:100%;font-size:12px;padding:9px;">↺ 기본 문구로 되돌리기</button>
   `;
-  p.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ state.teacher=b.dataset.t; renderAll(); });
+  p.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ state.teacher=b.dataset.t; persistRoster(); renderAll(); });
   const drop=document.getElementById('drop'), fin=document.getElementById('fileIn');
   drop.onclick=()=>fin.click(); fin.onchange=e=>{ if(e.target.files.length) loadFiles(e.target.files); e.target.value=''; };
   ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('over'); }));
@@ -296,6 +336,10 @@ function renderPanel(){
   const bind=(id,k)=>{ document.getElementById(id).oninput=e=>{ state[k]=e.target.value; persist(); renderStage(); }; };
   bind('semName','semesterName'); bind('startM','startM'); bind('startT','startT'); bind('footer','footer');
   document.getElementById('resetFooter').onclick=()=>{ state.footer=DEFAULT_FOOTER; persist(); renderAll(); };
+  document.getElementById('rememberChk').onchange=e=>{ REMEMBER=e.target.checked; persistRoster();
+    toast(REMEMBER ? (STUDENTS.length ? '이 노트북에 명단을 기억해 둘게요' : '엑셀을 올리면 기억해 둘게요') : '기억한 명단을 지웠어요'); renderPanel(); };
+  const fb=document.getElementById('forgetBtn');
+  if(fb) fb.onclick=()=>{ REMEMBER=false; STUDENTS=[]; FILES=[]; state.fixes={}; state.teacher=''; persistRoster(); toast('기억한 명단을 지웠어요'); renderAll(); };
 }
 
 /* ============== 오른쪽 ============== */
@@ -327,6 +371,10 @@ function renderStage(){
         <div class="stat ${checks.length?'warn':''}"><b>${checks.length}</b>확인 필요</div>
         <div class="stat"><b>${list.length-active.length}</b>퇴원</div>
       </div>
+      ${codes.length ? (()=>{ const n=codes.filter(c=>state.sent[sentKey(c)]).length;
+        return `<div class="progress"><span class="txt">✅ ${n} / ${codes.length}반 보냄</span>
+          <div class="bar"><i style="width:${codes.length? n/codes.length*100 : 0}%"></i></div>
+          ${n ? '<button id="resetSent">↺ 보냄 표시 초기화</button>' : ''}</div>`; })() : ''}
     </div>
 
     ${checks.length ? `<div class="check-box"><h3>⚠️ 다음 학기 반을 확인해 주세요 (${checks.length}명) — 반을 적으면 문자에 바로 들어가요</h3>
@@ -337,8 +385,9 @@ function renderStage(){
     <div class="msg-grid">
       ${codes.map(code=>{
         const ss = groups[code], info = TIME_MAP[code.slice(0,4)]||{days:'',time:''};
-        return `<div class="msg-card">
-          <div class="msg-head"><span class="msg-code">${code}</span><span class="msg-time">${info.days} ${info.time} · ${ss.length}명</span></div>
+        const sentAt = state.sent[sentKey(code)];
+        return `<div class="msg-card ${sentAt?'sent':''}">
+          <div class="msg-head"><span class="msg-code">${code}${sentAt?`<span class="sent-badge">✓ 보냄 ${sentAt}</span>`:''}</span><span class="msg-time">${info.days} ${info.time} · ${ss.length}명</span></div>
           <div class="msg-body">
             <div><div class="chip-label" style="margin-bottom:5px;">이 문자를 받을 학생</div>
               <div class="chips">${ss.map(s=>`<span class="chip ${s.cur!==code?'move':''}" title="현재 ${esc(s.cur)}">${esc(s.n)}${s.cur!==code?' · '+esc(s.cur)+'에서':''}</span>`).join('')}</div></div>
@@ -346,8 +395,9 @@ function renderStage(){
             <pre class="msg" id="msg-${code.replace(/[()]/g,'')}">${esc(buildMessage(code))}</pre>
             ${IS_MOBILE ? '' : '<div class="chip-label" style="font-weight:600;">PC에서는 복사 후 카카오톡 채팅방(나와의 채팅 등)에 Ctrl+V로 붙여넣어 주세요.</div>'}
             <div class="msg-actions">
-              <button class="copy-btn" data-copy="${code}">📋 문자 복사</button>
-              <button class="share-btn" data-share="${code}">${IS_MOBILE ? '💬 카톡으로 보내기' : '💬 카톡용 복사'}</button>
+              <button class="copy-btn" data-copy="${code}">📋 ${sentAt?'문자 다시 복사':'문자 복사'}</button>
+              <button class="share-btn" data-share="${code}">${IS_MOBILE ? (sentAt?'💬 카톡 다시 보내기':'💬 카톡으로 보내기') : (sentAt?'💬 카톡용 다시 복사':'💬 카톡용 복사')}</button>
+              ${sentAt ? `<button class="undo-btn" data-unsent="${code}">보냄 취소</button>` : ''}
             </div>
           </div></div>`;
       }).join('') || '<div class="empty">보낼 문자가 없어요.</div>'}
@@ -364,8 +414,11 @@ function renderStage(){
     </div>
   `;
   const roomOk = c=>{ if((state.rooms[c]||'').trim()) return true; toast('강의실 번호를 먼저 넣어주세요'); return false; };
-  stage.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ if(roomOk(b.dataset.copy)) copyText(buildMessage(b.dataset.copy)); });
-  stage.querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>{ if(roomOk(b.dataset.share)) shareText(buildMessage(b.dataset.share)); });
+  stage.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{ const c=b.dataset.copy; if(roomOk(c) && await copyText(buildMessage(c))) markSent(c); });
+  stage.querySelectorAll('[data-share]').forEach(b=>b.onclick=async()=>{ const c=b.dataset.share; if(roomOk(c) && await shareText(buildMessage(c))) markSent(c); });
+  stage.querySelectorAll('[data-unsent]').forEach(b=>b.onclick=()=>{ delete state.sent[sentKey(b.dataset.unsent)]; persist(); renderStage(); });
+  const rs=document.getElementById('resetSent');
+  if(rs) rs.onclick=()=>{ const pre=state.teacher+'|'; Object.keys(state.sent).forEach(k=>{ if(k.startsWith(pre)) delete state.sent[k]; }); persist(); renderStage(); toast('보냄 표시를 모두 지웠어요'); };
   stage.querySelectorAll('[data-room]').forEach(inp=>inp.oninput=()=>{
     state.rooms[inp.dataset.room]=inp.value; persist(); inp.classList.toggle('need', !inp.value.trim());
     const nt=inp.parentElement.querySelector('.need-txt'); if(nt) nt.style.display = inp.value.trim() ? 'none' : '';

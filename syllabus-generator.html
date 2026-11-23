@@ -383,8 +383,13 @@ async function hqLoadFiles(fileList){
   }
   hq.files.sort((a,b)=>{ const k=m=> (m>=8? m : m+12); return k(a.month||0)-k(b.month||0); });
   state.hq = hq.files.length ? hq : null;
+  hqPersist();
   renderAll();
 }
+/* 본사 PDF에서 읽은 날짜만 이 노트북 브라우저에 저장 (학생 정보 없음). 다음에 열면 자동으로 불러와요. */
+const HQ_LS = 'cyj-syllabus-hq-v1';
+function hqPersist(){ try{ if(state.hq) localStorage.setItem(HQ_LS, JSON.stringify(state.hq)); else localStorage.removeItem(HQ_LS); }catch(e){} }
+function hqRestore(){ try{ const v = JSON.parse(localStorage.getItem(HQ_LS)||'null'); if(v && v.files && v.files.length && v.days) state.hq = v; }catch(e){} }
 function hqOn(){ return !!(state.hq && state.hq.files.length); }
 function hqVal(pair,n){ const v = state.hq.days[pair][n]; return v===undefined ? null : v; }
 function hqWind(pat,g){ const v = state.hq.wind[pat][g]; return v===undefined ? null : v; }
@@ -470,6 +475,7 @@ function renderHqSection(){
     </div>
     <input type="file" id="hqInput" accept="application/pdf,.pdf" multiple hidden>
     ${on ? `<div class="hq-files">${state.hq.files.map(f=>`<div class="hq-file"><b>${f.month?f.month+'월':'?'}</b><span>${esc(f.name)}</span></div>`).join('')}</div>${status}
+      <div class="hq-saved-note" style="font-size:11.5px;color:#6b6b6b;margin:6px 0 2px;">💾 이 노트북에 저장돼 있어요 · 다음에 열어도 그대로 불러와요</div>
       <button class="add-link" id="hqClear" type="button">✕ 올린 PDF 모두 지우기</button>` : ''}
   `;
 }
@@ -482,7 +488,7 @@ function bindHqEvents(){
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) hqLoadFiles(e.dataTransfer.files); });
   const clr = document.getElementById('hqClear');
-  if(clr) clr.onclick = ()=>{ state.hq = null; renderAll(); };
+  if(clr) clr.onclick = ()=>{ state.hq = null; hqPersist(); renderAll(); };
 }
 
 
@@ -1275,6 +1281,7 @@ async function exportPDF(){
 
 /* ============== 초기화 ============== */
 function renderAll(){ renderPanel(); renderStage(); }
+hqRestore();
 renderAll();
 </script>
 </body>

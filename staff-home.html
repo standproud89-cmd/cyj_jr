@@ -140,6 +140,7 @@
     sessionStorage.removeItem('staff_name');
     sessionStorage.removeItem('staff_role');
     sessionStorage.removeItem('staff_campus');
+    try{ localStorage.removeItem('cyj-staff-next-sem-roster-v1'); }catch(e){}   // 다음학기 안내문자: 기억한 학생 명단 지우기
     window.location.href = 'coupon-hub.html';
   };
 </script>
