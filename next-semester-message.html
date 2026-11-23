@@ -246,9 +246,13 @@ async function copyText(text){
   try{ await navigator.clipboard.writeText(text); toast('복사했어요'); }
   catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('복사했어요'); }
 }
+/* 폰에서만 공유창을 써요. PC(윈도우)의 공유창은 카카오톡 PC가 앞으로 안 올라오고 작업표시줄에서 깜빡이기만 해서,
+   PC에서는 복사한 뒤 카카오톡에 붙여넣도록 안내해요. */
+const IS_MOBILE = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 async function shareText(text){
-  if(navigator.share){ try{ await navigator.share({ text }); return; }catch(e){ if(e.name==='AbortError') return; } }
-  await copyText(text); toast('복사했어요 · 카카오톡에 붙여넣기 하세요');
+  if(IS_MOBILE && navigator.share){ try{ await navigator.share({ text }); return; }catch(e){ if(e.name==='AbortError') return; } }
+  await copyText(text); toast('복사했어요 · 카카오톡 채팅방에서 Ctrl+V 로 붙여넣으세요');
 }
 
 /* ============== 왼쪽 ============== */
@@ -340,9 +344,10 @@ function renderStage(){
               <div class="chips">${ss.map(s=>`<span class="chip ${s.cur!==code?'move':''}" title="현재 ${esc(s.cur)}">${esc(s.n)}${s.cur!==code?' · '+esc(s.cur)+'에서':''}</span>`).join('')}</div></div>
             <div class="room-row">강의실 <input data-room="${code}" class="${(state.rooms[code]||'').trim()?'':'need'}" value="${esc(state.rooms[code]||'')}" placeholder="번호"> 번 ${(state.rooms[code]||'').trim()?'':'<span class="need-txt">← 강의실 번호를 넣어주세요</span>'}</div>
             <pre class="msg" id="msg-${code.replace(/[()]/g,'')}">${esc(buildMessage(code))}</pre>
+            ${IS_MOBILE ? '' : '<div class="chip-label" style="font-weight:600;">PC에서는 복사 후 카카오톡 채팅방(나와의 채팅 등)에 Ctrl+V로 붙여넣어 주세요.</div>'}
             <div class="msg-actions">
               <button class="copy-btn" data-copy="${code}">📋 문자 복사</button>
-              <button class="share-btn" data-share="${code}">💬 카톡으로 보내기</button>
+              <button class="share-btn" data-share="${code}">${IS_MOBILE ? '💬 카톡으로 보내기' : '💬 카톡용 복사'}</button>
             </div>
           </div></div>`;
       }).join('') || '<div class="empty">보낼 문자가 없어요.</div>'}

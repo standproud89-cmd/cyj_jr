@@ -31,19 +31,21 @@
   .who{ font-size:13.5px; font-weight:700; color:var(--ink-soft); }
   .who b{ color:var(--ink); }
 
-  .main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px clamp(20px,4vw,48px) 60px; }
+  .main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 8px clamp(20px,4vw,48px) clamp(20px,4vh,40px); }
   .main-title{ text-align:center; margin-bottom:clamp(28px,4vh,44px); }
   .main-title .icon{ font-size:40px; margin-bottom:8px; }
   .main-title h1{ font-size:clamp(20px,2.6vw,28px); margin:0 0 6px; }
   .main-title p{ font-size:13px; color:var(--ink-soft); margin:0; }
 
-  .box-grid{ display:flex; flex-wrap:wrap; justify-content:center; gap:clamp(18px,3vw,28px); max-width:1180px; width:100%; }
-  .box-grid .box{ flex:0 1 calc((100% - 2*clamp(18px,3vw,28px))/3); }
-  @media (max-width:900px){ .box-grid .box{ flex-basis:calc((100% - clamp(18px,3vw,28px))/2); } }
-  @media (max-width:620px){ .box-grid .box{ flex-basis:100%; } }
+  /* 7개 상자가 한 화면에 다 보이도록: 넓은 화면 4칸(4+3), 중간 3칸, 좁은 화면 2칸 */
+  .box-grid{ --gap:clamp(14px,2vw,24px); display:flex; flex-wrap:wrap; justify-content:center; gap:var(--gap); max-width:1240px; width:100%; }
+  .box-grid .box{ flex:0 1 calc((100% - 3*var(--gap))/4); }
+  @media (max-width:1100px){ .box-grid .box{ flex-basis:calc((100% - 2*var(--gap))/3); } }
+  @media (max-width:760px){ .box-grid .box{ flex-basis:calc((100% - var(--gap))/2); } }
+  @media (max-width:620px){ .box{ min-height:120px; padding:14px; border-radius:20px; } }
   .box{
     background:#fff; border:2px solid var(--line); border-radius:26px;
-    min-height:clamp(220px,32vh,300px); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;
+    min-height:clamp(150px,30vh,230px); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;
     cursor:pointer; position:relative; overflow:hidden;
     transition:transform .15s ease, box-shadow .15s ease;
     text-align:center;
@@ -53,8 +55,8 @@
   .box-accent{ position:absolute; top:0; left:0; right:0; height:8px; }
   .box.gold .box-accent{ background:linear-gradient(90deg, #C9971F, #E8B84B); }
   .box.blue .box-accent{ background:linear-gradient(90deg, var(--blue), #7EB3F7); }
-  .box-icon{ font-size:clamp(64px,8vw,92px); line-height:1; margin-bottom:18px; }
-  .box-title{ font-weight:900; font-size:clamp(26px,3.4vw,38px); letter-spacing:-0.01em; }
+  .box-icon{ font-size:clamp(44px,min(5.5vw,8vh),72px); line-height:1; margin-bottom:clamp(8px,1.6vh,16px); }
+  .box-title{ font-weight:900; font-size:clamp(19px,min(2.3vw,3.6vh),30px); letter-spacing:-0.01em; word-break:keep-all; }
   .box-desc{ font-size:13px; color:var(--ink-soft); margin-top:8px; font-weight:600; }
 </style>
 </head>

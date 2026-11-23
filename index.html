@@ -110,6 +110,7 @@
     transition:transform 0.15s ease;
   }
   .sub-box:hover{ transform:translateY(-4px); }
+  #screen-prep .sub-grid{ grid-template-columns:repeat(2, 1fr); }
   .sub-box-icon{ font-size:clamp(40px,5.5vw,64px); }
   .sub-box-title{ font-weight:900; font-size:clamp(22px,3.2vw,32px); letter-spacing:-0.01em; margin-top:14px; }
   .sub-box-desc{ font-size:clamp(12px,1.4vw,15px); margin-top:8px; font-weight:600; }
@@ -137,12 +138,10 @@
   body.theme-dark .back-btn{ background:var(--hcard); border-color:var(--hborder); color:#c9c9cc; }
   body.theme-dark .back-btn:hover{ background:#221f24; color:#fff; }
 
-  #screen-inclass .sub-grid{ grid-template-columns:repeat(2, 1fr); }
-
   /* ---------- 모바일: 세로 배치 ---------- */
   @media (max-width: 780px){
     .home-grid{ grid-template-columns:1fr; }
-    .sub-grid, #screen-inclass .sub-grid{ grid-template-columns:1fr; }
+    .sub-grid, #screen-prep .sub-grid{ grid-template-columns:1fr; }
     .home-box{ min-height:200px; }
     .sub-box{ min-height:auto; flex-direction:row; align-items:center; gap:16px; }
     .sub-box-title{ margin-top:0; }
@@ -167,19 +166,19 @@
         <div class="home-box-accent hex"></div>
         <div class="home-box-icon">🎯</div>
         <div class="home-box-title">In class</div>
-        <div class="home-box-sub">Activity Tool · Review Test</div>
+        <div class="home-box-sub">Activity Tool · Review Test · Halloween</div>
       </div>
       <div class="home-box light" id="box-prep">
         <div class="home-box-accent"></div>
         <div class="home-box-icon">📋</div>
         <div class="home-box-title">Class prep.</div>
-        <div class="home-box-sub">담임 안내문 · 숙제 기한표 · 다음학기 안내문자</div>
+        <div class="home-box-sub">담임 안내문 · 숙제 기한표</div>
       </div>
       <div class="home-box light" id="box-coupon">
         <div class="home-box-accent gold"></div>
         <div class="home-box-icon">🎟️</div>
         <div class="home-box-title">For Staff</div>
-        <div class="home-box-sub">LTE · Wow 쿠폰함 · Monthly Report</div>
+        <div class="home-box-sub">LTE · Wow 쿠폰함</div>
       </div>
     </div>
   </div>
@@ -196,6 +195,10 @@
         <div><span class="sub-box-icon">⏱️</span><div class="sub-box-title">Review Test</div></div>
         <div class="sub-box-desc">타이머 · 카운트다운 알림음</div>
       </a>
+      <a class="sub-box sub-box-dark" href="activity-tool/index.html#halloween">
+        <div><span class="sub-box-icon">🎃</span><div class="sub-box-title">Halloween</div></div>
+        <div class="sub-box-desc">방탈출 스타일 반 이벤트</div>
+      </a>
     </div>
   </div>
 
@@ -205,15 +208,11 @@
     <div class="sub-grid">
       <a class="sub-box" href="homeroom-notice.html">
         <div><span class="sub-box-icon">📝</span><div class="sub-box-title">담임 안내문</div></div>
-        <div class="sub-box-desc">반별 안내문 자동 생성 · 인쇄/PDF</div>
+        <div class="sub-box-desc">반별 안내문 자동 생성 · 인쇄/이미지/PDF</div>
       </a>
       <a class="sub-box" href="syllabus-generator.html">
         <div><span class="sub-box-icon">🗓️</span><div class="sub-box-title">숙제 기한표</div></div>
-        <div class="sub-box-desc">레벨별 실라버스 · 마스터 캘린더</div>
-      </a>
-      <a class="sub-box" href="next-semester-simulator.html">
-        <div><span class="sub-box-icon">📮</span><div class="sub-box-title">다음학기 안내문자</div></div>
-        <div class="sub-box-desc">반편성 자동계산 · 카톡 공유</div>
+        <div class="sub-box-desc">본사 Due Dates PDF로 자동 · 인쇄/이미지/PDF</div>
       </a>
     </div>
   </div>
