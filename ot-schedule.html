@@ -44,6 +44,16 @@
   .date-row input{ flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:9px; font-family:inherit; font-size:13px; }
   .date-row .dow{ width:28px; font-weight:800; font-size:13px; text-align:center; }
   .date-row .x{ border:none; background:none; color:var(--ink-soft); cursor:pointer; font-size:16px; padding:4px 6px; }
+  .date-row.on input{ border-color:var(--ink); font-weight:700; }
+  .date-row .pick{ border:1px solid var(--line); background:#fff; border-radius:8px; padding:7px 9px; font-size:11.5px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; color:var(--ink); }
+  .date-row .pick.on{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .day-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+  .day-tab{ border:1px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink); }
+  .day-tab.on{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .day-tab small{ font-weight:600; opacity:.75; margin-left:4px; }
+  .pick-empty{ margin-top:14px; padding:28px; text-align:center; border:1.5px dashed var(--line); border-radius:12px; color:var(--ink-soft); font-size:13.5px; line-height:1.7; }
+  tr.active-day td.day{ background:#1C2321; color:#fff; } tr.active-day td.day small{ color:#ffffffb0; }
+  .exporting tr.active-day td.day{ background:#F4F5F4; color:inherit; } .exporting tr.active-day td.day small{ color:#666; }
   .date-row.bad input{ border-color:var(--accent); background:var(--accent-soft); }
 
   /* 교육 박스 */
@@ -79,7 +89,7 @@
   .req.done{ background:var(--green-soft); border:2px solid #4CAF6A; }
   .req.done .req-count{ color:var(--green); font-weight:800; }
   .opts{ display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto; padding-right:2px; }
-  .opt{ display:grid; grid-template-columns:66px 74px minmax(0,1fr) auto; gap:6px; align-items:center; text-align:left; font-family:inherit; font-size:12px;
+  .opt{ display:grid; grid-template-columns:78px minmax(0,1fr) auto; gap:6px; align-items:center; text-align:left; font-family:inherit; font-size:12px;
     border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer; color:var(--ink); }
   .opt:hover{ border-color:var(--ink); background:var(--paper); }
   .opt .d{ font-weight:800; } .opt .t{ color:var(--ink-soft); font-variant-numeric:tabular-nums; }
@@ -155,9 +165,10 @@
 const staffId = sessionStorage.getItem('staff_id');
 if(!staffId){ location.href = 'coupon-hub.html'; }
 
-/* ================= 2026 Winter Timetable (동작) =================
+/* ================= 2026 Fall Timetable (동작, 2026_03_29) =================
    반마다 [요일][교시] = '과목 선생님'. 화목(T)반은 화·목 같은 시간표.
-   H5 = High 5 (담임/담당). 강의실은 시간표 번호 그대로. */
+   H5 = High 5 담당. 강의실은 시간표 번호 그대로. */
+const TT_LABEL = '2026 Fall 시간표';
 const ZONES = {
   'M(F)': { days:[1,3,5], periods:['2:30~3:15','3:20~4:05'] },
   'M(M)': { days:[1,3,5], periods:['4:10~4:55','5:00~5:45'] },
@@ -167,51 +178,52 @@ const ZONES = {
 };
 /* 반: [zone, 반, 담임, 강의실, H5담당, {요일: ['과목 선생님', ...]}] */
 const TT = [
-  ['M(F)','W1-A','Chloe',1,null,{1:['PS1 Calra','PS2 Lily'],3:['PS3 Chloe','PS1 Calra'],5:['PS2 Lily','PS3 Chloe']}],
-  ['M(F)','I1-A','Hazel',2,null,{1:['NS Ella','FW Ryan'],3:['LF Hazel','NS Ella'],5:['FW Ryan','LF Hazel']}],
-  ['M(F)','I2-A','Chloe',3,null,{1:['LF Rachel','FW Chloe'],3:['NS Ella','LF Rachel'],5:['FW Chloe','NS Ella']}],
-  ['M(F)','I2-B','Justin',4,null,{1:['NS Tiaan','LF Calra'],3:['FW Justin','NS Tiaan'],5:['LF Calra','FW Justin']}],
-  ['M(F)','I3-A','Lily',8,null,{1:['FW Lily','NS Tiaan'],3:['LF Calra','FW Lily'],5:['NS Tiaan','LF Calra']}],
-  ['M(F)','I3-B','Rachel',5,null,{1:['FW Justin','NS Robin'],3:['LF Rachel','FW Justin'],5:['NS Robin','LF Rachel']}],
-  ['M(F)','I4-A','Ryan',6,null,{1:['NS Robin','FW Ella'],3:['LF Ryan','NS Robin'],5:['FW Ella','LF Ryan']}],
+  ['M(F)','W2-A','Swan',1,null,{1:['PS1 Swan','PS3 Ella'],3:['PS3 Ella','PS2 Rachel'],5:['PS2 Rachel','PS1 Swan']}],
+  ['M(F)','I1-A','Swan',2,null,{1:['NS Tiaan','LF Ryan'],3:['LF Ryan','FW Swan'],5:['FW Swan','NS Tiaan']}],
+  ['M(F)','I2-A','Hazel',3,null,{1:['LF Hazel','NS Kay'],3:['LF Hazel','FW Justin'],5:['NS Kay','FW Justin']}],
+  ['M(F)','I2-B','Cathy',4,null,{1:['FW Justin','LF Cathy'],3:['FW Justin','NS Ella'],5:['LF Cathy','NS Ella']}],
+  ['M(F)','I3-A','Rachel',5,null,{1:['LF Rachel','FW Mark'],3:['LF Rachel','NS Kay'],5:['FW Mark','NS Kay']}],
+  ['M(F)','I3-B','Ryan',8,null,{1:['NS Ella','FW Swan'],3:['FW Swan','LF Ryan'],5:['NS Ella','LF Ryan']}],
+  ['M(F)','I4-A','Mark',6,null,{1:['FW Mark','LF Hazel'],3:['FW Mark','NS Tiaan'],5:['NS Tiaan','LF Hazel']}],
 
-  ['M(M)','I2-A','Justin',2,null,{1:['NS Ella','LF Chloe'],3:['FW Justin','NS Ella'],5:['LF Chloe','FW Justin']}],
-  ['M(M)','I3-A','Justin',3,null,{1:['NS Tiaan','FW Justin'],3:['LF Rachel','NS Tiaan'],5:['FW Justin','LF Rachel']}],
-  ['M(M)','I3-B','Calra',4,null,{1:['LF Calra','NS Ella'],3:['FW Lily','LF Calra'],5:['NS Ella','FW Lily']}],
-  ['M(M)','I4-A','Ryan',5,null,{1:['FW Ryan','NS Tiaan'],3:['LF Hazel','FW Ryan'],5:['NS Tiaan','LF Hazel']}],
-  ['M(M)','I4-B','Hazel',6,null,{1:['LF Hazel','FW Lily'],3:['NS Robin','LF Hazel'],5:['FW Lily','NS Robin']}],
-  ['M(M)','N1-A','Rachel',7,null,{1:['NS Robin','LF Rachel'],3:['FW Chloe','NS Robin'],5:['LF Rachel','FW Chloe']}],
-  ['M(M)','N1-B','Calra',8,null,{1:['FW Chloe','LF Calra'],3:['NS Tiaan','FW Chloe'],5:['LF Calra','NS Tiaan']}],
-  ['M(M)','N2-A','Lily',9,null,{1:['LF Lily','NS Robin'],3:['FW Ryan','LF Lily'],5:['NS Robin','FW Ryan']}],
+  ['M(M)','I2-A','Justin',1,null,{1:['FW Justin','LF Ryan'],3:['FW Justin','NS Kay'],5:['LF Ryan','NS Kay']}],
+  ['M(M)','I3-A','Mark',2,null,{1:['NS Tiaan','FW Mark'],3:['LF Cathy','FW Mark'],5:['NS Tiaan','LF Cathy']}],
+  ['M(M)','I3-B','Rachel',4,null,{1:['NS Ella','FW Tiaan'],3:['FW Tiaan','LF Rachel'],5:['LF Rachel','NS Ella']}],
+  ['M(M)','I4-A','Ryan',6,null,{1:['FW Ryan','LF Rachel'],3:['NS Ella','FW Ryan'],5:['NS Ella','LF Rachel']}],
+  ['M(M)','I4-B','Hazel',9,null,{1:['LF Hazel','FW Swan'],3:['LF Hazel','NS Tiaan'],5:['FW Swan','NS Tiaan']}],
+  ['M(M)','N1-A','Mark',7,null,{1:['LF Cathy','NS Ella'],3:['FW Mark','NS Ella'],5:['LF Cathy','FW Mark']}],
+  ['M(M)','N1-B','Justin',10,null,{1:['NS Kay','FW Justin'],3:['NS Kay','LF Hazel'],5:['LF Hazel','FW Justin']}],
+  ['M(M)','N2-A','Rachel',8,null,{1:['LF Rachel','NS Kay'],3:['LF Rachel','FW Swan'],5:['NS Kay','FW Swan']}],
 
-  ['M(T)','N1-A','Rachel',2,'Rachel',{1:['LF Rachel','NS Tiaan'],3:['FW Justin','LF Rachel'],5:['NS Tiaan','FW Justin']}],
-  ['M(T)','N1-B','Justin',3,'Justin',{1:['FW Justin','LF Calra'],3:['NS Robin','FW Justin'],5:['LF Calra','NS Robin']}],
-  ['M(T)','N3-A','Hazel',8,'Hazel',{1:['LF Hazel','FW Ryan'],3:['NS Ella','LF Hazel'],5:['FW Ryan','NS Ella']}],
-  ['M(T)','N3-B','Chloe',4,'Chloe',{1:['NS Ella','FW Chloe'],3:['LF Calra','NS Ella'],5:['FW Chloe','LF Calra']}],
-  ['M(T)','N4-A','Lily',5,'Lily',{1:['NS Robin','LF Lily'],3:['FW Rachel','NS Robin'],5:['LF Lily','FW Rachel']}],
-  ['M(T)','G1-A','Ryan',6,'Ryan',{1:['RA Ryan','GW Hazel'],3:['AD Tiaan','RA Ryan'],5:['GW Hazel','AD Tiaan']}],
+  ['M(T)','I4-A','Swan',1,'Kay',{1:['LF Ryan','NS Kay'],3:['FW Swan','NS Kay'],5:['FW Swan','LF Ryan']}],
+  ['M(T)','N1-A','Justin',8,'Justin',{1:['FW Justin','LF Ryan'],3:['NS Tiaan','LF Ryan'],5:['NS Tiaan','FW Justin']}],
+  ['M(T)','N2-A','Swan',2,'Swan',{1:['FW Swan','LF Cathy'],3:['NS Ella','LF Cathy'],5:['NS Ella','FW Swan']}],
+  ['M(T)','N3-A','Hazel',3,'Hazel',{1:['NS Kay','FW Mark'],3:['LF Hazel','FW Mark'],5:['LF Hazel','NS Kay']}],
+  ['M(T)','N3-B','Rachel',4,'Rachel',{1:['LF Rachel','NS Ella'],3:['LF Rachel','FW Justin'],5:['FW Justin','NS Ella']}],
+  ['M(T)','N4-A','Cathy',6,'Cathy',{1:['FW Mark','NS Tiaan'],3:['LF Cathy','NS Tiaan'],5:['LF Cathy','FW Mark']}],
 
-  ['T(F)','W2-A','Calra',1,null,{2:['PS1 Rachel','PS2 Calra','PS3 Ella']}],
-  ['T(F)','I1-A','Ryan',2,null,{2:['FW Ryan','NS Ella','LF Chloe']}],
-  ['T(F)','I2-A','Rachel',3,null,{2:['NS Robin','LF Hazel','FW Rachel']}],
-  ['T(F)','I2-B','Calra',4,null,{2:['NS Tiaan','FW Chloe','LF Calra']}],
-  ['T(F)','I3-A','Justin',8,null,{2:['FW Justin','NS Robin','LF Lily']}],
-  ['T(F)','I3-B','Lily',5,null,{2:['FW Ella','LF Lily','NS Tiaan']}],
-  ['T(F)','I4-A','Hazel',6,null,{2:['LF Hazel','FW Ryan','NS Robin']}],
-  ['T(F)','I4-B','Chloe',7,null,{2:['LF Chloe','NS Tiaan','FW Justin']}],
+  ['T(F)','W1-A','Hazel',1,null,{2:['PS3 Hazel','PS2 Justin','PS1 Ryan']}],
+  ['T(F)','W2-A','Cathy',2,null,{2:['PS2 Mark','PS1 Cathy','PS3 Ella']}],
+  ['T(F)','I1-A','Justin',8,null,{2:['FW Justin','NS Kay','LF Mark']}],
+  ['T(F)','I2-A','Swan',3,null,{2:['LF Rachel','FW Swan','NS Tiaan']}],
+  ['T(F)','I2-B','Hazel',4,null,{2:['FW Swan','NS Ella','LF Hazel']}],
+  ['T(F)','I3-A','Ryan',5,null,{2:['FW Ryan','NS Tiaan','LF Rachel']}],
+  ['T(F)','I3-B','Rachel',6,null,{2:['NS Kay','LF Rachel','FW Swan']}],
+  ['T(F)','I4-A','Cathy',7,null,{2:['LF Cathy','FW Mark','NS Kay']}],
+  ['T(F)','I4-B','Ryan',9,null,{2:['NS Tiaan','LF Ryan','FW Justin']}],
 
-  ['T(T)','N1-A','Chloe',8,'Chloe',{2:['NS Tiaan','FW Chloe','LF Rachel']}],
-  ['T(T)','N1-B','Rachel',1,'Rachel',{2:['FW Rachel','NS Robin','LF Justin']}],
-  ['T(T)','N2-A','Ryan',2,'Robin',{2:['NS Robin','FW Ryan','LF Lily']}],
-  ['T(T)','N2-B','Lily',3,'Lily',{2:['LF Lily','FW Justin','NS Tiaan']}],
-  ['T(T)','N3-A','Calra',4,'Calra',{2:['LF Calra','NS Ella','FW Chloe']}],
-  ['T(T)','N3-B','Calra',5,'Ella',{2:['NS Ella','FW Hazel','LF Calra']}],
-  ['T(T)','N4-A','Ryan',6,'Ryan',{2:['FW Ryan','LF Rachel','NS Robin']}],
-  ['T(T)','G1-A','Justin',7,'Justin',{2:['GW Justin','AD Tiaan','RA Ryan']}],
-  ['T(T)','G3-A','Hazel',9,'Hazel',{2:['RA Hazel','GW Lily','AD Ella']}]
+  ['T(T)','N1-A','Mark',8,'Ella',{2:['FW Mark','LF Hazel','NS Ella']}],
+  ['T(T)','N1-B','Swan',2,'Swan',{2:['LF Ryan','NS Kay','FW Swan']}],
+  ['T(T)','N2-A','Justin',3,'Tiaan',{2:['NS Tiaan','FW Justin','LF Ryan']}],
+  ['T(T)','N2-B','Ryan',4,'Ryan',{2:['NS Ella','FW Ryan','LF Cathy']}],
+  ['T(T)','N3-A','Rachel',5,'Rachel',{2:['NS Kay','FW Mark','LF Rachel']}],
+  ['T(T)','N3-B','Mark',6,'Mark',{2:['LF Hazel','NS Tiaan','FW Mark']}],
+  ['T(T)','G1-A','Cathy',7,'Cathy',{2:['GW Cathy','RA Swan','AD Kay']}],
+  ['T(T)','G2-A','Hazel',9,'Hazel',{2:['RA Rachel','AD Ella','GW Hazel']}],
+  ['T(T)','G3-A','Justin',1,'Justin',{2:['RA Justin','GW Cathy','AD Tiaan']}]
 ];
 /* 요일별 고정 안내 (선택 사항이 아닌 정보 줄) */
-const DAY_INFO = { 3:['7:30~8:10 멘토링 (1번 강의실 · Hazel)'], 2:['7:30~8:10 독해코칭','7:50~8:30 멘토링'], 4:['7:30~8:10 독해코칭','7:50~8:30 멘토링'] };
+const DAY_INFO = { 3:['7:30~8:10 멘토링 (2번 강의실 · Hazel)','7:30~8:10 문법코칭 (8번 강의실 · Cathy)'], 4:['7:50~8:30 멘토링 (8번 강의실 · Rachel)'] };
 
 /* 꼭 들어야 하는 청강 */
 const REQS = [
@@ -265,7 +277,7 @@ function slotsFor(dow){
   out.push({ id:'post', time: M ? '7:30~8:30' : '7:50~8:30', extra:true });
   return out;
 }
-function toMin(t){ const [h,m]=t.split(':').map(Number); return (h<12?h+12:h)*60+m; }   // 오후 시간표
+function toMin(t){ const [h,m]=t.split('~')[0].split(':').map(Number); return (h<12?h+12:h)*60+m; }   // 오후 시간표
 
 /* 날짜 하나에서 들을 수 있는 청강 전부 */
 function optionsForDate(iso){
@@ -297,6 +309,7 @@ function defaultState(){
     obs:{},          // `${iso}|${slotId}` -> option
     boxes: DEFAULT_BOXES.map((t,i)=>({ id:'b'+i, text:t, who:'' })),
     place:{},        // boxId -> `${iso}|${slotId}`  (없으면 대기함)
+    activeDate:'',   // 지금 청강을 고르는 날
     showSeen:false
   };
 }
@@ -322,6 +335,7 @@ function trainerShort(){ return (state.trainer||'').split(/\s/)[0]; }
 /* 안 쓰는 날짜에 걸린 청강·박스 정리 */
 function cleanup(){
   const ok = new Set(validDates());
+  if(state.activeDate && !ok.has(state.activeDate)) state.activeDate='';
   Object.keys(state.obs).forEach(k=>{ if(!ok.has(k.split('|')[0])) delete state.obs[k]; });
   Object.keys(state.place).forEach(id=>{ if(!ok.has((state.place[id]||'').split('|')[0])) delete state.place[id]; });
 }
@@ -362,7 +376,9 @@ function renderPanel(){
 
     <div class="section-title">OT 날짜 (평일 · 최대 5일)</div>
     <div id="dates">${state.dates.map((d,i)=>{ const w=d?dowOf(d):-1; const bad = d && !(w>=1&&w<=5);
-      return `<div class="date-row ${bad?'bad':''}"><span class="dow">${d?WD[w]:''}</span><input type="date" data-di="${i}" value="${d}"><button class="x" data-dx="${i}" title="이 날 빼기">✕</button></div>`; }).join('')}</div>
+      const on = d && d===state.activeDate;
+      return `<div class="date-row ${bad?'bad':''} ${on?'on':''}"><span class="dow">${d?WD[w]:''}</span><input type="date" data-di="${i}" value="${d}">
+        ${d && !bad ? `<button class="pick ${on?'on':''}" data-dpick="${d}">${on?'고르는 중':'청강 고르기'}</button>` : ''}<button class="x" data-dx="${i}" title="이 날 빼기">✕</button></div>`; }).join('')}</div>
     ${state.dates.length<5 ? '<button class="btn" id="addDate" style="width:100%;">+ 날짜 추가</button>' : ''}
     ${state.dates.some(d=>d && !(dowOf(d)>=1&&dowOf(d)<=5)) ? '<div class="note" style="margin-top:6px;color:var(--accent);">주말은 수업이 없어서 빠져요.</div>' : ''}
 
@@ -384,11 +400,12 @@ function renderPanel(){
   `;
   const bind=(id,k)=>{ document.getElementById(id).oninput=e=>{ state[k]=e.target.value; persist(); renderStage(); }; };
   bind('fTeacher','teacher'); bind('fTrainer','trainer'); bind('fPhone','phone');
-  p.querySelectorAll('[data-di]').forEach(inp=>inp.onchange=()=>{ state.dates[+inp.dataset.di]=inp.value; cleanup(); persist(); renderAll(); });
+  p.querySelectorAll('[data-di]').forEach(inp=>inp.onchange=()=>{ state.dates[+inp.dataset.di]=inp.value; if(inp.value && [1,2,3,4,5].includes(dowOf(inp.value))) state.activeDate=inp.value; cleanup(); persist(); renderAll(); });
+  p.querySelectorAll('[data-dpick]').forEach(b=>b.onclick=()=>{ state.activeDate=b.dataset.dpick; persist(); renderAll(); });
   p.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{ state.dates.splice(+b.dataset.dx,1); cleanup(); persist(); renderAll(); });
   const ad=document.getElementById('addDate');
   if(ad) ad.onclick=()=>{ const last = validDates().slice(-1)[0]; const d = last ? new Date(last+'T00:00:00') : new Date();
-    do{ d.setDate(d.getDate()+1); }while(d.getDay()===0||d.getDay()===6); state.dates.push(isoOf(d)); persist(); renderAll(); };
+    do{ d.setDate(d.getDate()+1); }while(d.getDay()===0||d.getDay()===6); state.dates.push(isoOf(d)); state.activeDate=isoOf(d); persist(); renderAll(); };
   document.getElementById('addBox').onclick=()=>editBox(null);
   document.getElementById('resetAll').onclick=()=>confirmBox('일정을 모두 지우고 처음부터 만들까요? (교육 박스도 기본으로 돌아가요)', ()=>{ state=defaultState(); persist(); renderAll(); });
   bindBoxes(p);
@@ -407,7 +424,9 @@ function renderStage(){
   const dates = validDates();
   const cov = covered(), seen = seenLevels();
   const doneN = REQS.filter(r=>cov[r.key]).length;
-  const allOpts = dates.flatMap(optionsForDate);
+  const act = dates.includes(state.activeDate) ? state.activeDate : '';
+  const allOpts = act ? optionsForDate(act) : [];
+  const dayCount = iso => { const c=covered(); return optionsForDate(iso).filter(o=>!c[o.key] && !state.obs[`${o.iso}|${o.slot}`]).length; };
 
   const reqCards = REQS.map(r=>{
     const got = cov[r.key];
@@ -417,29 +436,34 @@ function renderStage(){
         <div class="picked">✓ ${mdw(got.iso)} ${got.time} · ${got.code} · ${got.teacher} T.<button data-unobs="${cell}">취소</button></div></div>`;
     }
     const opts = allOpts.filter(o=>o.key===r.key && !state.obs[`${o.iso}|${o.slot}`])
-      .sort((a,b)=> (seen.has(a.level)-seen.has(b.level)) || (a.iso<b.iso?-1:a.iso>b.iso?1:0) || toMin(a.time)-toMin(b.time) || (a.code<b.code?-1:1));
+      .sort((a,b)=> toMin(a.time)-toMin(b.time) || (seen.has(a.level)-seen.has(b.level)) || (a.code<b.code?-1:1));
+    const elsewhere = got ? [] : dates.filter(d=>d!==act && optionsForDate(d).some(o=>o.key===r.key && !state.obs[`${o.iso}|${o.slot}`]));
     return `<div class="req ${got?'done':''}"><div class="req-head"><span class="stage-tag st-${r.stage}">${STAGE_LABEL[r.stage]}</span><span class="req-name">${r.name.split(' · ')[1]||r.name}</span>
         <span class="req-count">${got?'✓ 완료 · ':''}${opts.length}개 가능</span></div>
       ${got ? `<div class="picked">✓ ${mdw(got.iso)} ${got.time} · ${got.code}</div>` : ''}
       <div class="opts">${opts.map(o=>`<button class="opt ${seen.has(o.level)?'seen':''}" data-opt="${esc(o.id)}">
-          <span class="d">${mdw(o.iso)}</span><span class="t">${o.time}</span>
+          <span class="t">${o.time}</span>
           <span class="c">${o.code}<small>${esc(o.sub)} · ${esc(o.teacher)} · ${o.room}번</small></span>
-          ${seen.has(o.level)?'':'<span class="new">새 레벨</span>'}</button>`).join('') || '<div class="none">고른 날짜에 들을 수 있는 수업이 없어요. 날짜를 바꿔 보세요.</div>'}</div></div>`;
+          ${seen.has(o.level)?'':'<span class="new">새 레벨</span>'}</button>`).join('') || `<div class="none">${mdw(act)}에는 없어요.${elsewhere.length ? ` <b>${elsewhere.map(mdw).join(', ')}</b>에 있어요.` : ' 다른 OT 날짜에도 없어서 날짜를 바꿔야 해요.'}</div>`}</div></div>`;
   }).join('');
 
   stage.innerHTML = `
     <div class="card no-print">
-      <div class="card-title">필수 청강 고르기
+      <div class="card-title">필수 청강 고르기 ${act?`<span style="font-size:13px;color:var(--ink-soft);font-weight:700;">· ${mdw(act)}</span>`:''}
         <label class="toggle" style="margin-left:auto;"><input type="checkbox" id="showSeen" ${state.showSeen?'checked':''}> 다 들은 과목도 후보 보기</label></div>
       <div class="progress"><span class="txt">✅ ${doneN} / ${REQS.length} 완료</span><div class="bar"><i style="width:${doneN/REQS.length*100}%"></i></div></div>
-      <div class="levels">본 레벨: ${ALL_LEVELS.map(l=>`<span class="lv ${seen.has(l)?'on':''}">${l}</span>`).join('')}</div>
-      ${dates.length ? `<div class="req-grid">${reqCards}</div>` : '<div class="note" style="margin-top:12px;">👈 왼쪽에서 OT 날짜를 먼저 골라주세요.</div>'}
+      <div class="levels">본 레벨: ${ALL_LEVELS.map(l=>`<span class="lv ${seen.has(l)?'on':''}">${l}</span>`).join('')} <span style="margin-left:auto;font-size:11px;">${TT_LABEL} 기준</span></div>
+      ${dates.length ? `<div class="day-tabs">${dates.map(d=>`<button class="day-tab ${d===act?'on':''}" data-tab="${d}">${mdw(d)}<small>후보 ${dayCount(d)}</small></button>`).join('')}</div>` : ''}
+      ${!dates.length ? '<div class="pick-empty">👈 왼쪽에서 <b>OT 날짜</b>를 먼저 넣어주세요.</div>'
+        : !act ? '<div class="pick-empty">청강을 고를 <b>날짜</b>를 먼저 눌러주세요.<br>그 날 그 시간에 들을 수 있는 수업만 보여드려요.</div>'
+        : `<div class="req-grid">${reqCards}</div>`}
     </div>
     <div class="pages" id="pages">${renderPages(dates)}</div>
   `;
   const optMap = Object.fromEntries(allOpts.map(o=>[o.id,o]));
   stage.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>pickObs(optMap[b.dataset.opt]));
   stage.querySelectorAll('[data-unobs]').forEach(b=>b.onclick=()=>removeObs(b.dataset.unobs));
+  stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ state.activeDate=b.dataset.tab; persist(); renderAll(); });
   document.getElementById('showSeen').onchange=e=>{ state.showSeen=e.target.checked; persist(); renderStage(); };
   bindBoxes(stage);
   stage.querySelectorAll('td.slot').forEach(td=>{
@@ -479,7 +503,8 @@ function dayRows(iso){
   const infoRows = info.map(t=>({ html:`<td class="time">ⓘ</td><td colspan="2">${esc(t)}</td>`, cls:'info-row extra blank' }));
   let all = rows.concat(infoRows);
   if(EXPORT) all = all.filter(r=>!(r.cls.includes('extra') && r.cls.includes('blank')));
-  return all.map((r,i)=>`<tr class="${r.cls}">${i===0?`<td class="day" rowspan="${all.length}">${d.getMonth()+1}/${d.getDate()}<small>(${WD_EN[dow]})</small></td>`:''}${r.html}</tr>`).join('');
+  const actCls = (!EXPORT && iso===state.activeDate) ? ' active-day' : '';
+  return all.map((r,i)=>`<tr class="${r.cls}${i===0?actCls:''}">${i===0?`<td class="day" rowspan="${all.length}">${d.getMonth()+1}/${d.getDate()}<small>(${WD_EN[dow]})</small></td>`:''}${r.html}</tr>`).join('');
 }
 
 /* ================= 끌어다 놓기 ================= */
