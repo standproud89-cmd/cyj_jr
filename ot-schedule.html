@@ -116,6 +116,8 @@
   td.time{ text-align:center; font-variant-numeric:tabular-nums; white-space:nowrap; color:#333; }
   td.time.h5{ color:#9B2C4E; font-weight:700; }
   td.who{ text-align:center; font-size:11.5px; color:#333; }
+  td.who select{ width:100%; font-family:inherit; font-size:11.5px; padding:3px 2px; border:1px solid #CBD7EC; border-radius:6px; background:#F7FAFF; color:#1C2321; cursor:pointer; }
+  td.who select + select{ margin-top:4px; }
   td.slot{ min-height:26px; }
   td.slot.over{ background:var(--blue-soft); outline:2px dashed var(--blue); outline-offset:-3px; }
   td.slot.can{ cursor:pointer; }
@@ -225,6 +227,8 @@ const TT = [
 /* 요일별 고정 안내 (선택 사항이 아닌 정보 줄) */
 const DAY_INFO = { 3:['7:30~8:10 멘토링 (2번 강의실 · Hazel)','7:30~8:10 문법코칭 (8번 강의실 · Cathy)'], 4:['7:50~8:30 멘토링 (8번 강의실 · Rachel)'] };
 
+/* 교육 박스 담당으로 고를 수 있는 선생님 (Ella·Kay·Tiaan 제외) */
+const TRAINERS = ['Hazel','Swan','Rachel','Ryan','Cathy','Justin','Mark'];
 /* 꼭 들어야 하는 청강 */
 const REQS = [
   { key:'W-PS', stage:'W', name:'Wind · PS' },
@@ -331,6 +335,14 @@ function seenLevels(){ return new Set(Object.values(state.obs).map(o=>o.level));
 function obsText(o){ return `청강: ${o.sub==='High 5'?'High 5':o.sub.replace(/\d$/,'')}, ${o.code}, ${o.room}번 강의실`; }
 function boxesAt(cell){ return state.boxes.filter(b=>state.place[b.id]===cell); }
 function trainerShort(){ return (state.trainer||'').split(/\s/)[0]; }
+/* 박스 담당: 따로 고른 선생님 → 없으면 트레이닝 담당 이름 */
+function boxWho(b){ return (b.who || trainerShort() || '').replace(/\s*과장님|\s*T\.?$/,'').trim(); }
+function whoOptions(cur, withDefault){
+  const list = TRAINERS.includes(cur) || !cur ? TRAINERS : [cur, ...TRAINERS];
+  return (withDefault ? `<option value="" ${!cur?'selected':''}>트레이닝 담당 (${esc(trainerShort()||'-')})</option>` : '')
+    + list.map(t=>`<option value="${esc(t)}" ${t===cur?'selected':''}>${esc(t)} T.</option>`).join('');
+}
+function whoSelect(b){ return `<select data-who="${b.id}" title="담당 선생님">${whoOptions(boxWho(b), false)}</select>`; }
 
 /* 안 쓰는 날짜에 걸린 청강·박스 정리 */
 function cleanup(){
@@ -496,7 +508,9 @@ function dayRows(iso){
     const blank = !o && !bx.length;
     let content, who='';
     if(o){ content=`<div class="it obs"><span class="tx">${esc(obsText(o))}</span><button class="rm" data-unobs="${cell}" title="청강 빼기">✕</button></div>`; who=`${esc(o.teacher)} T.`; }
-    else if(bx.length){ content=bx.map(b=>boxHtml(b,true)).join(''); who=[...new Set(bx.map(b=>b.who||trainerShort()).filter(Boolean))].map(w=>esc(w.replace(/\s*과장님|\s*T\.?$/,''))+' T.').join('<br>'); }
+    else if(bx.length){ content=bx.map(b=>boxHtml(b,true)).join('');
+      who = EXPORT ? [...new Set(bx.map(boxWho).filter(Boolean))].map(w=>esc(w)+' T.').join('<br>')
+                   : bx.map(b=>whoSelect(b)).join(''); }
     else content= EXPORT ? '' : `<span class="empty-hint">${selBox?'여기를 눌러 넣기':'비어 있음'}</span>`;
     return { html:`<td class="time ${s.h5?'h5':''}">${s.h5?'High 5<br>':''}${s.time}</td><td class="slot can" data-drop="${cell}">${content}</td><td class="who">${who}</td>`, cls:`${s.extra?'extra':''} ${blank?'blank':''}` };
   });
@@ -515,6 +529,8 @@ function bindBoxes(root){
       if(selBox) toast('이제 일정표에서 넣을 칸을 눌러주세요'); });
   });
   root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); editBox(b.dataset.edit); });
+  root.querySelectorAll('[data-who]').forEach(sel=>{ sel.onclick=e=>e.stopPropagation();
+    sel.onchange=()=>{ const b=state.boxes.find(x=>x.id===sel.dataset.who); if(b){ b.who=sel.value; persist(); renderAll(); } }; });
   root.querySelectorAll('[data-unplace]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); placeBox(b.dataset.unplace, null); });
   root.querySelectorAll('[data-unobs]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); removeObs(b.dataset.unobs); });
 }
@@ -531,7 +547,8 @@ function editBox(id){
   const bg=document.createElement('div'); bg.className='modal-bg';
   bg.innerHTML=`<div class="modal"><b>${id?'교육 박스 고치기':'교육 박스 새로 만들기'}</b>
     <textarea id="mText" placeholder="교육 내용">${esc(b.text)}</textarea>
-    <input id="mWho" value="${esc(b.who)}" placeholder="담당 (비우면 트레이닝 담당)">
+    <label style="font-size:12px;color:var(--ink-soft);font-weight:600;">담당 선생님</label>
+    <select id="mWho" style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:13px;">${whoOptions(b.who, true)}</select>
     <div style="display:flex;gap:8px;">${id?'<button class="btn" id="mDel" style="color:var(--accent);">삭제</button>':''}<span style="flex:1"></span>
       <button class="btn" id="mCancel">취소</button><button class="btn dark" id="mOk">저장</button></div></div>`;
   document.body.appendChild(bg);
@@ -539,7 +556,7 @@ function editBox(id){
   bg.onclick=e=>{ if(e.target===bg) close(); };
   bg.querySelector('#mCancel').onclick=close;
   bg.querySelector('#mOk').onclick=()=>{ const t=bg.querySelector('#mText').value.trim(); if(!t){ toast('내용을 적어주세요'); return; }
-    b.text=t; b.who=bg.querySelector('#mWho').value.trim(); if(!id) state.boxes.push(b); persist(); close(); renderAll(); };
+    b.text=t; b.who=bg.querySelector('#mWho').value; if(!id) state.boxes.push(b); persist(); close(); renderAll(); };
   const del=bg.querySelector('#mDel'); if(del) del.onclick=()=>{ state.boxes=state.boxes.filter(x=>x.id!==id); delete state.place[id]; persist(); close(); renderAll(); };
   setTimeout(()=>bg.querySelector('#mText').focus(),30);
 }
