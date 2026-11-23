@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
     --ink:#1C2321;
@@ -79,6 +80,16 @@
   .holiday-row button{ flex:0 0 auto; border:none; background:none; color:var(--ink-soft);
     cursor:pointer; font-size:15px; padding:2px 6px; }
   .holiday-row button:hover{ color:var(--accent); }
+  .hq-drop{ border:2px dashed var(--teal); border-radius:12px; background:var(--teal-soft); padding:16px 12px; text-align:center; cursor:pointer; font-size:13px; color:var(--teal); font-weight:700; line-height:1.5; }
+  .hq-drop.over{ background:#d3ece6; }
+  .hq-drop small{ display:block; font-weight:500; color:var(--ink-soft); font-size:11.5px; margin-top:4px; }
+  .hq-files{ margin-top:8px; display:flex; flex-direction:column; gap:5px; }
+  .hq-file{ display:flex; align-items:center; gap:8px; font-size:12px; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:6px 9px; }
+  .hq-file b{ color:var(--teal); }
+  .hq-file span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hq-status{ margin-top:8px; font-size:12px; line-height:1.6; color:var(--ink-soft); }
+  .hq-status .ok{ color:var(--teal); font-weight:700; } .hq-status .miss{ color:var(--accent); font-weight:700; }
+  .hq-on-note{ font-size:12px; background:var(--amber-soft); color:var(--polive); border-radius:8px; padding:8px 10px; line-height:1.5; }
   .add-link{ background:none; border:1px dashed #C6CBCE; border-radius:8px; color:var(--ink-soft);
     font-weight:700; font-size:12px; padding:7px; width:100%; cursor:pointer; margin-bottom:16px; }
   .add-link:hover{ color:var(--ink); border-color:var(--ink-soft); }
@@ -222,8 +233,10 @@ let state = {
   schedule:{'월수':'FW','수금':'LF','월금':'NS'},
   jrTest:{'월수':'','수금':'','월금':'','화목':''},
   windJrTest:'',
+  hq:null,
+  sideDow:0,
   includeMasterCalendar:true,
-  campus: CAMPUSES[0]
+  campus: '정이조주니어(동작)'
 };
 
 /* ============== 날짜 유틸 ============== */
@@ -240,7 +253,238 @@ function nextNonHoliday(date, hSet){
 }
 function fmtMD(d){ if(!d) return '—'; return `${d.getMonth()+1}/${d.getDate()}`; }
 function fmtMDW(d){ if(!d) return '—'; return `${d.getMonth()+1}월 ${d.getDate()}일(${WEEKDAY_KO[d.getDay()]})`; }
-function holidaySet(){ return new Set(state.holidays.filter(h=>h.date).map(h=>h.date)); }
+function holidaySet(){ if(hqOn()) return hqHolidaySet(); return new Set(state.holidays.filter(h=>h.date).map(h=>h.date)); }
+
+/* ============== 본사 일정 PDF (Due Dates) ============== */
+/* 본사에서 내려주는 월별 "Homework Due Dates" PDF(왼쪽 Island~Globe 표, 오른쪽 Wind 표)를
+   그대로 읽어서 날짜를 채운다. 계산 대신 본사 날짜가 정답이 된다. */
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+const HQ_HEAD = {'M/W Class':'월수','W/F Class':'수금','M/F Class':'월금','T/TH Class':'화목'};
+const PAIR_DOWS = {'월수':[1,3],'수금':[3,5],'월금':[1,5],'화목':[2,4]};
+function hqParsePage(items){
+  const it = items.filter(i=>i.str && i.str.trim()).map(i=>({s:i.str.trim().replace(/\s+/g,' '),x:i.x,y:i.y,w:i.w||0}));
+  const suns = it.filter(i=>i.s==='Sun').map(i=>i.y);
+  const bottom = suns.length ? Math.min(...suns)-2 : 1e9;
+  const top = it.filter(i=>i.y<bottom);
+  const out = { days:{'월수':{},'수금':{},'월금':{},'화목':{}}, wind:{MWF:{},TTH:{}}, sess:{'월수':{},'수금':{},'월금':{},'화목':{}}, windJr:null, ucc:[] };
+  const isVal = s=>/^\d{1,2}\/\d{1,2}$/.test(s) || /^jr\.?\s*test$/i.test(s) || /^in\s*class$/i.test(s);
+  const val = s=> /jr/i.test(s) ? 'JR' : (/in\s*class/i.test(s) ? 'IN' : s);
+  const heads = top.filter(i=>HQ_HEAD[i.s]).sort((a,b)=>a.x-b.x);
+  const lessonsH = top.filter(i=>i.s==='Lessons').sort((a,b)=>a.x-b.x);
+  const windX = lessonsH.length ? lessonsH[0].x : 1e9;
+  if(heads.length){
+    const firstX = heads[0].x;
+    top.filter(i=>/^Day\s*\d+$/.test(i.s) && i.x < firstX).forEach(r=>{
+      const n = +r.s.replace(/\D/g,'');
+      const cells = top.filter(i=>Math.abs(i.y-r.y)<3 && i.x>=firstX-4 && i.x<windX-20 && isVal(i.s));
+      if(cells.length===1 && val(cells[0].s)!=='JR' && val(cells[0].s)==='IN'){ Object.values(HQ_HEAD).forEach(p=>out.days[p][n]='IN'); return; }
+      cells.forEach(c=>{ let h=heads[0]; heads.forEach(hh=>{ if(hh.x <= c.x+3) h=hh; }); out.days[HQ_HEAD[h.s]][n] = val(c.s); });
+    });
+  }
+  if(lessonsH.length){
+    const blocks = lessonsH.map((lh,bi)=>{
+      const nextX = lessonsH[bi+1] ? lessonsH[bi+1].x : 1e9;
+      return { x:lh.x, nextX,
+        mwf: top.find(i=>i.s==='MWF' && i.x>lh.x && i.x<nextX),
+        tth: top.find(i=>/^T\/TH$/.test(i.s) && i.x>lh.x && i.x<nextX),
+        lessons: top.filter(i=>/^Lesson\s*\d+$/.test(i.s) && i.x>=lh.x-15 && i.x<lh.x+40).map(i=>({n:+i.s.replace(/\D/g,''),y:i.y})) };
+    });
+    top.filter(i=>isVal(i.s) && i.x>windX+20).forEach(c=>{
+      const b = blocks.find(bb=>c.x>bb.x+20 && c.x<bb.nextX);
+      if(!b || !b.mwf || !b.tth || !b.lessons.length) return;
+      const pat = Math.abs(c.x-b.mwf.x) < Math.abs(c.x-b.tth.x) ? 'MWF' : 'TTH';
+      let best=null; b.lessons.forEach(l=>{ if(!best || Math.abs(l.y-c.y)<Math.abs(best.y-c.y)) best=l; });
+      out.wind[pat][Math.ceil(best.n/(pat==='MWF'?2:3))] = val(c.s);
+    });
+  }
+  /* 달력: 칸마다 "M/W Day 3", (화·목 칸의) "Day 3" → 실제 수업일. 날짜는 {month offset, day} 로 저장 */
+  const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const cal = it.filter(i=>i.y>bottom);
+  const hdrs = it.filter(i=>wd.includes(i.s) && Math.abs(i.y-(bottom+2))<4).map(h=>({dow:wd.indexOf(h.s),cx:h.x+h.w/2,x:h.x}));
+  const sides = [hdrs.filter(h=>h.x<windX-20), hdrs.filter(h=>h.x>=windX-20)];
+  sides.forEach((H,si)=>{
+    if(H.length<7) return;
+    const inSide = i=> si===0 ? i.x < windX-20 : i.x >= windX-20;
+    const colOf = i=>{ const c=i.x+i.w/2; let b=H[0]; H.forEach(h=>{ if(Math.abs(h.cx-c)<Math.abs(b.cx-c)) b=h; }); return b.dow; };
+    const nums = cal.filter(i=>inSide(i) && /^\d{1,2}$/.test(i.s));
+    const rowYs = [...new Set(nums.map(n=>Math.round(n.y)))].sort((a,b)=>a-b);
+    const rows = []; rowYs.forEach(y=>{ if(!rows.length || y-rows[rows.length-1]>4) rows.push(y); });
+    const dateAt = (item)=>{
+      let ri=-1; rows.forEach((ry,k)=>{ if(ry < item.y-1) ri=k; });
+      if(ri<0) return null;
+      const dow = colOf(item);
+      const n = nums.find(x=>Math.abs(x.y-rows[ri])<4 && colOf(x)===dow);
+      if(!n) return null;
+      const d = +n.s; let off = 0;
+      if(ri===0 && d>20) off=-1; else if(ri>=3 && d<15) off=1;
+      return {off, d};
+    };
+    cal.filter(inSide).forEach(i=>{
+      if(si===0){
+        let m = i.s.match(/^(M\/W|W\/F|M\/F) Day (\d+)$/), pair=null, n=null;
+        if(m){ pair={'M/W':'월수','W/F':'수금','M/F':'월금'}[m[1]]; n=+m[2]; }
+        else if((m=i.s.match(/^Day (\d+)$/)) && [2,4].includes(colOf(i))){ pair='화목'; n=+m[1]; }
+        if(pair){ const dt=dateAt(i); if(dt) out.sess[pair][n]=dt; }
+      } else if(/jr\.?\s*test/i.test(i.s)){ const dt=dateAt(i); if(dt) out.windJr=dt; }
+      if(si===0){
+        let um;
+        if(/best\s*ucc/i.test(i.s)){ const dt=dateAt(i); if(dt) out.ucc.push({kind:'best',dt}); }
+        else if((um=i.s.match(/^All\s+([A-Za-z]+)\.?\s*UCCs?/i))){ const dt=dateAt(i); if(dt) out.ucc.push({kind:'all',mon:um[1],dt}); }
+      }
+    });
+  });
+  return out;
+}
+/* "12/2" → ISO. 연도는 요일이 가장 잘 맞는 해로 (파일명에 연도가 있으면 그걸 우선) */
+function hqResolveYears(page, fileName){
+  const mds = [];
+  Object.entries(page.days).forEach(([pair,m])=>Object.values(m).forEach(v=>{ if(/\//.test(v)) mds.push({v,dows:PAIR_DOWS[pair]}); }));
+  Object.entries(page.wind).forEach(([pat,m])=>Object.values(m).forEach(v=>{ if(/\//.test(v)) mds.push({v,dows:pat==='MWF'?[1,3,5]:[2,4]}); }));
+  if(!mds.length) return null;
+  const months = mds.map(o=>+o.v.split('/')[0]);
+  const cnt = {}; months.forEach(m=>cnt[m]=(cnt[m]||0)+1);
+  const main = +Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
+  const yearOf = (Y,m)=> (main>=11 && m<=2) ? Y+1 : ((main<=2 && m>=11) ? Y-1 : Y);
+  let fy = null; const fm = (fileName||'').match(/(20\d\d)\D{0,3}(\d{1,2})?/); if(fm) fy = +fm[1];
+  const thisY = new Date().getFullYear(); let bestY = fy || thisY, bestScore = -1;
+  [thisY-1,thisY,thisY+1,thisY+2].forEach(Y=>{
+    let sc=0; mds.forEach(o=>{ const [m,d]=o.v.split('/').map(Number); const dt=new Date(yearOf(Y,m),m-1,d); if(o.dows.includes(dt.getDay())) sc++; });
+    if(fy && Y===fy) sc += 0.5;
+    if(sc>bestScore){ bestScore=sc; bestY=Y; }
+  });
+  return { main, fromCal:(o)=>{ let m=main+o.off, y=yearOf(bestY,main); if(m<1){m=12;y--;} if(m>12){m=1;y++;} return toISO(new Date(y,m-1,o.d)); }, toISO:(v)=>{ if(!/\//.test(v)) return v; const [m,d]=v.split('/').map(Number); return toISO(new Date(yearOf(bestY,m),m-1,d)); } };
+}
+async function hqLoadFiles(fileList){
+  const files = Array.from(fileList).filter(f=>/\.pdf$/i.test(f.name) || f.type==='application/pdf');
+  if(!files.length){ alert('PDF 파일을 올려주세요.'); return; }
+  if(!window.pdfjsLib){ alert('PDF 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침 해주세요.'); return; }
+  const hq = state.hq || { days:{'월수':{},'수금':{},'월금':{},'화목':{}}, wind:{MWF:{},TTH:{}}, sess:{'월수':{},'수금':{},'월금':{},'화목':{}}, windJr:null, ucc:[], files:[] };
+  for(const f of files){
+    try{
+      const doc = await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
+      let got = 0, mainMonth = null;
+      for(let pn=1; pn<=doc.numPages; pn++){
+        const page = await doc.getPage(pn);
+        const vp = page.getViewport({scale:1});
+        const tc = await page.getTextContent();
+        const parsed = hqParsePage(tc.items.map(i=>({str:i.str,x:i.transform[4],y:vp.height-i.transform[5],w:i.width||0})));
+        const yr = hqResolveYears(parsed, f.name);
+        if(!yr) continue;
+        mainMonth = mainMonth || yr.main;
+        Object.entries(parsed.days).forEach(([pair,m])=>Object.entries(m).forEach(([n,v])=>{ hq.days[pair][n]=yr.toISO(v); got++; }));
+        Object.entries(parsed.wind).forEach(([pat,m])=>Object.entries(m).forEach(([g,v])=>{ hq.wind[pat][g]=yr.toISO(v); got++; }));
+        Object.entries(parsed.sess).forEach(([pair,m])=>Object.entries(m).forEach(([n,o])=>{ const v=yr.fromCal(o); if(!hq.sess[pair][n] || v<hq.sess[pair][n]) hq.sess[pair][n]=v; })); /* 다음 학기 Day1·2가 마지막 달 끝에 보이므로 더 이른 날짜를 우선 */
+        parsed.ucc.forEach(u=>{ const iso=yr.fromCal(u.dt); if(!hq.ucc.some(x=>x.kind===u.kind && x.iso===iso)) hq.ucc.push({kind:u.kind, mon:u.mon||'', iso}); });
+        if(parsed.windJr && !hq.windJr) hq.windJr = yr.fromCal(parsed.windJr);
+      }
+      hq.files = hq.files.filter(x=>x.name!==f.name);
+      hq.files.push({ name:f.name, month:mainMonth, count:got });
+    } catch(err){ alert(`${f.name} 을(를) 읽지 못했어요: ${err.message}`); }
+  }
+  hq.files.sort((a,b)=>{ const k=m=> (m>=8? m : m+12); return k(a.month||0)-k(b.month||0); });
+  state.hq = hq.files.length ? hq : null;
+  renderAll();
+}
+function hqOn(){ return !!(state.hq && state.hq.files.length); }
+function hqVal(pair,n){ const v = state.hq.days[pair][n]; return v===undefined ? null : v; }
+function hqWind(pat,g){ const v = state.hq.wind[pat][g]; return v===undefined ? null : v; }
+function prevOnDow(iso, dows){ let d=addDays(parseISO(iso),-1); for(let k=0;k<10;k++){ if(dows.includes(d.getDay())) return d; d=addDays(d,-1);} return null; }
+/* 본사 날짜로부터 그 페어의 실제 수업일 목록(검사날짜 = 다음 Day의 수업일) */
+function hqSess(pair,n){ const v = state.hq.sess && state.hq.sess[pair] ? state.hq.sess[pair][n] : null; return v ? parseISO(v) : null; }
+function hqSessions(pair){
+  const cal = state.hq.sess && state.hq.sess[pair];
+  if(cal && Object.keys(cal).length>=20){ return Object.keys(cal).map(Number).sort((a,b)=>a-b).map(n=>parseISO(cal[n])); }
+  const out = [];
+  for(let n=1;n<=23;n++){ const v=hqVal(pair,n); if(v && /^\d{4}-/.test(v)) out.push(parseISO(v)); }
+  const first = hqVal(pair,1);
+  if(first && /^\d{4}-/.test(first)){ const d1 = prevOnDow(first, PAIR_DOWS[pair]); if(d1) out.unshift(d1); }
+  return out;
+}
+function hqWindMeetings(pat){
+  const total = WIND_PATTERNS[pat].totalMeetings, out = [];
+  const g1 = hqWind(pat,1);
+  out.push(g1 && /^\d{4}-/.test(g1) ? prevOnDow(g1, WIND_PATTERNS[pat].days) : null);
+  for(let g=1; g<total; g++){ const v=hqWind(pat,g); out.push(v && /^\d{4}-/.test(v) ? parseISO(v) : null); }
+  return out; // index i = meeting i+1
+}
+/* 본사 일정에서 수업이 하나도 없는 평일 = 휴무일 */
+function hqHolidaySet(){
+  const all = new Set();
+  ['월수','수금','월금','화목'].forEach(p=>hqSessions(p).forEach(d=>all.add(toISO(d))));
+  ['MWF','TTH'].forEach(p=>hqWindMeetings(p).forEach(d=>{ if(d) all.add(toISO(d)); }));
+  const list = [...all].sort(); const set = new Set();
+  if(!list.length) return set;
+  let d = parseISO(list[0]); const end = parseISO(list[list.length-1]);
+  while(d <= end){ const iso=toISO(d); if(d.getDay()>0 && d.getDay()<6 && !all.has(iso)) set.add(iso); d=addDays(d,1); }
+  return set;
+}
+function windJrISO(){
+  if(state.windJrTest) return state.windJrTest;
+  if(!hqOn()) return '';
+  if(state.dayGroup==='MWF' && state.hq.windJr) return state.hq.windJr;
+  const d = hqSess(state.dayGroup==='MWF' ? '월수' : '화목', 20);
+  return d ? toISO(d) : '';
+}
+const MON_KO = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Sept:9,Oct:10,Nov:11,Dec:12};
+function hqUccHtml(){
+  const u = [...state.hq.ucc].sort((a,b)=>a.iso<b.iso?-1:1);
+  const best = u.filter(x=>x.kind==='best'), all = u.filter(x=>x.kind==='all');
+  const f = iso=>fmtMDW(parseISO(iso));
+  return `[UCC 일정]<br>
+    · Best UCC List & Upload: ${best.map(x=>f(x.iso)).join(', ') || '—'}<br>
+    · 월별 UCC 전체 업로드: ${all.map(x=>`${MON_KO[x.mon]?MON_KO[x.mon]+'월분 ':''}${f(x.iso)}`).join(', ') || '—'}`;
+}
+function hqCompleteness(){
+  const pairs = ['월수','수금','월금','화목'].map(p=>{ let c=0; for(let n=1;n<=24;n++) if(hqVal(p,n)) c++; return {p,c}; });
+  const wind = ['MWF','TTH'].map(p=>{ const t=WIND_PATTERNS[p].totalMeetings; let c=0; for(let g=1;g<=t;g++) if(hqWind(p,g)) c++; return {p,c,t}; });
+  return {pairs, wind};
+}
+function renderTermInfo(){
+  if(!hqOn()) return `<div class="side-note" style="text-align:left;">위에 본사 PDF를 올리면 개강일·종강일·휴무일이 여기 표시돼요.</div>`;
+  const all = []; ['월수','수금','월금','화목'].forEach(p=>hqSessions(p).forEach(d=>all.push(d)));
+  ['MWF','TTH'].forEach(p=>hqWindMeetings(p).forEach(d=>{ if(d) all.push(d); }));
+  all.sort((a,b)=>a-b);
+  const hol = [...hqHolidaySet()].sort().map(parseISO);
+  const fmt = d=>`${d.getMonth()+1}/${d.getDate()}(${WEEKDAY_KO[d.getDay()]})`;
+  return `<div class="hq-status" style="margin-top:0;color:var(--ink);font-size:13px;line-height:1.9;">
+    <b>개강일</b> ${all.length?fmt(all[0]):'—'} &nbsp;·&nbsp; <b>종강일</b> ${all.length?fmt(all[all.length-1]):'—'}<br>
+    <b>휴무일</b> ${hol.length ? hol.map(fmt).join(', ') : '없음'}
+  </div>`;
+}
+function renderHqSection(){
+  const on = hqOn();
+  let status = '';
+  if(on){
+    const c = hqCompleteness();
+    status = `<div class="hq-status">
+      Day 표: ${c.pairs.map(x=>`${PAIR_DEFS[x.p].label} <span class="${x.c>=24?'ok':'miss'}">${x.c}/24</span>`).join(' · ')}<br>
+      Wind: ${c.wind.map(x=>`${x.p} <span class="${x.c>=x.t?'ok':'miss'}">${x.c}/${x.t}</span>`).join(' · ')}
+      ${c.pairs.some(x=>x.c<24)||c.wind.some(x=>x.c<x.t) ? '<br><span class="miss">빠진 달 PDF가 있으면 더 올려주세요.</span>' : ''}
+    </div>`;
+  }
+  return `
+    <div class="section-title">본사 일정 PDF (월별 Due Dates)</div>
+    <div class="hq-drop" id="hqDrop" role="button" tabindex="0">
+      📄 본사 Due Dates PDF를 여기로 끌어다 놓으세요
+      <small>학기 3개월치 PDF를 한 번에 올려도 돼요 · 클릭해서 고르기</small>
+    </div>
+    <input type="file" id="hqInput" accept="application/pdf,.pdf" multiple hidden>
+    ${on ? `<div class="hq-files">${state.hq.files.map(f=>`<div class="hq-file"><b>${f.month?f.month+'월':'?'}</b><span>${esc(f.name)}</span></div>`).join('')}</div>${status}
+      <button class="add-link" id="hqClear" type="button">✕ 올린 PDF 모두 지우기</button>` : ''}
+  `;
+}
+function bindHqEvents(){
+  const drop = document.getElementById('hqDrop'), inp = document.getElementById('hqInput');
+  if(!drop) return;
+  drop.onclick = ()=>inp.click();
+  inp.onchange = e=>{ if(e.target.files.length) hqLoadFiles(e.target.files); };
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) hqLoadFiles(e.dataTransfer.files); });
+  const clr = document.getElementById('hqClear');
+  if(clr) clr.onclick = ()=>{ state.hq = null; renderAll(); };
+}
+
 
 function generateDates(startISO, endISO, weekdays, count, hSet){
   let cur = parseISO(startISO);
@@ -301,9 +545,11 @@ function renderPanel(){
       <div class="brand-mark">정</div>
       <div>
         <div class="brand-text">정이조 · 숙제 기한표 생성기</div>
-        <div class="brand-sub">개강일/종강일/휴무일만 넣으면 자동으로 짜여요</div>
+        <div class="brand-sub">본사 Due Dates PDF를 올리면 그 날짜 그대로 채워져요</div>
       </div>
     </div>
+
+    ${renderHqSection()}
 
     <div class="section-title">레벨</div>
     <div class="seg" id="levelSeg">
@@ -321,43 +567,28 @@ function renderPanel(){
       <input type="text" id="className" value="${esc(state.className)}">
     </div>
 
-    <div class="section-title">학기 기간</div>
-    <div class="row2">
-      <div class="field"><label>개강일</label><input type="date" id="startDate" value="${state.startDate}"></div>
-      <div class="field"><label>종강일</label><input type="date" id="endDate" value="${state.endDate}"></div>
-    </div>
-
-    <div class="section-title">휴무일 (공휴일 + 학원 휴무, 비워두면 무시)</div>
-    <div id="holidayList"></div>
-    <button class="add-link" id="addHoliday" type="button">+ 휴무일 추가</button>
-    <button class="add-link" id="fillKrHoliday" type="button" style="border-style:solid;border-color:var(--teal);color:var(--teal);">🇰🇷 2026년 9~11월 공휴일 자동 채우기 (추석·개천절 대체·한글날)</button>
+    <div class="section-title">학기 정보 (본사 PDF에서 자동)</div>
+    ${renderTermInfo()}
 
     ${(!isWind && state.dayGroup==='MWF') ? renderScheduleUI(lvl) : ''}
 
-    <div class="section-title">주니어테스트 날짜</div>
+    <div class="section-title">주니어테스트</div>
     <div id="jrTestList"></div>
 
-    <div class="section-title">캠퍼스</div>
-    <div class="field">
-      <select id="campus">
-        ${CAMPUSES.map(c=>`<option value="${esc(c)}" ${state.campus===c?'selected':''}>${c}</option>`).join('')}
-      </select>
-    </div>
-
-    <div class="field" style="display:flex;align-items:center;gap:8px;">
-      <input type="checkbox" id="includeMasterCal" ${state.includeMasterCalendar?'checked':''} style="width:16px;height:16px;">
-      <label style="margin:0;">전체 반(M/W·W/F·M/F·T/TH) 마스터 캘린더도 뒤에 붙이기</label>
-    </div>
+    ${isWind ? '' : `<div class="section-title">${state.level==='Globe'?'Novel Study':'Speaking & Writing'} 제출 날짜 (자동)</div><div id="sideInputs"></div>`}
 
     <div class="actions">
       <button class="btn btn-primary" id="printBtn" type="button">🖨️ 인쇄하기</button>
+      <button class="btn btn-secondary" id="imgBtn" type="button">🖼️ 이미지로 저장</button>
       <button class="btn btn-secondary" id="pdfBtn" type="button">⬇️ PDF로 저장</button>
     </div>
   `;
 
   bindPanelEvents();
+  bindHqEvents();
   renderHolidayList();
   renderJrTestList();
+  renderSideInputs();
 }
 
 function renderScheduleUI(lvl){
@@ -386,7 +617,7 @@ function bindPanelEvents(){
   document.querySelectorAll('#levelSeg button').forEach(btn=>{
     btn.onclick = ()=>{
       state.level = btn.dataset.val;
-      state.className = state.level;
+      state.className = state.level; state.sideDow = 0;
       if(!['MWF','TTH'].includes(state.dayGroup)) state.dayGroup = 'MWF';
       const lvl = LEVEL_DEFS[state.level];
       if(lvl && lvl.subjects){
@@ -398,13 +629,14 @@ function bindPanelEvents(){
   });
   const dgSeg = document.getElementById('dayGroupSeg');
   if(dgSeg) dgSeg.querySelectorAll('button').forEach(btn=>{
-    btn.onclick = ()=>{ state.dayGroup = btn.dataset.val; renderAll(); };
+    btn.onclick = ()=>{ state.dayGroup = btn.dataset.val; state.sideDow = 0; renderAll(); };
   });
   document.getElementById('className').oninput = e=>{ state.className=e.target.value; renderStage(); };
-  document.getElementById('startDate').oninput = e=>{ state.startDate=e.target.value; renderStage(); };
-  document.getElementById('endDate').oninput = e=>{ state.endDate=e.target.value; renderStage(); };
-  document.getElementById('addHoliday').onclick = ()=>{ state.holidays.push({date:'',label:''}); renderHolidayList(); renderStage(); };
-  document.getElementById('fillKrHoliday').onclick = ()=>{
+  const $ = id=>document.getElementById(id)||{};
+  $('startDate').oninput = e=>{ state.startDate=e.target.value; renderStage(); };
+  $('endDate').oninput = e=>{ state.endDate=e.target.value; renderStage(); };
+  $('addHoliday').onclick = ()=>{ state.holidays.push({date:'',label:''}); renderHolidayList(); renderStage(); };
+  $('fillKrHoliday').onclick = ()=>{
     const existing = new Set(state.holidays.map(h=>h.date).filter(Boolean));
     KR_HOLIDAYS_2026.forEach(h=>{
       if(!existing.has(h.date)){
@@ -417,18 +649,30 @@ function bindPanelEvents(){
     });
     renderHolidayList(); renderStage();
   };
-  document.getElementById('campus').onchange = e=>{ state.campus=e.target.value; renderStage(); };
-  document.getElementById('includeMasterCal').onchange = e=>{ state.includeMasterCalendar=e.target.checked; renderStage(); };
+
+
   document.getElementById('printBtn').onclick = ()=>window.print();
   document.getElementById('pdfBtn').onclick = exportPDF;
+  document.getElementById('imgBtn').onclick = ()=>{
+    if(!hqOn()){ alert('본사 PDF를 먼저 올려주세요.'); return; }
+    const name = (state.className||state.level).replace(/[\\/:*?"<>|]/g,'');
+    exportImages('imgBtn', ()=>Array.from(document.querySelectorAll('#stage .page')), i=>`숙제기한표_${name}_${state.dayGroup}${i?'_'+(i+1):''}`);
+  };
 
   document.querySelectorAll('.scheduleSel').forEach(sel=>{
-    sel.onchange = ()=>{ state.schedule[sel.dataset.pair] = sel.value; renderStage(); };
+    sel.onchange = ()=>{
+      const pair = sel.dataset.pair, nv = sel.value, ov = state.schedule[pair];
+      /* 같은 과목이 두 요일에 겹치지 않게: 이미 그 과목을 쓰던 요일과 서로 맞바꿈 (Globe는 AD를 고르면 GW·RA가 나머지로) */
+      const other = Object.keys(state.schedule).find(p=>p!==pair && state.schedule[p]===nv);
+      state.schedule[pair] = nv; if(other) state.schedule[other] = ov;
+      state.sideDow = 0; renderAll();
+    };
   });
 }
 
 function renderHolidayList(){
   const list = document.getElementById('holidayList');
+  if(!list) return;
   list.innerHTML = state.holidays.map((h,i)=>`
     <div class="holiday-row">
       <input type="date" data-hidx="${i}" data-hfield="date" value="${h.date}">
@@ -456,17 +700,18 @@ function activeJrPairs(){
 
 function renderJrTestList(){
   const list = document.getElementById('jrTestList');
+  if(!list) return;
+  const box = t=>`<div class="hq-status" style="margin-top:0;color:var(--ink);font-size:13px;line-height:1.9;">${t}</div>`;
+  if(!hqOn()){ list.innerHTML = `<div class="side-note" style="text-align:left;">본사 PDF를 올리면 자동으로 표시돼요.</div>`; return; }
   if(state.level === 'Wind'){
-    list.innerHTML = `
-      <div class="field">
-        <label>주니어테스트 날짜 (해당 날짜가 들어있는 Lesson 줄에 자동으로 표시돼요)</label>
-        <input type="date" id="windJr" value="${state.windJrTest||''}">
-      </div>
-    `;
-    document.getElementById('windJr').oninput = e=>{ state.windJrTest = e.target.value; renderStage(); };
+    const j = windJrISO();
+    list.innerHTML = box(j ? `${fmtMDW(parseISO(j))} — 해당 Lesson 줄에 자동 표시` : '본사 달력에서 찾지 못했어요');
     return;
   }
-  list.innerHTML = `<div class="side-note" style="text-align:left;color:var(--ink-soft);">Day 20에 자동으로 표시돼요 (과목마다 그 Day20 날짜 그대로) — 별도 입력이 필요 없어요.</div>`;
+  const pairs = state.dayGroup==='TTH' ? ['화목'] : ['월수','수금','월금'];
+  list.innerHTML = box(pairs.map(p=>{ const d=hqSess(p,20); const subj = state.dayGroup==='TTH' ? '화목' : `${p}(${state.schedule[p]})`;
+    const ex = state.dayGroup!=='TTH' && state.schedule[p]===LEVEL_DEFS[state.level].exempt;
+    return `<b>${subj}</b> ${d?fmtMDW(d):'—'}${ex?' · 예외 과목(시험 없음)':''}`; }).join('<br>'));
 }
 
 /* ============== esc ============== */
@@ -474,6 +719,7 @@ function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&am
 
 /* ============== Day 테이블 셀 계산 ============== */
 function buildDaySeries(pair){
+  if(hqOn()) return hqSessions(pair);
   if(pair === '화목'){
     return generateDates(state.startDate, state.endDate, [2,4], 23, holidaySet());
   }
@@ -481,6 +727,7 @@ function buildDaySeries(pair){
 }
 
 function buildFullSeries(pair){
+  if(hqOn()) return hqSessions(pair);
   if(pair === '화목'){
     return generateDates(state.startDate, state.endDate, [2,4], 24, holidaySet());
   }
@@ -497,6 +744,23 @@ function buildHNumberMap(){
   return map;
 }
 
+function hqDayCell(pair, n, exempt){
+  const v = hqVal(pair,n);
+  const md = x=> (x && /^\d{4}-/.test(x)) ? fmtMD(parseISO(x)) : '—';
+  const jrDay = hqSess(pair,20);
+  /* 주니어테스트 예외 과목(Globe AD): Day 19 숙제는 시험 날(=그 페어의 Day 20 수업일)에, Day 20 숙제는 그다음 수업일에 검사 */
+  if(exempt && n===19) return jrDay ? fmtMD(jrDay) : md(v);
+  if(n===20){
+    const base = md(hqVal(pair,19));
+    if(exempt) return base;
+    return `${base}<span class="jrtest-note">주니어테스트: ${jrDay ? fmtMDW(jrDay) : '날짜 확인'}</span>`;
+  }
+  if(n===24) return `<span class="cp-note">(Day 24 수업날짜: ${md(hqVal(pair,23))})</span>`;
+  if(v==='JR') return `<span class="jrtest-note" style="margin-top:0;">주니어테스트</span>`;
+  if(v==='IN') return `In class`;
+  if(n===8 || n===16) return `${md(v)}<span class="cp-note">(Day ${n} 수업날짜: ${md(hqVal(pair,n-1))})</span>`;
+  return md(v);
+}
 function dayCellContent(dates, dayNum, showJr){
   if(dayNum === 24){
     const prev = dates[22];
@@ -515,67 +779,87 @@ function dayCellContent(dates, dayNum, showJr){
 }
 
 /* ============== 보조표(Speaking&Writing / Novel Study) ============== */
+/* 제출 요일 기준(본사 기준): NS(Globe는 AD)가 들어간 요일 페어의 "앞 요일"
+   (월수·월금 → 월요일, 수금 → 수요일, 화목 → 화요일). 개강 둘째 주의 그 요일부터 매주,
+   그 요일이 휴무면 그 주는 건너뛰고 다음 주 같은 요일로 넘어간다. 왼쪽에서 직접 고를 수도 있다. */
+function sideAutoDow(){
+  const lvl = LEVEL_DEFS[state.level];
+  if(state.dayGroup === 'TTH') return 2;
+  const pair = Object.keys(state.schedule).find(p => state.schedule[p] === lvl.sideBasis) || Object.keys(state.schedule)[0];
+  return Math.min(...PAIR_DEFS[pair].days);
+}
+function sideDow(){ return state.sideDow || sideAutoDow(); }
+function termStartDate(){
+  if(hqOn()){
+    const all = []; ['월수','수금','월금','화목'].forEach(p=>hqSessions(p).forEach(d=>all.push(d)));
+    if(all.length){ all.sort((a,b)=>a-b); return all[0]; }
+  }
+  return parseISO(state.startDate);
+}
+function skipNoClassWeeks(d, hSet){ let g=0; while(hSet.has(toISO(d)) && g<20){ d=addDays(d,7); g++; } return d; }
 function sideTableSpec(){
   const lvl = LEVEL_DEFS[state.level];
   if(!lvl || !lvl.side) return null;
-
-  // 기준일 자동 제안: NS/AD(sideBasis)가 배정된 요일 페어 중 "더 늦은 요일"(=숙제 체크하는 날)의
-  // 두 번째 실제 수업일 (첫 주는 건너뛰고 "다음 주 그 요일"부터 시작)
-  let base = null;
-  const hSet = holidaySet();
-  if(state.dayGroup === 'TTH' || state.level==='Wind'){
-    const ds = buildFullSeries('화목');
-    base = ds[1] || ds[0];
-  } else {
-    const pair = Object.keys(state.schedule).find(p => state.schedule[p] === lvl.sideBasis) || Object.keys(state.schedule)[0];
-    const checkDow = Math.max(...PAIR_DEFS[pair].days); // 페어 중 더 늦은 요일
-    const series = buildFullSeries(pair).filter(d => d.getDay() === checkDow);
-    base = series[1] || series[0];
-  }
-  if(!base) return null;
-  base = nextNonHoliday(base, hSet);
-
+  const start = termStartDate(); if(!start) return null;
+  const dow = sideDow();
+  let first = new Date(start); while(first.getDay()!==dow) first = addDays(first,1);
+  const base = skipNoClassWeeks(addDays(first,7), holidaySet());
   if(lvl.side === 'speaking'){
     const topics = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B'];
-    return { title:'Speaking & Writing<br>Due Dates', colLabel:'Topic #', labels:topics, base };
+    return { title:'Speaking & Writing<br>Due Dates', colLabel:'Topic #', labels:topics, base, foot:'* 6B 숙제에 대한 답은 NS과목 Day 24 수업시간에 확인합니다.' };
   } else {
     const weeks = ['1','2','3','4','5','6','7','8','9','10','11','Final Draft'];
-    return { title:'Novel Study<br>Due Dates', colLabel:'Week', labels:weeks, base };
+    return { title:'Novel Study<br>Due Dates', colLabel:'Week', labels:weeks, base, foot:'' };
   }
 }
 
 let sideTableOverrides = {}; // id -> ISO date, user edits
 
-function renderSideTable(spec, pageId){
-  if(!spec) return '';
-  const labels = spec.labels;
+function sideRows(){
+  const spec = sideTableSpec();
+  if(!spec) return null;
+  const pageId = state.level+'-'+state.dayGroup+'-'+sideDow();
   const hSet = holidaySet();
-  const key0 = pageId+'-0';
-  const row0Val = sideTableOverrides[key0] || toISO(nextNonHoliday(spec.base, hSet));
+  let cur = parseISO(sideTableOverrides[pageId+'-0'] || toISO(spec.base));
+  const rows = spec.labels.map((label,i)=>{
+    const key = pageId+'-'+i;
+    if(i === spec.labels.length-1) return { key, label, fixed:true };
+    if(i>0) cur = skipNoClassWeeks(addDays(cur,7), hSet);
+    return { key, label, val: sideTableOverrides[key] ?? toISO(cur), fixed:false };
+  });
+  return { spec, rows, pageId };
+}
 
+function renderSideTable(spec, pageId){
+  const info = sideRows();
+  if(!info) return '';
   return `
-    <div class="side-title">${spec.title}</div>
+    <div class="side-title">${info.spec.title}</div>
     <div class="side-note">(아래 표를 보고 숙제 제출 날짜를 ${state.level==='Globe'?'Novel Study':'Speaking & Writing'} 교재 첫페이지에 적으세요.)</div>
     <table class="side-table">
-      <thead><tr><th>${spec.colLabel}</th><th>제출 날짜</th></tr></thead>
+      <thead><tr><th>${info.spec.colLabel}</th><th>제출 날짜</th></tr></thead>
       <tbody>
-        ${labels.map((label,i)=>{
-          const key = pageId+'-'+i;
-          const isLast = i === labels.length-1;
-          if(isLast){
-            return `<tr><td>${label}</td><td><span class="side-fixed">In class</span></td></tr>`;
-          }
-          const rawDefault = i===0 ? parseISO(row0Val) : addDays(parseISO(row0Val), 7*i);
-          const defaultVal = toISO(nextNonHoliday(rawDefault, hSet));
-          const val = sideTableOverrides[key] ?? defaultVal;
-          return `<tr>
-            <td>${label}</td>
-            <td><input type="date" data-side="${key}" value="${val}"></td>
-          </tr>`;
-        }).join('')}
+        ${info.rows.map(r=>`<tr><td>${r.label}</td><td>${r.fixed ? '<span class="side-fixed">In class</span>' : fmtMDW(parseISO(r.val))}</td></tr>`).join('')}
       </tbody>
     </table>
+    ${info.spec.foot ? `<div class="side-note" style="text-align:left;margin-top:8px;">${info.spec.foot}</div>` : ''}
   `;
+}
+
+/* 왼쪽 패널: 제출 날짜는 레벨·과목 요일 배정에 따라 자동 (읽기 전용 요약) */
+function renderSideInputs(){
+  const box = document.getElementById('sideInputs');
+  if(!box) return;
+  if(!hqOn()){ box.innerHTML = '<div class="side-note" style="text-align:left;">본사 PDF를 올리면 자동으로 계산돼요.</div>'; return; }
+  const info = sideRows();
+  if(!info){ box.innerHTML = ''; return; }
+  const basis = state.level==='Globe' ? 'AD' : 'NS';
+  const pair = state.dayGroup==='TTH' ? '화목' : (Object.keys(state.schedule).find(p=>state.schedule[p]===LEVEL_DEFS[state.level].sideBasis)||'');
+  const fmt = d=>`${d.getMonth()+1}/${d.getDate()}`;
+  box.innerHTML = `<div class="hq-status" style="margin-top:0;color:var(--ink);font-size:13px;line-height:1.8;">
+    ${basis} ${pair} 반 → 매주 <b>${WEEKDAY_KO[sideDow()]}요일</b> 제출 (휴무인 주는 건너뜀)<br>
+    ${info.rows.map(r=>`${r.label} ${r.fixed?'In class':fmt(parseISO(r.val))}`).join(' · ')}
+  </div>`;
 }
 
 /* ============== Nation / Island / Globe 페이지 ============== */
@@ -586,15 +870,19 @@ function renderNIGPage(){
 
   if(state.dayGroup === 'TTH'){
     const dates = buildDaySeries('화목');
+    const isGlobe = state.level==='Globe';
+    const cols = isGlobe ? [{label:'AD', exempt:true},{label:'GW & RA', exempt:false}]
+                         : [{label:`모든과목 (${lvl.subjects.join(', ')})`, exempt:false}];
+    const cell = (c,n)=> hqOn() ? hqDayCell('화목',n,c.exempt) : dayCellContent(dates,n,!c.exempt);
     bodyHtml = `
       <table class="dd">
-        <tr><th class="pairhead" style="background:var(--ink);color:#fff;">단계</th><td colspan="1" style="font-weight:800;color:var(--accent);">${esc(state.className)}</td></tr>
-        <tr><th class="pairhead" style="background:var(--paper);">과목</th><td>모든과목 (${lvl.subjects ? lvl.subjects.join(', ') : 'AD, GW, RA'})</td></tr>
-        <tr><th class="pairhead" style="background:var(--paper);">수업요일</th><td style="font-weight:800;">화 & 목</td></tr>
-        <tr><th class="daylabel" style="background:var(--ink);color:#fff;">수업한 날</th><th style="background:var(--ink);color:#fff;">과목별 숙제 검사날짜</th></tr>
+        <tr><th class="pairhead" style="background:var(--ink);color:#fff;">단계</th><td colspan="${cols.length}" style="font-weight:800;color:var(--accent);">${esc(state.className)}</td></tr>
+        <tr><th class="pairhead" style="background:var(--paper);">과목</th>${cols.map(c=>`<td style="font-weight:800;">${c.label}</td>`).join('')}</tr>
+        <tr><th class="pairhead" style="background:var(--paper);">수업요일</th><td colspan="${cols.length}" style="font-weight:800;">화 & 목</td></tr>
+        <tr><th class="daylabel" style="background:var(--ink);color:#fff;">수업한 날</th>${cols.map(()=>`<th style="background:var(--ink);color:#fff;">과목별 숙제 검사날짜</th>`).join('')}</tr>
         ${Array.from({length:24},(_,i)=>i+1).map(n=>{
-          if(n===9 || n===17){ return `<tr><td class="spacer" colspan="2"></td></tr><tr><td class="daylabel">Day ${n}</td><td>${dayCellContent(dates,n,true)}</td></tr>`; }
-          return `<tr><td class="daylabel">Day ${n}</td><td>${dayCellContent(dates,n,true)}</td></tr>`;
+          const row = `<tr><td class="daylabel">Day ${n}</td>${cols.map(c=>`<td>${cell(c,n)}</td>`).join('')}</tr>`;
+          return (n===9 || n===17) ? `<tr><td class="spacer" colspan="${cols.length+1}"></td></tr>${row}` : row;
         }).join('')}
       </table>
     `;
@@ -619,7 +907,7 @@ function renderNIGPage(){
         ${Array.from({length:24},(_,i)=>i+1).map(n=>{
           const cells = pairs.map(p=>{
             const jrOk = state.schedule[p] !== lvl.exempt;
-            return `<td>${dayCellContent(seriesByPair[p], n, jrOk)}</td>`;
+            return `<td>${hqOn()?hqDayCell(p,n,!jrOk):dayCellContent(seriesByPair[p], n, jrOk)}</td>`;
           }).join('');
           if(n===9 || n===17){ return `<tr><td class="spacer" colspan="${pairs.length+1}"></td></tr><tr><td class="daylabel">Day ${n}</td>${cells}</tr>`; }
           return `<tr><td class="daylabel">Day ${n}</td>${cells}</tr>`;
@@ -647,6 +935,7 @@ function renderNIGPage(){
 
 /* ============== Wind: 회차(meeting) 날짜 계산 ============== */
 function buildWindMeetings(){
+  if(hqOn()) return hqWindMeetings(state.dayGroup);
   const pat = WIND_PATTERNS[state.dayGroup];
   // 마지막 체크포인트(72번째 레슨)는 괄호로만 표기되므로 totalMeetings-1개만 실제 날짜 필요
   return generateDates(state.startDate, state.endDate, pat.days, pat.totalMeetings - 1, holidaySet());
@@ -668,14 +957,22 @@ function renderWindLessonPage(){
   const total = pat.totalMeetings;
   const perMeeting = pat.lessonsPerMeeting;
   const checkpoints = [24,48,72].map(x=>Math.round(x/perMeeting)); // meeting indices(1-based) that are checkpoints
-  const jrRowIdx = findJrTestRow(dates, state.windJrTest); // 0-based meeting index
+  const jrISO = windJrISO();
+  let jrRowIdx = findJrTestRow(dates, jrISO); // 0-based meeting index
+  if(hqOn() && jrISO){ jrRowIdx = -1; for(let g=1; g<=total; g++){ const v=hqWind(state.dayGroup,g); if(v && /^\d{4}-/.test(v) && v>=jrISO){ jrRowIdx=g-1; break; } } }
 
   const rows = Array.from({length: total},(_,i)=>{
     const meetingNum = i+1; // 1-based
     const l1 = i*perMeeting+1, l2 = i*perMeeting+perMeeting;
     const label = `Lessons ${l1}-${l2}`;
     let html;
-    if(meetingNum === total){
+    if(hqOn()){
+      const v = hqWind(state.dayGroup, meetingNum), prev = dates[meetingNum-1];
+      const md = x=> (x && /^\d{4}-/.test(x)) ? fmtMD(parseISO(x)) : '—';
+      if(meetingNum === total) html = `<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(prev)})</span>`;
+      else if(checkpoints.includes(meetingNum)) html = `${md(v)}<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(prev)})</span>`;
+      else html = v==='IN' ? 'In class' : md(v);
+    } else if(meetingNum === total){
       html = `<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(dates[meetingNum-2])})</span>`;
     } else if(checkpoints.includes(meetingNum)){
       html = `${fmtMD(dates[meetingNum-1])}<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(dates[meetingNum-2])})</span>`;
@@ -683,7 +980,7 @@ function renderWindLessonPage(){
       html = fmtMD(dates[meetingNum-1]);
     }
     if(i === jrRowIdx){
-      const jd = parseISO(state.windJrTest);
+      const jd = parseISO(jrISO);
       html += `<span class="jrtest-note">${jd.getMonth()+1}월 ${jd.getDate()}일에 주니어테스트 있음</span>`;
     }
     return { label, html };
@@ -716,8 +1013,8 @@ function renderWindLessonPage(){
         </tbody>
       </table>
       <div class="side-note" style="text-align:left;">
-        [UCC 찍는날]<br>
-        1. ${ucc[0]} &nbsp; 2. ${ucc[1]} &nbsp; 3. ${ucc[2]}
+        ${hqOn() && (state.hq.ucc||[]).length ? hqUccHtml() : `[UCC 찍는날]<br>
+        1. ${ucc[0]} &nbsp; 2. ${ucc[1]} &nbsp; 3. ${ucc[2]}`}
       </div>
     </div>
     <div class="page-footer">
@@ -805,7 +1102,25 @@ function renderMasterCalendarPage(monthDate){
 
 /* ============== Wind: 월별 캘린더 ============== */
 function monthsInRange(){
-  const s = parseISO(state.startDate), e = parseISO(state.endDate);
+  const raw = monthsInRangeRaw();
+  if(!hqOn() || raw.length<2) return raw;
+  const ds = [];
+  if(state.level==='Wind') hqWindMeetings(state.dayGroup).forEach(d=>{ if(d) ds.push(d); });
+  else ['월수','수금','월금','화목'].forEach(p=>hqSessions(p).forEach(d=>ds.push(d)));
+  const first = raw[0], next = raw[1];
+  const nextRowStart = addDays(next, -next.getDay());
+  const inFirst = ds.filter(d=>d.getFullYear()===first.getFullYear() && d.getMonth()===first.getMonth());
+  if(inFirst.length && inFirst.every(d=>d>=nextRowStart)) return raw.slice(1);
+  return raw;
+}
+function monthsInRangeRaw(){
+  let s = parseISO(state.startDate), e = parseISO(state.endDate);
+  if(hqOn()){
+    const ds = [];
+    if(state.level==='Wind') hqWindMeetings(state.dayGroup).forEach(d=>{ if(d) ds.push(d); });
+    else ['월수','수금','월금','화목'].forEach(p=>hqSessions(p).forEach(d=>ds.push(d)));
+    if(ds.length){ ds.sort((a,b)=>a-b); s = ds[0]; e = ds[ds.length-1]; }
+  }
   const out = [];
   let cur = new Date(s.getFullYear(), s.getMonth(), 1);
   while(cur <= e){
@@ -827,12 +1142,13 @@ function renderWindCalendarPage(monthDate){
   // date -> lesson range label
   const dateToLesson = {};
   dates.forEach((d,i)=>{
+    if(!d) return;
     const l1=i*pat.lessonsPerMeeting+1, l2=i*pat.lessonsPerMeeting+pat.lessonsPerMeeting;
     dateToLesson[toISO(d)] = `Lesson ${l1}-${l2}`;
   });
 
   const cells = [];
-  for(let i=0;i<firstDow;i++) cells.push(null);
+  for(let i=firstDow;i>0;i--) cells.push(new Date(y,m,1-i)); // 첫 주의 지난달 날짜도 그대로 (본사 PDF처럼)
   for(let d=1; d<=daysInMonth; d++) cells.push(new Date(y,m,d));
   while(cells.length % 7 !== 0) cells.push(null);
 
@@ -850,8 +1166,9 @@ function renderWindCalendarPage(monthDate){
             if(!d) return `<td></td>`;
             const iso = toISO(d);
             const isHol = hSet.has(iso);
-            const isClass = pat.days.includes(d.getDay()) && !isHol;
-            let inner = `<div class="cal-daynum">${d.getDate()}</div>`;
+            const isClass = hqOn() ? !!dateToLesson[iso] : (pat.days.includes(d.getDay()) && !isHol);
+            const other = d.getMonth()!==m;
+            let inner = `<div class="cal-daynum" ${other?'style="color:#9aa3a0;"':''}>${other?(d.getMonth()+1)+'/':''}${d.getDate()}</div>`;
             if(isHol){
               inner += `<div class="cal-noclass">No Class</div>`;
             } else if(isClass){
@@ -872,10 +1189,18 @@ function renderWindCalendarPage(monthDate){
 /* ============== Stage 렌더 ============== */
 function renderStage(){
   const stage = document.getElementById('stage');
+  if(!hqOn()){
+    stage.innerHTML = `<div style="max-width:520px;margin:120px auto;text-align:center;color:var(--ink-soft);line-height:1.8;">
+      <div style="font-size:44px;">📄</div>
+      <div style="font-size:18px;font-weight:800;color:var(--ink);margin:8px 0;">본사 Due Dates PDF를 먼저 올려주세요</div>
+      왼쪽 맨 위 칸에 월별 PDF(보통 3개)를 끌어다 놓으면<br>레벨·반 형태·과목 배정에 맞는 숙제 기한표가 바로 만들어져요.</div>`;
+    return;
+  }
   let pagesHtml = '';
   let pageCount = 0;
   const months = monthsInRange();
-  const masterCount = state.includeMasterCalendar ? months.length : 0;
+  const showMaster = false; // 마스터 캘린더 붙이기 기능 제거
+  const masterCount = showMaster ? months.length : 0;
 
   if(state.level === 'Wind'){
     pageCount = 1 + months.length + masterCount;
@@ -888,7 +1213,7 @@ function renderStage(){
     pagesHtml += `<div class="page-label">미리보기 1 / ${pageCount} · ${state.level} ${state.dayGroup}</div><div class="page" id="page-main">${renderNIGPage()}</div>`;
   }
 
-  if(state.includeMasterCalendar){
+  if(showMaster){
     months.forEach((md,i)=>{
       const idx = (state.level==='Wind' ? months.length : 0) + i + 2;
       pagesHtml += `<div class="page-label">미리보기 ${idx} / ${pageCount} · ${md.getFullYear()}.${md.getMonth()+1} 마스터 캘린더</div><div class="page" id="page-master-${i}">${renderMasterCalendarPage(md)}</div>`;
@@ -897,9 +1222,32 @@ function renderStage(){
 
   stage.innerHTML = pagesHtml;
 
-  stage.querySelectorAll('input[data-side]').forEach(el=>{
-    el.oninput = ()=>{ sideTableOverrides[el.dataset.side] = el.value; renderStage(); };
-  });
+  renderSideInputs();
+  renderJrTestList();
+}
+
+
+/* ---------------- 이미지(PNG) 저장 ---------------- */
+async function exportImages(btnId, getPages, baseName){
+  const btn = document.getElementById(btnId);
+  const original = btn.textContent;
+  btn.textContent = '이미지 만드는 중...'; btn.disabled = true;
+  try{
+    const pages = getPages().filter(Boolean);
+    for(let i=0;i<pages.length;i++){
+      const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff' });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pages.length>1 ? `${baseName(i)}.png` : `${baseName(0)}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      await new Promise(r=>setTimeout(r,400)); // 여러 장 연속 다운로드 간격
+    }
+  } catch(err){
+    alert('이미지 저장 중 오류가 발생했어요: ' + err.message);
+  } finally {
+    btn.textContent = original; btn.disabled = false;
+  }
 }
 
 /* ============== PDF 저장 ============== */

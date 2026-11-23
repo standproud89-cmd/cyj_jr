@@ -273,6 +273,7 @@
 /* ---------------- 상수 ---------------- */
 const WEEKDAYS = ['월','화','수','목','금'];
 const SUBJ = { FW:'Fiction & Writing', NS:'Non-fiction & Speaking', LF:'Language Framework' };
+const CAMPUS_FIXED = '정이조주니어(동작)'; // 캠퍼스는 동작으로 고정
 const CAMPUSES = [
   '정이조주니어영어학원(목동)',
   '정이조주니어(목2관)',
@@ -296,7 +297,7 @@ function mkClass(dayGroup, slot, levelName, levelNum, suffix, room, vocabDay, ca
   return {
     id: 'c'+Math.random().toString(36).slice(2,9),
     dayGroup, slot, levelName, levelNum, suffix, room, vocabDay,
-    campus: campus || CAMPUSES[0],
+    campus: CAMPUS_FIXED,
     order: ['fixed','vocab'],
     mwfSchedule: defaultMwfSchedule(),
     tthSchedule: defaultTthSchedule()
@@ -388,6 +389,7 @@ function renderPanel(){
 
     <div class="actions">
       <button class="btn btn-primary" id="printBtn" type="button">🖨️ 인쇄하기</button>
+      <button class="btn btn-secondary" id="imgBtn" type="button">🖼️ 이미지로 저장</button>
       <button class="btn btn-secondary" id="pdfBtn" type="button">⬇️ PDF로 저장</button>
     </div>
   `;
@@ -408,6 +410,9 @@ function renderPanel(){
   };
   document.getElementById('printBtn').onclick = () => window.print();
   document.getElementById('pdfBtn').onclick = exportPDF;
+  document.getElementById('imgBtn').onclick = ()=>exportImages('imgBtn',
+    ()=>state.classes.map(c=>document.getElementById('page-'+c.id)),
+    i=>`담임안내문_${classCode(state.classes[i]).replace(/[\\/:*?"<>|()]/g,'')}`);
 
   renderClassList();
 }
@@ -516,13 +521,6 @@ function renderClassList(){
         </select>
       </div>
 
-      <div class="field">
-        <label>캠퍼스</label>
-        <select data-field="campus" data-idx="${i}">
-          ${CAMPUSES.map(cp=>`<option value="${esc(cp)}" ${c.campus===cp?'selected':''}>${cp}</option>`).join('')}
-        </select>
-      </div>
-
       ${c.dayGroup==='MWF' ? renderMwfEditor(c,i) : renderTthEditor(c,i)}
     </div>
   `).join('');
@@ -626,7 +624,7 @@ function renderStage(){
 
         <div class="page-footer">
           <div class="footer-line"></div>
-          <div class="footer-campus">${esc(c.campus)}</div>
+          <div class="footer-campus">${esc(CAMPUS_FIXED)}</div>
         </div>
       </div>
     `;
@@ -710,6 +708,30 @@ function cellHtml(code, lvlLabel){
     <div class="subj-name">${SUBJ[code]}</div>
     <div class="subj-detail">${lvlLabel} ${code}</div>
   </td>`;
+}
+
+
+/* ---------------- 이미지(PNG) 저장 ---------------- */
+async function exportImages(btnId, getPages, baseName){
+  const btn = document.getElementById(btnId);
+  const original = btn.textContent;
+  btn.textContent = '이미지 만드는 중...'; btn.disabled = true;
+  try{
+    const pages = getPages().filter(Boolean);
+    for(let i=0;i<pages.length;i++){
+      const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff' });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pages.length>1 ? `${baseName(i)}.png` : `${baseName(0)}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      await new Promise(r=>setTimeout(r,400)); // 여러 장 연속 다운로드 간격
+    }
+  } catch(err){
+    alert('이미지 저장 중 오류가 발생했어요: ' + err.message);
+  } finally {
+    btn.textContent = original; btn.disabled = false;
+  }
 }
 
 /* ---------------- PDF 저장 ---------------- */
