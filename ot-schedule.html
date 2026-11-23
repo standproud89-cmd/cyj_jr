@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정이조 For Staff | 신규 선생님 OT 스케쥴</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1C2321; --ink-soft:#5B6360; --paper:#F6F7F9; --card:#FFFFFF; --line:#E3E6E8;
+    --accent:#C13E3E; --accent-soft:#FBEAEA; --teal:#1F7A6C; --teal-soft:#E7F3F0;
+    --amber:#B7791F; --amber-soft:#FBF2E2; --blue:#2F5FA8; --blue-soft:#E8EFFA; --green:#2E7D4A; --green-soft:#EEF8EF; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased; }
+  .app{ display:flex; min-height:100vh; }
+  .panel{ width:380px; flex:0 0 380px; background:var(--card); border-right:1px solid var(--line);
+    padding:24px 22px 60px; overflow-y:auto; height:100vh; position:sticky; top:0; }
+  .stage{ flex:1; min-width:0; padding:28px; display:flex; flex-direction:column; gap:20px; }
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .brand-mark{ width:34px; height:34px; border-radius:9px; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .brand-text{ font-weight:800; font-size:15px; }
+  .brand-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+  .back-link{ display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-weight:700; font-size:12.5px;
+    color:var(--ink-soft); padding:7px 14px; border-radius:20px; border:1px solid var(--line); margin-bottom:18px; background:#fff; }
+  .section-title{ font-size:12px; font-weight:700; color:var(--ink-soft); margin:22px 0 8px; display:flex; align-items:center; gap:6px; }
+  .field{ margin-bottom:10px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; }
+  .field input{ width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px; font-family:inherit; font-size:13px; color:var(--ink); background:#fff; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .note{ font-size:11.5px; color:var(--ink-soft); line-height:1.6; background:var(--paper); border-radius:10px; padding:10px 12px; }
+  .btn{ border:1px solid var(--line); background:#fff; border-radius:9px; padding:8px 12px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink); }
+  .btn:hover{ background:var(--paper); }
+  .btn.dark{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .btn.dark:hover{ background:#333; }
+
+  /* 날짜 */
+  .date-row{ display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+  .date-row input{ flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:9px; font-family:inherit; font-size:13px; }
+  .date-row .dow{ width:28px; font-weight:800; font-size:13px; text-align:center; }
+  .date-row .x{ border:none; background:none; color:var(--ink-soft); cursor:pointer; font-size:16px; padding:4px 6px; }
+  .date-row.bad input{ border-color:var(--accent); background:var(--accent-soft); }
+
+  /* 교육 박스 */
+  .tray{ display:flex; flex-direction:column; gap:6px; min-height:60px; padding:8px; border:1.5px dashed var(--line); border-radius:12px; background:var(--paper); }
+  .tray.over{ border-color:var(--blue); background:var(--blue-soft); }
+  .tbox{ background:#fff; border:1px solid #CBD7EC; border-left:4px solid var(--blue); border-radius:8px; padding:7px 8px 7px 10px; font-size:12px; line-height:1.45;
+    cursor:grab; display:flex; gap:6px; align-items:flex-start; user-select:none; }
+  .tbox:active{ cursor:grabbing; }
+  .tbox.sel{ outline:2px solid var(--blue); outline-offset:1px; background:var(--blue-soft); }
+  .tbox .txt{ flex:1; min-width:0; word-break:keep-all; }
+  .tbox .who{ font-size:10.5px; color:var(--blue); font-weight:700; white-space:nowrap; }
+  .tbox .ic{ border:none; background:none; cursor:pointer; color:var(--ink-soft); font-size:12px; padding:0 2px; line-height:1.4; }
+  .tray-empty{ font-size:11.5px; color:var(--ink-soft); text-align:center; padding:10px 0; }
+
+  /* 필수 청강 카드 */
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; }
+  .card-title{ font-weight:800; font-size:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .progress{ display:flex; align-items:center; gap:12px; margin:12px 0 4px; flex-wrap:wrap; }
+  .progress .bar{ flex:1; min-width:160px; height:10px; background:var(--paper); border-radius:6px; overflow:hidden; }
+  .progress .bar i{ display:block; height:100%; background:var(--green); transition:width .25s; }
+  .progress .txt{ font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .levels{ font-size:12px; color:var(--ink-soft); display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+  .lv{ font-size:11px; font-weight:800; border-radius:6px; padding:2px 6px; background:var(--paper); color:#9aa19e; border:1px solid var(--line); }
+  .lv.on{ background:var(--green-soft); color:var(--green); border-color:#CFE8D4; }
+  .req-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(360px,1fr)); gap:12px; margin-top:14px; align-items:start; }
+  .req{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:#fff; display:flex; flex-direction:column; gap:8px; }
+  .req-head{ display:flex; align-items:center; gap:8px; }
+  .req-name{ font-weight:800; font-size:14px; }
+  .stage-tag{ font-size:10.5px; font-weight:800; border-radius:6px; padding:2px 7px; }
+  .st-W{ background:#FFF3D6; color:#8A5A00; } .st-I{ background:#E3F0FF; color:#1F4E8C; } .st-N{ background:#E9F6EC; color:#2B6B3B; }
+  .st-G{ background:#F3E8FB; color:#6B2E8F; } .st-H{ background:#FDE9EF; color:#9B2C4E; }
+  .req-count{ margin-left:auto; font-size:11px; color:var(--ink-soft); }
+  .req.done{ background:var(--green-soft); border:2px solid #4CAF6A; }
+  .req.done .req-count{ color:var(--green); font-weight:800; }
+  .opts{ display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto; padding-right:2px; }
+  .opt{ display:grid; grid-template-columns:66px 74px minmax(0,1fr) auto; gap:6px; align-items:center; text-align:left; font-family:inherit; font-size:12px;
+    border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 8px; cursor:pointer; color:var(--ink); }
+  .opt:hover{ border-color:var(--ink); background:var(--paper); }
+  .opt .d{ font-weight:800; } .opt .t{ color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .opt .c{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .opt .c small{ font-weight:500; color:var(--ink-soft); margin-left:4px; }
+  .opt .new{ font-size:10px; font-weight:800; color:var(--teal); background:var(--teal-soft); border-radius:5px; padding:1px 5px; }
+  .opt.seen{ opacity:.6; }
+  .picked{ font-size:12.5px; font-weight:700; color:var(--green); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .picked button{ margin-left:auto; border:1px solid #CFE8D4; background:#fff; border-radius:7px; font-size:11px; padding:3px 8px; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
+  .none{ font-size:12px; color:var(--ink-soft); padding:4px 0; }
+  .toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .toggle{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); cursor:pointer; }
+
+  /* 일정표 (인쇄용 A4) */
+  .pages{ display:flex; flex-direction:column; align-items:center; gap:20px; }
+  .page{ width:794px; min-height:1123px; background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.08); padding:44px 44px 40px; display:flex; flex-direction:column; gap:14px; }
+  .doc-title{ font-size:22px; font-weight:800; letter-spacing:-.3px; }
+  .doc-sub{ font-size:12.5px; color:#333; background:#FFF8D9; border:1px solid #F0E2A0; border-radius:6px; padding:7px 10px; }
+  .doc-sub b{ color:var(--accent); }
+  table.ot{ width:100%; border-collapse:collapse; font-size:12px; table-layout:fixed; }
+  table.ot th{ background:#2B3330; color:#fff; font-weight:700; padding:7px 6px; border:1px solid #2B3330; }
+  table.ot td{ border:1px solid #CFD4D2; padding:5px 7px; vertical-align:middle; line-height:1.45; }
+  td.day{ background:#F4F5F4; font-weight:800; text-align:center; font-size:13px; }
+  td.day small{ display:block; font-weight:600; color:#666; font-size:11px; margin-top:2px; }
+  td.time{ text-align:center; font-variant-numeric:tabular-nums; white-space:nowrap; color:#333; }
+  td.time.h5{ color:#9B2C4E; font-weight:700; }
+  td.who{ text-align:center; font-size:11.5px; color:#333; }
+  td.slot{ min-height:26px; }
+  td.slot.over{ background:var(--blue-soft); outline:2px dashed var(--blue); outline-offset:-3px; }
+  td.slot.can{ cursor:pointer; }
+  td.slot.can:hover{ background:#F7FAFF; }
+  .it{ display:flex; gap:6px; align-items:flex-start; }
+  .it + .it{ margin-top:4px; padding-top:4px; border-top:1px dotted #D5D9D7; }
+  .it .tx{ flex:1; min-width:0; word-break:keep-all; }
+  .it.obs .tx{ color:#B3261E; font-weight:700; }
+  .it.train{ cursor:grab; }
+  .it .rm{ border:none; background:none; color:#999; cursor:pointer; font-size:12px; padding:0 2px; }
+  .empty-hint{ color:#B8BDBB; font-size:11px; }
+  .info-row td{ color:#777; font-size:11px; background:#FAFAFA; }
+  /* 저장·인쇄할 때는 편집 표시 숨기기 */
+  .exporting .rm, .exporting .empty-hint{ display:none !important; }
+  .exporting tr.extra.blank{ display:none; }
+  .exporting td.slot{ background:#fff !important; outline:none !important; }
+
+  .actions{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .actions .btn{ padding:11px; font-size:13px; }
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:10px 18px; border-radius:10px; font-size:13px; font-weight:700; opacity:0; transition:.2s; pointer-events:none; z-index:20; }
+  .toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:30; }
+  .modal{ background:#fff; border-radius:14px; padding:20px; width:min(460px,92vw); display:flex; flex-direction:column; gap:10px; }
+  .modal textarea, .modal input{ width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px; font-family:inherit; font-size:13px; }
+  .modal textarea{ min-height:90px; resize:vertical; line-height:1.5; }
+
+  @media (max-width: 1100px){ .app{ flex-direction:column; } .panel{ width:auto; flex:none; height:auto; position:static; } .page{ transform-origin:top center; } }
+  @media print{
+    @page{ size:A4; margin:0; }
+    body{ background:#fff; }
+    .panel, .no-print, .toast{ display:none !important; }
+    .stage{ padding:0; } .pages{ gap:0; }
+    .page{ box-shadow:none; page-break-after:always; }
+    .rm, .empty-hint{ display:none !important; }
+    tr.extra.blank{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel" id="panel"></aside>
+  <main class="stage" id="stage"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const staffId = sessionStorage.getItem('staff_id');
+if(!staffId){ location.href = 'coupon-hub.html'; }
+
+/* ================= 2026 Winter Timetable (동작) =================
+   반마다 [요일][교시] = '과목 선생님'. 화목(T)반은 화·목 같은 시간표.
+   H5 = High 5 (담임/담당). 강의실은 시간표 번호 그대로. */
+const ZONES = {
+  'M(F)': { days:[1,3,5], periods:['2:30~3:15','3:20~4:05'] },
+  'M(M)': { days:[1,3,5], periods:['4:10~4:55','5:00~5:45'] },
+  'M(T)': { days:[1,3,5], h5:'5:50~5:56', periods:['5:57~6:40','6:42~7:25'] },
+  'T(F)': { days:[2,4],   periods:['3:10~3:50','3:53~4:33','4:35~5:15'] },
+  'T(T)': { days:[2,4],   h5:'5:20~5:29', periods:['5:30~6:13','6:16~6:59','7:01~7:44'] }
+};
+/* 반: [zone, 반, 담임, 강의실, H5담당, {요일: ['과목 선생님', ...]}] */
+const TT = [
+  ['M(F)','W1-A','Chloe',1,null,{1:['PS1 Calra','PS2 Lily'],3:['PS3 Chloe','PS1 Calra'],5:['PS2 Lily','PS3 Chloe']}],
+  ['M(F)','I1-A','Hazel',2,null,{1:['NS Ella','FW Ryan'],3:['LF Hazel','NS Ella'],5:['FW Ryan','LF Hazel']}],
+  ['M(F)','I2-A','Chloe',3,null,{1:['LF Rachel','FW Chloe'],3:['NS Ella','LF Rachel'],5:['FW Chloe','NS Ella']}],
+  ['M(F)','I2-B','Justin',4,null,{1:['NS Tiaan','LF Calra'],3:['FW Justin','NS Tiaan'],5:['LF Calra','FW Justin']}],
+  ['M(F)','I3-A','Lily',8,null,{1:['FW Lily','NS Tiaan'],3:['LF Calra','FW Lily'],5:['NS Tiaan','LF Calra']}],
+  ['M(F)','I3-B','Rachel',5,null,{1:['FW Justin','NS Robin'],3:['LF Rachel','FW Justin'],5:['NS Robin','LF Rachel']}],
+  ['M(F)','I4-A','Ryan',6,null,{1:['NS Robin','FW Ella'],3:['LF Ryan','NS Robin'],5:['FW Ella','LF Ryan']}],
+
+  ['M(M)','I2-A','Justin',2,null,{1:['NS Ella','LF Chloe'],3:['FW Justin','NS Ella'],5:['LF Chloe','FW Justin']}],
+  ['M(M)','I3-A','Justin',3,null,{1:['NS Tiaan','FW Justin'],3:['LF Rachel','NS Tiaan'],5:['FW Justin','LF Rachel']}],
+  ['M(M)','I3-B','Calra',4,null,{1:['LF Calra','NS Ella'],3:['FW Lily','LF Calra'],5:['NS Ella','FW Lily']}],
+  ['M(M)','I4-A','Ryan',5,null,{1:['FW Ryan','NS Tiaan'],3:['LF Hazel','FW Ryan'],5:['NS Tiaan','LF Hazel']}],
+  ['M(M)','I4-B','Hazel',6,null,{1:['LF Hazel','FW Lily'],3:['NS Robin','LF Hazel'],5:['FW Lily','NS Robin']}],
+  ['M(M)','N1-A','Rachel',7,null,{1:['NS Robin','LF Rachel'],3:['FW Chloe','NS Robin'],5:['LF Rachel','FW Chloe']}],
+  ['M(M)','N1-B','Calra',8,null,{1:['FW Chloe','LF Calra'],3:['NS Tiaan','FW Chloe'],5:['LF Calra','NS Tiaan']}],
+  ['M(M)','N2-A','Lily',9,null,{1:['LF Lily','NS Robin'],3:['FW Ryan','LF Lily'],5:['NS Robin','FW Ryan']}],
+
+  ['M(T)','N1-A','Rachel',2,'Rachel',{1:['LF Rachel','NS Tiaan'],3:['FW Justin','LF Rachel'],5:['NS Tiaan','FW Justin']}],
+  ['M(T)','N1-B','Justin',3,'Justin',{1:['FW Justin','LF Calra'],3:['NS Robin','FW Justin'],5:['LF Calra','NS Robin']}],
+  ['M(T)','N3-A','Hazel',8,'Hazel',{1:['LF Hazel','FW Ryan'],3:['NS Ella','LF Hazel'],5:['FW Ryan','NS Ella']}],
+  ['M(T)','N3-B','Chloe',4,'Chloe',{1:['NS Ella','FW Chloe'],3:['LF Calra','NS Ella'],5:['FW Chloe','LF Calra']}],
+  ['M(T)','N4-A','Lily',5,'Lily',{1:['NS Robin','LF Lily'],3:['FW Rachel','NS Robin'],5:['LF Lily','FW Rachel']}],
+  ['M(T)','G1-A','Ryan',6,'Ryan',{1:['RA Ryan','GW Hazel'],3:['AD Tiaan','RA Ryan'],5:['GW Hazel','AD Tiaan']}],
+
+  ['T(F)','W2-A','Calra',1,null,{2:['PS1 Rachel','PS2 Calra','PS3 Ella']}],
+  ['T(F)','I1-A','Ryan',2,null,{2:['FW Ryan','NS Ella','LF Chloe']}],
+  ['T(F)','I2-A','Rachel',3,null,{2:['NS Robin','LF Hazel','FW Rachel']}],
+  ['T(F)','I2-B','Calra',4,null,{2:['NS Tiaan','FW Chloe','LF Calra']}],
+  ['T(F)','I3-A','Justin',8,null,{2:['FW Justin','NS Robin','LF Lily']}],
+  ['T(F)','I3-B','Lily',5,null,{2:['FW Ella','LF Lily','NS Tiaan']}],
+  ['T(F)','I4-A','Hazel',6,null,{2:['LF Hazel','FW Ryan','NS Robin']}],
+  ['T(F)','I4-B','Chloe',7,null,{2:['LF Chloe','NS Tiaan','FW Justin']}],
+
+  ['T(T)','N1-A','Chloe',8,'Chloe',{2:['NS Tiaan','FW Chloe','LF Rachel']}],
+  ['T(T)','N1-B','Rachel',1,'Rachel',{2:['FW Rachel','NS Robin','LF Justin']}],
+  ['T(T)','N2-A','Ryan',2,'Robin',{2:['NS Robin','FW Ryan','LF Lily']}],
+  ['T(T)','N2-B','Lily',3,'Lily',{2:['LF Lily','FW Justin','NS Tiaan']}],
+  ['T(T)','N3-A','Calra',4,'Calra',{2:['LF Calra','NS Ella','FW Chloe']}],
+  ['T(T)','N3-B','Calra',5,'Ella',{2:['NS Ella','FW Hazel','LF Calra']}],
+  ['T(T)','N4-A','Ryan',6,'Ryan',{2:['FW Ryan','LF Rachel','NS Robin']}],
+  ['T(T)','G1-A','Justin',7,'Justin',{2:['GW Justin','AD Tiaan','RA Ryan']}],
+  ['T(T)','G3-A','Hazel',9,'Hazel',{2:['RA Hazel','GW Lily','AD Ella']}]
+];
+/* 요일별 고정 안내 (선택 사항이 아닌 정보 줄) */
+const DAY_INFO = { 3:['7:30~8:10 멘토링 (1번 강의실 · Hazel)'], 2:['7:30~8:10 독해코칭','7:50~8:30 멘토링'], 4:['7:30~8:10 독해코칭','7:50~8:30 멘토링'] };
+
+/* 꼭 들어야 하는 청강 */
+const REQS = [
+  { key:'W-PS', stage:'W', name:'Wind · PS' },
+  { key:'I-LF', stage:'I', name:'Island · LF' },
+  { key:'I-NS', stage:'I', name:'Island · NS' },
+  { key:'I-FW', stage:'I', name:'Island · FW' },
+  { key:'N-LF', stage:'N', name:'Nation · LF' },
+  { key:'N-NS', stage:'N', name:'Nation · NS' },
+  { key:'N-FW', stage:'N', name:'Nation · FW' },
+  { key:'G-GW', stage:'G', name:'Globe · GW' },
+  { key:'G-AD', stage:'G', name:'Globe · AD' },
+  { key:'G-RA', stage:'G', name:'Globe · RA' },
+  { key:'H5',   stage:'H', name:'High 5' }
+];
+const STAGE_LABEL = { W:'Wind', I:'Island', N:'Nation', G:'Globe', H:'High 5' };
+const ALL_LEVELS = [...new Set(TT.map(r=>r[1].split('-')[0]))].sort((a,b)=>('WING'.indexOf(a[0])-'WING'.indexOf(b[0])) || (a<b?-1:1));
+
+/* 엑셀(Chloe T. OT)에 있던 청강 외 교육 내용 */
+const DEFAULT_BOXES = [
+  '소개 및 인사 (OT 일정 및 순서 공지)',
+  'CYJ Jr. Curriculum / 4 Stages 13 Levels (레벨/과목별 목표/숙제종류와 관리법)',
+  'Office hour 및 소개, 기본예절, dress code, 교구, 필수 연락처 / 컴퓨터 Set up / 홈페이지 자기 소개서',
+  '신규강사 담임 매뉴얼 / CYJ학생 매뉴얼 + 학부모 상담 노하우, 월별 개강 상담 및 성적 상담 개요',
+  '상담 Manual 숙지',
+  'Speaking TOP (방식, 코멘트 작성 등) + High 5 & High 5 Preview, Work Allotment',
+  '알림장 및 Junior Test, 숙제 종류와 관리법, Weekend Journal, Vocab 관리',
+  '온라인 과제 종류 및 담임 관리법, 오프라인 과제 종류 및 담임 관리법',
+  '복습 및 Q&A',
+  '시간표와 Due Date 보는 방법 숙지 + 대체수업 & Make-up수업 안내법 숙지',
+  '담임안내문, HW Due Date 작성 및 Day1에 배부될 안내문 준비 확인 및 Demo 준비',
+  'LMS 숙지 - Checking Attendance + 종이 출석부 관리법, 성적/상담 입력, point 제도, point 온라인 부여 법, 분과별 UCC 담당 레벨 및 업로드',
+  '토요 수업 및 Clinic 수업, FTP 사용방법 숙지, #test 진행 잊지말기!',
+  '비디오 시청',
+  'Lesson Plan 제출 due & Demo 수업'
+];
+
+/* ================= 시간칸 ================= */
+const WD = ['일','월','화','수','목','금','토'];
+const WD_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function slotsFor(dow){
+  const M = [1,3,5].includes(dow), T = [2,4].includes(dow);
+  if(!M && !T) return [];
+  const zs = M ? ['M(F)','M(M)','M(T)'] : ['T(F)','T(T)'];
+  const out = [{ id:'pre', time: M ? '2:00~2:30' : '2:00~3:10', extra:true }];
+  zs.forEach(z=>{
+    const Z = ZONES[z];
+    if(Z.h5) out.push({ id:z+'|H5', time:Z.h5, zone:z, h5:true });
+    Z.periods.forEach((t,i)=>out.push({ id:z+'|'+i, time:t, zone:z, p:i }));
+  });
+  out.push({ id:'post', time: M ? '7:30~8:30' : '7:50~8:30', extra:true });
+  return out;
+}
+function toMin(t){ const [h,m]=t.split(':').map(Number); return (h<12?h+12:h)*60+m; }   // 오후 시간표
+
+/* 날짜 하나에서 들을 수 있는 청강 전부 */
+function optionsForDate(iso){
+  const dow = dowOf(iso); const out=[];
+  TT.forEach(([z,cls,hr,room,h5,days])=>{
+    const Z = ZONES[z]; if(!Z.days.includes(dow)) return;
+    const row = days[dow] || days[Z.days[0]];
+    const level = cls.split('-')[0], st = level[0];
+    const code = `${z}${cls}`;
+    row.forEach((cell,i)=>{
+      const [subRaw, teacher] = cell.split(' ');
+      const sub = subRaw.replace(/\d$/,'');          // PS1 → PS
+      const key = st==='W' ? 'W-PS' : `${st}-${sub}`;
+      out.push({ id:`${iso}|${z}|${i}|${cls}`, iso, slot:`${z}|${i}`, time:Z.periods[i], key, sub:subRaw, teacher, code, level, room });
+    });
+    if(Z.h5 && h5) out.push({ id:`${iso}|${z}|H5|${cls}`, iso, slot:`${z}|H5`, time:Z.h5, key:'H5', sub:'High 5', teacher:h5, code, level, room });
+  });
+  return out;
+}
+
+/* ================= 상태 ================= */
+const LS = 'cyj-staff-ot-schedule-v1';
+function defaultState(){
+  const d = new Date(); const dates=[];
+  while(dates.length<3){ d.setDate(d.getDate()+1); if(d.getDay()>=1 && d.getDay()<=5) dates.push(isoOf(d)); }
+  return {
+    teacher:'Chloe', trainer:'Hazel 과장님', phone:'', campus:'동작',
+    dates,
+    obs:{},          // `${iso}|${slotId}` -> option
+    boxes: DEFAULT_BOXES.map((t,i)=>({ id:'b'+i, text:t, who:'' })),
+    place:{},        // boxId -> `${iso}|${slotId}`  (없으면 대기함)
+    showSeen:false
+  };
+}
+function isoOf(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function dowOf(iso){ return new Date(iso+'T00:00:00').getDay(); }
+function mdw(iso){ const d=new Date(iso+'T00:00:00'); return `${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]})`; }
+let state; try{ state = JSON.parse(localStorage.getItem(LS)||'null'); }catch(e){}
+if(!state || !state.boxes) state = defaultState();
+function persist(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+let selBox = null;
+let EXPORT = false;   // 저장·인쇄할 때는 빈 추가 줄과 편집 표시를 빼고 그려요   // 클릭으로 옮길 때 고른 박스
+
+/* ================= 유틸 ================= */
+function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'),1700); }
+function validDates(){ return [...new Set(state.dates.filter(x=>x && [1,2,3,4,5].includes(dowOf(x))))].sort(); }
+function covered(){ const s={}; Object.values(state.obs).forEach(o=>{ s[o.key]=o; }); return s; }
+function seenLevels(){ return new Set(Object.values(state.obs).map(o=>o.level)); }
+function obsText(o){ return `청강: ${o.sub==='High 5'?'High 5':o.sub.replace(/\d$/,'')}, ${o.code}, ${o.room}번 강의실`; }
+function boxesAt(cell){ return state.boxes.filter(b=>state.place[b.id]===cell); }
+function trainerShort(){ return (state.trainer||'').split(/\s/)[0]; }
+
+/* 안 쓰는 날짜에 걸린 청강·박스 정리 */
+function cleanup(){
+  const ok = new Set(validDates());
+  Object.keys(state.obs).forEach(k=>{ if(!ok.has(k.split('|')[0])) delete state.obs[k]; });
+  Object.keys(state.place).forEach(id=>{ if(!ok.has((state.place[id]||'').split('|')[0])) delete state.place[id]; });
+}
+
+/* ================= 동작 ================= */
+function pickObs(opt){
+  const cell = `${opt.iso}|${opt.slot}`;
+  if(state.obs[cell]){ toast('그 시간에는 이미 청강이 있어요'); return; }
+  state.obs[cell] = opt;
+  const bumped = boxesAt(cell);
+  bumped.forEach(b=>delete state.place[b.id]);
+  persist(); renderAll();
+  toast(bumped.length ? `${mdw(opt.iso)} ${opt.time} 청강 추가 · 같은 칸 교육 ${bumped.length}개는 대기함으로 옮겼어요` : `${mdw(opt.iso)} ${opt.time} 청강 추가`);
+}
+function removeObs(cell){ delete state.obs[cell]; persist(); renderAll(); }
+function placeBox(id, cell){
+  if(cell && state.obs[cell]){ toast('청강 시간에는 교육을 넣을 수 없어요'); return; }
+  if(cell) state.place[id]=cell; else delete state.place[id];
+  selBox=null; persist(); renderAll();
+}
+
+/* ================= 왼쪽 ================= */
+function renderPanel(){
+  const p = document.getElementById('panel');
+  const unplaced = state.boxes.filter(b=>!state.place[b.id]);
+  p.innerHTML = `
+    <a class="back-link" href="staff-home.html">← For Staff</a>
+    <div class="brand"><div class="brand-mark">정</div><div>
+      <div class="brand-text">신규 선생님 OT 스케쥴</div>
+      <div class="brand-sub">청강을 고르고, 교육 박스를 끌어다 놓아 일정을 만들어요</div></div></div>
+
+    <div class="section-title">기본 정보</div>
+    <div class="field"><label>신규 선생님 이름</label><input id="fTeacher" value="${esc(state.teacher)}" placeholder="Chloe"></div>
+    <div class="row2">
+      <div class="field"><label>트레이닝 담당</label><input id="fTrainer" value="${esc(state.trainer)}" placeholder="Hazel 과장님"></div>
+      <div class="field"><label>연락처</label><input id="fPhone" value="${esc(state.phone)}" placeholder="010-0000-0000"></div>
+    </div>
+
+    <div class="section-title">OT 날짜 (평일 · 최대 5일)</div>
+    <div id="dates">${state.dates.map((d,i)=>{ const w=d?dowOf(d):-1; const bad = d && !(w>=1&&w<=5);
+      return `<div class="date-row ${bad?'bad':''}"><span class="dow">${d?WD[w]:''}</span><input type="date" data-di="${i}" value="${d}"><button class="x" data-dx="${i}" title="이 날 빼기">✕</button></div>`; }).join('')}</div>
+    ${state.dates.length<5 ? '<button class="btn" id="addDate" style="width:100%;">+ 날짜 추가</button>' : ''}
+    ${state.dates.some(d=>d && !(dowOf(d)>=1&&dowOf(d)<=5)) ? '<div class="note" style="margin-top:6px;color:var(--accent);">주말은 수업이 없어서 빠져요.</div>' : ''}
+
+    <div class="section-title">교육 박스 · 대기함 (${unplaced.length})</div>
+    <div class="tray" id="tray" data-drop="tray">
+      ${unplaced.map(b=>boxHtml(b)).join('') || '<div class="tray-empty">모두 일정표에 넣었어요 👍</div>'}
+    </div>
+    <button class="btn" id="addBox" style="width:100%;margin-top:6px;">+ 교육 박스 새로 만들기</button>
+    <div class="note" style="margin-top:8px;">박스를 오른쪽 일정표 칸으로 <b>끌어다 놓거나</b>, 박스를 누른 다음 원하는 칸을 누르면 들어가요. 일정표에 있는 박스도 다른 칸으로 끌어 옮길 수 있고, 대기함으로 끌어오면 빠져요.</div>
+
+    <div class="section-title">저장 · 전달</div>
+    <div class="actions">
+      <button class="btn dark" onclick="doPrint()">🖨️ 인쇄하기</button>
+      <button class="btn" id="imgBtn" onclick="exportImages()">🖼️ 이미지로 저장</button>
+      <button class="btn" id="pdfBtn" onclick="exportPDF()">📄 PDF로 저장</button>
+      <button class="btn" id="resetAll" style="color:var(--accent);">↺ 새로 만들기 (모두 지우기)</button>
+    </div>
+    <div class="note" style="margin-top:8px;">💾 만들던 일정은 이 노트북에 자동 저장돼요.</div>
+  `;
+  const bind=(id,k)=>{ document.getElementById(id).oninput=e=>{ state[k]=e.target.value; persist(); renderStage(); }; };
+  bind('fTeacher','teacher'); bind('fTrainer','trainer'); bind('fPhone','phone');
+  p.querySelectorAll('[data-di]').forEach(inp=>inp.onchange=()=>{ state.dates[+inp.dataset.di]=inp.value; cleanup(); persist(); renderAll(); });
+  p.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{ state.dates.splice(+b.dataset.dx,1); cleanup(); persist(); renderAll(); });
+  const ad=document.getElementById('addDate');
+  if(ad) ad.onclick=()=>{ const last = validDates().slice(-1)[0]; const d = last ? new Date(last+'T00:00:00') : new Date();
+    do{ d.setDate(d.getDate()+1); }while(d.getDay()===0||d.getDay()===6); state.dates.push(isoOf(d)); persist(); renderAll(); };
+  document.getElementById('addBox').onclick=()=>editBox(null);
+  document.getElementById('resetAll').onclick=()=>confirmBox('일정을 모두 지우고 처음부터 만들까요? (교육 박스도 기본으로 돌아가요)', ()=>{ state=defaultState(); persist(); renderAll(); });
+  bindBoxes(p);
+  bindDrop(document.getElementById('tray'));
+}
+function boxHtml(b, inTable){
+  if(inTable) return `<div class="it train" draggable="true" data-box="${b.id}"><span class="tx">${esc(b.text)}</span><button class="rm" data-unplace="${b.id}" title="대기함으로">✕</button></div>`;
+  return `<div class="tbox ${selBox===b.id?'sel':''}" draggable="true" data-box="${b.id}">
+    <span class="txt">${esc(b.text)}${b.who?` <span class="who">· ${esc(b.who)}</span>`:''}</span>
+    <button class="ic" data-edit="${b.id}" title="고치기">✎</button></div>`;
+}
+
+/* ================= 오른쪽 ================= */
+function renderStage(){
+  const stage = document.getElementById('stage');
+  const dates = validDates();
+  const cov = covered(), seen = seenLevels();
+  const doneN = REQS.filter(r=>cov[r.key]).length;
+  const allOpts = dates.flatMap(optionsForDate);
+
+  const reqCards = REQS.map(r=>{
+    const got = cov[r.key];
+    if(got && !state.showSeen){
+      const cell = Object.keys(state.obs).find(k=>state.obs[k]===got);
+      return `<div class="req done"><div class="req-head"><span class="stage-tag st-${r.stage}">${STAGE_LABEL[r.stage]}</span><span class="req-name">${r.name.split(' · ')[1]||r.name}</span><span class="req-count">✓ 완료</span></div>
+        <div class="picked">✓ ${mdw(got.iso)} ${got.time} · ${got.code} · ${got.teacher} T.<button data-unobs="${cell}">취소</button></div></div>`;
+    }
+    const opts = allOpts.filter(o=>o.key===r.key && !state.obs[`${o.iso}|${o.slot}`])
+      .sort((a,b)=> (seen.has(a.level)-seen.has(b.level)) || (a.iso<b.iso?-1:a.iso>b.iso?1:0) || toMin(a.time)-toMin(b.time) || (a.code<b.code?-1:1));
+    return `<div class="req ${got?'done':''}"><div class="req-head"><span class="stage-tag st-${r.stage}">${STAGE_LABEL[r.stage]}</span><span class="req-name">${r.name.split(' · ')[1]||r.name}</span>
+        <span class="req-count">${got?'✓ 완료 · ':''}${opts.length}개 가능</span></div>
+      ${got ? `<div class="picked">✓ ${mdw(got.iso)} ${got.time} · ${got.code}</div>` : ''}
+      <div class="opts">${opts.map(o=>`<button class="opt ${seen.has(o.level)?'seen':''}" data-opt="${esc(o.id)}">
+          <span class="d">${mdw(o.iso)}</span><span class="t">${o.time}</span>
+          <span class="c">${o.code}<small>${esc(o.sub)} · ${esc(o.teacher)} · ${o.room}번</small></span>
+          ${seen.has(o.level)?'':'<span class="new">새 레벨</span>'}</button>`).join('') || '<div class="none">고른 날짜에 들을 수 있는 수업이 없어요. 날짜를 바꿔 보세요.</div>'}</div></div>`;
+  }).join('');
+
+  stage.innerHTML = `
+    <div class="card no-print">
+      <div class="card-title">필수 청강 고르기
+        <label class="toggle" style="margin-left:auto;"><input type="checkbox" id="showSeen" ${state.showSeen?'checked':''}> 다 들은 과목도 후보 보기</label></div>
+      <div class="progress"><span class="txt">✅ ${doneN} / ${REQS.length} 완료</span><div class="bar"><i style="width:${doneN/REQS.length*100}%"></i></div></div>
+      <div class="levels">본 레벨: ${ALL_LEVELS.map(l=>`<span class="lv ${seen.has(l)?'on':''}">${l}</span>`).join('')}</div>
+      ${dates.length ? `<div class="req-grid">${reqCards}</div>` : '<div class="note" style="margin-top:12px;">👈 왼쪽에서 OT 날짜를 먼저 골라주세요.</div>'}
+    </div>
+    <div class="pages" id="pages">${renderPages(dates)}</div>
+  `;
+  const optMap = Object.fromEntries(allOpts.map(o=>[o.id,o]));
+  stage.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>pickObs(optMap[b.dataset.opt]));
+  stage.querySelectorAll('[data-unobs]').forEach(b=>b.onclick=()=>removeObs(b.dataset.unobs));
+  document.getElementById('showSeen').onchange=e=>{ state.showSeen=e.target.checked; persist(); renderStage(); };
+  bindBoxes(stage);
+  stage.querySelectorAll('td.slot').forEach(td=>{
+    bindDrop(td);
+    td.onclick=e=>{ if(e.target.closest('button')||e.target.closest('[data-box]')) return; if(selBox) placeBox(selBox, td.dataset.drop); };
+  });
+}
+
+/* 일정표: 3일씩 A4 한 장 */
+function renderPages(dates){
+  if(!dates.length) return '';
+  const chunks=[]; for(let i=0;i<dates.length;i+=3) chunks.push(dates.slice(i,i+3));
+  return chunks.map((ch,pi)=>`
+    <div class="page" id="page-${pi}">
+      ${pi===0 ? `<div class="doc-title">신규강사 OT 일정 - ${esc(state.teacher||'○○')} T.</div>
+      <div class="doc-sub">트레이닝 담당: ${esc(state.campus)} ${esc(state.trainer||'')}${state.phone?` - ${esc(state.phone)}`:''} &nbsp;<b>늦거나 무슨 일 있으면 꼭! 연락주세요.</b></div>`
+      : `<div class="doc-title" style="font-size:16px;">신규강사 OT 일정 - ${esc(state.teacher||'○○')} T. (이어서)</div>`}
+      <table class="ot">
+        <colgroup><col style="width:92px"><col style="width:92px"><col><col style="width:84px"></colgroup>
+        <thead><tr><th>날짜</th><th>시간</th><th>내용</th><th>담당</th></tr></thead>
+        <tbody>${ch.map(dayRows).join('')}</tbody>
+      </table>
+    </div>`).join('');
+}
+function dayRows(iso){
+  const dow=dowOf(iso), slots=slotsFor(dow), info=DAY_INFO[dow]||[];
+  const d=new Date(iso+'T00:00:00');
+  const rows = slots.map(s=>{
+    const cell=`${iso}|${s.id}`, o=state.obs[cell], bx=boxesAt(cell);
+    const blank = !o && !bx.length;
+    let content, who='';
+    if(o){ content=`<div class="it obs"><span class="tx">${esc(obsText(o))}</span><button class="rm" data-unobs="${cell}" title="청강 빼기">✕</button></div>`; who=`${esc(o.teacher)} T.`; }
+    else if(bx.length){ content=bx.map(b=>boxHtml(b,true)).join(''); who=[...new Set(bx.map(b=>b.who||trainerShort()).filter(Boolean))].map(w=>esc(w.replace(/\s*과장님|\s*T\.?$/,''))+' T.').join('<br>'); }
+    else content= EXPORT ? '' : `<span class="empty-hint">${selBox?'여기를 눌러 넣기':'비어 있음'}</span>`;
+    return { html:`<td class="time ${s.h5?'h5':''}">${s.h5?'High 5<br>':''}${s.time}</td><td class="slot can" data-drop="${cell}">${content}</td><td class="who">${who}</td>`, cls:`${s.extra?'extra':''} ${blank?'blank':''}` };
+  });
+  const infoRows = info.map(t=>({ html:`<td class="time">ⓘ</td><td colspan="2">${esc(t)}</td>`, cls:'info-row extra blank' }));
+  let all = rows.concat(infoRows);
+  if(EXPORT) all = all.filter(r=>!(r.cls.includes('extra') && r.cls.includes('blank')));
+  return all.map((r,i)=>`<tr class="${r.cls}">${i===0?`<td class="day" rowspan="${all.length}">${d.getMonth()+1}/${d.getDate()}<small>(${WD_EN[dow]})</small></td>`:''}${r.html}</tr>`).join('');
+}
+
+/* ================= 끌어다 놓기 ================= */
+function bindBoxes(root){
+  root.querySelectorAll('[data-box]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain', el.dataset.box); e.dataTransfer.effectAllowed='move'; });
+    el.addEventListener('click',e=>{ if(e.target.closest('button')) return; e.stopPropagation(); selBox = selBox===el.dataset.box ? null : el.dataset.box; renderAll();
+      if(selBox) toast('이제 일정표에서 넣을 칸을 눌러주세요'); });
+  });
+  root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); editBox(b.dataset.edit); });
+  root.querySelectorAll('[data-unplace]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); placeBox(b.dataset.unplace, null); });
+  root.querySelectorAll('[data-unobs]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); removeObs(b.dataset.unobs); });
+}
+function bindDrop(el){
+  el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('over'); });
+  el.addEventListener('dragleave',()=>el.classList.remove('over'));
+  el.addEventListener('drop',e=>{ e.preventDefault(); el.classList.remove('over'); const id=e.dataTransfer.getData('text/plain'); if(!id) return;
+    placeBox(id, el.dataset.drop==='tray' ? null : el.dataset.drop); });
+}
+
+/* ================= 박스 고치기 · 확인창 ================= */
+function editBox(id){
+  const b = id ? state.boxes.find(x=>x.id===id) : { id:'b'+Date.now(), text:'', who:'' };
+  const bg=document.createElement('div'); bg.className='modal-bg';
+  bg.innerHTML=`<div class="modal"><b>${id?'교육 박스 고치기':'교육 박스 새로 만들기'}</b>
+    <textarea id="mText" placeholder="교육 내용">${esc(b.text)}</textarea>
+    <input id="mWho" value="${esc(b.who)}" placeholder="담당 (비우면 트레이닝 담당)">
+    <div style="display:flex;gap:8px;">${id?'<button class="btn" id="mDel" style="color:var(--accent);">삭제</button>':''}<span style="flex:1"></span>
+      <button class="btn" id="mCancel">취소</button><button class="btn dark" id="mOk">저장</button></div></div>`;
+  document.body.appendChild(bg);
+  const close=()=>bg.remove();
+  bg.onclick=e=>{ if(e.target===bg) close(); };
+  bg.querySelector('#mCancel').onclick=close;
+  bg.querySelector('#mOk').onclick=()=>{ const t=bg.querySelector('#mText').value.trim(); if(!t){ toast('내용을 적어주세요'); return; }
+    b.text=t; b.who=bg.querySelector('#mWho').value.trim(); if(!id) state.boxes.push(b); persist(); close(); renderAll(); };
+  const del=bg.querySelector('#mDel'); if(del) del.onclick=()=>{ state.boxes=state.boxes.filter(x=>x.id!==id); delete state.place[id]; persist(); close(); renderAll(); };
+  setTimeout(()=>bg.querySelector('#mText').focus(),30);
+}
+function confirmBox(msg, ok){
+  const bg=document.createElement('div'); bg.className='modal-bg';
+  bg.innerHTML=`<div class="modal"><div style="font-size:14px;line-height:1.6;">${esc(msg)}</div><div style="display:flex;gap:8px;justify-content:flex-end;">
+    <button class="btn" id="cNo">취소</button><button class="btn dark" id="cYes">네</button></div></div>`;
+  document.body.appendChild(bg);
+  bg.querySelector('#cNo').onclick=()=>bg.remove();
+  bg.querySelector('#cYes').onclick=()=>{ bg.remove(); ok(); };
+}
+
+/* ================= 인쇄 · 이미지 · PDF ================= */
+function fileBase(){ return `신규강사OT_${(state.teacher||'선생님').replace(/[\\/:*?"<>|\s]/g,'')}`; }
+function doPrint(){ window.print(); }
+window.addEventListener('beforeprint',()=>{ selBox=null; EXPORT=true; renderStage(); document.getElementById('pages').classList.add('exporting'); });
+window.addEventListener('afterprint',()=>{ EXPORT=false; renderStage(); });
+async function withExport(fn){ selBox=null; EXPORT=true; renderStage(); const pages=document.getElementById('pages'); pages.classList.add('exporting');
+  try{ await fn([...pages.querySelectorAll('.page')]); } finally { EXPORT=false; renderStage(); } }
+async function exportImages(){
+  const btn=document.getElementById('imgBtn'), o=btn.textContent; btn.textContent='이미지 만드는 중...'; btn.disabled=true;
+  try{ await withExport(async pages=>{
+    for(let i=0;i<pages.length;i++){
+      const c = await html2canvas(pages[i],{scale:2,backgroundColor:'#ffffff'});
+      const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download = pages.length>1 ? `${fileBase()}_${i+1}.png` : `${fileBase()}.png`;
+      document.body.appendChild(a); a.click(); a.remove(); await new Promise(r=>setTimeout(r,400));
+    } }); }
+  catch(err){ alert('이미지 저장 중 오류가 났어요: '+err.message); }
+  finally{ btn.textContent=o; btn.disabled=false; }
+}
+async function exportPDF(){
+  const btn=document.getElementById('pdfBtn'), o=btn.textContent; btn.textContent='만드는 중...'; btn.disabled=true;
+  try{ await withExport(async pages=>{
+    const { jsPDF } = window.jspdf; const pdf=new jsPDF('p','mm','a4');
+    for(let i=0;i<pages.length;i++){
+      const c = await html2canvas(pages[i],{scale:2,backgroundColor:'#ffffff'});
+      if(i) pdf.addPage();
+      const h = Math.min(297, c.height*210/c.width);
+      pdf.addImage(c.toDataURL('image/jpeg',0.95),'JPEG',0,0,210,h);
+    }
+    pdf.save(fileBase()+'.pdf'); }); }
+  catch(err){ alert('PDF 만드는 중 오류가 났어요: '+err.message); }
+  finally{ btn.textContent=o; btn.disabled=false; }
+}
+
+function renderAll(){ renderPanel(); renderStage(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && selBox){ selBox=null; renderAll(); } });
+cleanup();
+renderAll();
+</script>
+</body>
+</html>
