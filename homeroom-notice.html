@@ -248,7 +248,31 @@
     text-align:center; font-size:13px; font-weight:800; color:var(--ink); letter-spacing:0.01em;
   }
 
+  /* 꼭 채워야 하는 칸 */
+  .field input.req-empty, .field select.req-empty{ border:2px solid var(--accent) !important; background:#FFF5F5; }
+  .req-tag{ color:var(--accent); font-weight:800; font-size:11px; margin-left:4px; }
+  .blank-mark{ display:inline-block; border:2px dashed var(--accent); background:#FFF0F0; color:var(--accent); border-radius:6px; padding:0 6px; font-weight:800; font-size:.92em; line-height:1.5; }
+  .missing-box{ background:#FFF0F0; border:1px solid #F3C4C4; color:var(--accent); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.6; margin-top:10px; font-weight:600; }
+  /* 학기 교재 */
+  .term-seg{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .term-seg button{ border:1px solid var(--line); background:#fff; border-radius:10px; padding:10px 6px; font-family:inherit; font-weight:800; font-size:13.5px; cursor:pointer; color:var(--ink); }
+  .term-seg button small{ display:block; font-weight:600; font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  .term-seg button.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .term-seg button.active small{ color:#ffffffb0; }
+  /* 안내문 직접 수정 */
+  .edit-bar{ position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:13px; box-shadow:0 2px 10px rgba(0,0,0,.05); width:794px; max-width:100%; }
+  .edit-bar .tog{ border:1px solid var(--line); background:#fff; border-radius:9px; padding:8px 14px; font-family:inherit; font-weight:800; font-size:13px; cursor:pointer; }
+  .edit-bar .tog.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .edit-bar .hint{ color:var(--ink-soft); font-size:12px; flex:1; min-width:200px; }
+  .editing [data-ed]{ outline:1.5px dashed #9DB8E8; outline-offset:3px; border-radius:4px; cursor:text; }
+  .editing [data-ed]:hover{ background:#F4F8FF; }
+  .editing [data-ed]:focus{ outline:2px solid #2F5FA8; background:#F4F8FF; }
+  [data-ed].edited{ box-shadow:inset 3px 0 0 #F0B429; }
+  .page-label .reset-edits{ margin-left:10px; border:1px solid #F0D58A; background:#FFF8E1; color:#8A5A00; border-radius:7px; padding:3px 9px; font-size:11.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .exporting [data-ed]{ outline:none !important; background:none !important; box-shadow:none !important; }
   @media print{
+    .edit-bar{ display:none !important; }
+    [data-ed]{ outline:none !important; background:none !important; box-shadow:none !important; }
     .panel{ display:none; }
     .stage{ padding:0; gap:0; }
     .page-label{ display:none; }
@@ -299,24 +323,58 @@ function mkClass(dayGroup, slot, levelName, levelNum, suffix, room, vocabDay, ca
     dayGroup, slot, levelName, levelNum, suffix, room, vocabDay,
     campus: CAMPUS_FIXED,
     order: ['fixed','vocab'],
+    edits: {},          // 오른쪽 안내문에서 직접 고친 내용 (칸 이름 → 내용)
     mwfSchedule: defaultMwfSchedule(),
     tthSchedule: defaultTthSchedule()
   };
 }
 
 /* ---------------- 상태 ---------------- */
+/* 학기 교재: 9~11월 Discover, 12~2월 Miracle, 이 순서로 반복 (3~5월 Discover, 6~8월 Miracle)
+   안내문은 개강 전에 만드니까 2주 뒤 날짜 기준으로 기본값을 골라요. 왼쪽에서 바꿀 수 있어요. */
+function autoTerm(){ const d=new Date(); d.setDate(d.getDate()+14); return [12,1,2,6,7,8].includes(d.getMonth()+1) ? 'Miracle' : 'Discover'; }
+const LS = 'cyj-homeroom-notice-v1';
 let state = {
-  teacherName: 'Ryan',
-  phone: '010-7216-2797',
-  classes: [
-    mkClass('MWF','F','Island','3','B','8','월'),
-    mkClass('TTH','F','Island','3','A','5','화'),
-    mkClass('MWF','M','Island','2','A','6','수'),
-  ]
+  term: autoTerm(),
+  teacherName: '',
+  phone: '',
+  editMode: false,
+  classes: [ mkClass('MWF','F','','','','','월') ]
 };
+try{
+  const saved = JSON.parse(localStorage.getItem(LS)||'null');
+  if(saved && Array.isArray(saved.classes) && saved.classes.length){
+    state = Object.assign(state, saved, { editMode:false });
+    state.classes.forEach(c=>{ c.edits = c.edits || {}; c.order = c.order || ['fixed','vocab']; c.mwfSchedule = c.mwfSchedule || defaultMwfSchedule(); c.tthSchedule = c.tthSchedule || defaultTthSchedule(); });
+  }
+}catch(e){}
+/* 작업하다 나가도 남아 있게 이 노트북 브라우저에 자동 저장 */
+function persist(){ try{ const {editMode, ...rest} = state; localStorage.setItem(LS, JSON.stringify(rest)); }catch(e){} }
+const isBlank = v => !(v ?? '').toString().trim();
+const blankMark = label => `<span class="blank-mark">${label}</span>`;
+function classReady(c){ return !isBlank(c.levelName) && !isBlank(c.levelNum); }
+function missingList(){
+  const m=[];
+  if(isBlank(state.teacherName)) m.push('선생님 이름');
+  if(isBlank(state.phone)) m.push('직통 전화번호');
+  state.classes.forEach((c,i)=>{
+    const tag = state.classes.length>1 ? `${i+1}번 반 ` : '';
+    if(isBlank(c.levelName)) m.push(tag+'레벨명');
+    if(isBlank(c.levelNum)) m.push(tag+'레벨 숫자');
+    if(isBlank(c.room)) m.push(tag+'강의실 번호');
+  });
+  return m;
+}
+function checkBeforeExport(){
+  const m = missingList();
+  if(m.length){ alert('아직 비어 있는 칸이 있어요:\n· ' + m.join('\n· ') + '\n\n왼쪽 빨간 칸을 채운 뒤 다시 눌러주세요.'); return false; }
+  if(document.querySelector('.page .blank-mark')){ alert('직접 고친 칸에 빨간 빈칸 표시가 남아 있어요. 그 칸을 고치거나 [되돌리기]를 눌러주세요.'); return false; }
+  return true;
+}
 
 /* ---------------- 코드/시간표 계산 ---------------- */
 function classCode(c){
+  if(!classReady(c)) return `${c.dayGroup==='MWF'?'M':'T'}(${c.slot})?`;
   const dayLetter = c.dayGroup === 'MWF' ? 'M' : 'T';
   const lvlInitial = (c.levelName || '').trim().charAt(0).toUpperCase() || '?';
   const suf = c.suffix && c.suffix.trim() ? '-' + c.suffix.trim() : '';
@@ -324,7 +382,7 @@ function classCode(c){
 }
 
 function timetableSpec(c){
-  const lvlLabel = `Discover ${c.levelName} ${c.levelNum}`;
+  const lvlLabel = classReady(c) ? `${state.term} ${c.levelName} ${c.levelNum}` : `${state.term} ${blankMark('레벨')}`;
   if(c.dayGroup === 'MWF'){
     return {
       orientation:'daysAsCols',
@@ -364,14 +422,20 @@ function renderPanel(){
       </div>
     </div>
 
+    <div class="section-title">학기 교재</div>
+    <div class="term-seg" id="termSeg">
+      <button type="button" data-term="Discover" class="${state.term==='Discover'?'active':''}">Discover<small>9~11월 · 3~5월</small></button>
+      <button type="button" data-term="Miracle" class="${state.term==='Miracle'?'active':''}">Miracle<small>12~2월 · 6~8월</small></button>
+    </div>
+
     <div class="section-title">담임 선생님 공통 정보</div>
     <div class="field">
-      <label>선생님 이름</label>
-      <input type="text" id="teacherName" value="${esc(state.teacherName)}">
+      <label>선생님 이름 <span class="req-tag">* 필수</span></label>
+      <input type="text" id="teacherName" class="${isBlank(state.teacherName)?'req-empty':''}" value="${esc(state.teacherName)}" placeholder="영문 이름">
     </div>
     <div class="field">
-      <label>직통 전화번호</label>
-      <input type="text" id="phone" value="${esc(state.phone)}">
+      <label>직통 전화번호 <span class="req-tag">* 필수</span></label>
+      <input type="text" id="phone" class="${isBlank(state.phone)?'req-empty':''}" value="${esc(state.phone)}" placeholder="예: 010-0000-0000">
     </div>
 
     <div class="section-title">담당 반 목록</div>
@@ -392,25 +456,35 @@ function renderPanel(){
       <button class="btn btn-secondary" id="imgBtn" type="button">🖼️ 이미지로 저장</button>
       <button class="btn btn-secondary" id="pdfBtn" type="button">⬇️ PDF로 저장</button>
     </div>
+    <div id="missingBox"></div>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin-top:10px;line-height:1.6;">💾 입력한 내용은 이 노트북에 자동 저장돼서, 나갔다 와도 그대로 남아 있어요.</div>
+    <button class="btn btn-secondary" id="resetAllBtn" type="button" style="margin-top:8px;color:var(--accent);">↺ 처음부터 새로 쓰기</button>
   `;
 
-  document.getElementById('teacherName').oninput = e => { state.teacherName = e.target.value; renderStage(); };
-  document.getElementById('phone').oninput = e => { state.phone = e.target.value; renderStage(); };
+  document.getElementById('teacherName').oninput = e => { state.teacherName = e.target.value; e.target.classList.toggle('req-empty', isBlank(e.target.value)); renderStage(); };
+  document.getElementById('phone').oninput = e => { state.phone = e.target.value; e.target.classList.toggle('req-empty', isBlank(e.target.value)); renderStage(); };
+  document.querySelectorAll('#termSeg [data-term]').forEach(b=>b.onclick=()=>{ state.term=b.dataset.term; renderAll(); });
+  document.getElementById('resetAllBtn').onclick = () => {
+    if(!confirm('입력한 내용과 직접 고친 안내문을 모두 지우고 처음부터 쓸까요?')) return;
+    try{ localStorage.removeItem(LS); }catch(e){}
+    state = { term:autoTerm(), teacherName:'', phone:'', editMode:false, classes:[ mkClass('MWF','F','','','','','월') ] };
+    renderAll();
+  };
   document.getElementById('incClass').onclick = () => {
     const last = state.classes[state.classes.length-1];
-    state.classes.push(mkClass(last?.dayGroup||'MWF', last?.slot||'F', last?.levelName||'Island', last?.levelNum||'1','', '', '월'));
+    state.classes.push(mkClass(last?.dayGroup||'MWF', last?.slot||'F', '', '', '', '', '월'));
     renderAll();
   };
   document.getElementById('decClass').onclick = () => {
     if(state.classes.length>1){ state.classes.pop(); renderAll(); }
   };
   document.getElementById('addClassBtn').onclick = () => {
-    state.classes.push(mkClass('MWF','F','Island','1','', '', '월'));
+    state.classes.push(mkClass('MWF','F','', '', '', '', '월'));
     renderAll();
   };
-  document.getElementById('printBtn').onclick = () => window.print();
-  document.getElementById('pdfBtn').onclick = exportPDF;
-  document.getElementById('imgBtn').onclick = ()=>exportImages('imgBtn',
+  document.getElementById('printBtn').onclick = () => { if(checkBeforeExport()) window.print(); };
+  document.getElementById('pdfBtn').onclick = () => { if(checkBeforeExport()) exportPDF(); };
+  document.getElementById('imgBtn').onclick = ()=> checkBeforeExport() && exportImages('imgBtn',
     ()=>state.classes.map(c=>document.getElementById('page-'+c.id)),
     i=>`담임안내문_${classCode(state.classes[i]).replace(/[\\/:*?"<>|()]/g,'')}`);
 
@@ -487,15 +561,17 @@ function renderClassList(){
 
       <div class="row2">
         <div class="field">
-          <label>레벨명</label>
-          <select data-field="levelName" data-idx="${i}">
+          <label>레벨명 <span class="req-tag">*</span></label>
+          <select data-field="levelName" data-idx="${i}" class="${isBlank(c.levelName)?'req-empty':''}">
+            <option value="" ${!c.levelName?'selected':''}>선택</option>
             ${['Wind','Island','Nation','Globe'].map(l=>`<option value="${l}" ${c.levelName===l?'selected':''}>${l}</option>`).join('')}
           </select>
         </div>
         <div class="field">
-          <label>레벨 숫자</label>
-          <select data-field="levelNum" data-idx="${i}">
-            ${['1','2','3','4'].map(n=>`<option value="${n}" ${c.levelNum===n?'selected':''}>${n}</option>`).join('')}
+          <label>레벨 숫자 <span class="req-tag">*</span></label>
+          <select data-field="levelNum" data-idx="${i}" class="${isBlank(c.levelNum)?'req-empty':''}">
+            <option value="" ${!c.levelNum?'selected':''}>선택</option>
+            ${(c.levelName==='Wind'?['1','2']:['1','2','3','4']).map(n=>`<option value="${n}" ${c.levelNum===n?'selected':''}>${n}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -509,17 +585,17 @@ function renderClassList(){
           </select>
         </div>
         <div class="field">
-          <label>강의실 번호</label>
-          <input type="text" data-field="room" data-idx="${i}" value="${esc(c.room)}" placeholder="예: 8">
+          <label>강의실 번호 <span class="req-tag">*</span></label>
+          <input type="text" data-field="room" data-idx="${i}" class="${isBlank(c.room)?'req-empty':''}" value="${esc(c.room)}" placeholder="예: 8">
         </div>
       </div>
 
-      <div class="field">
+      ${c.levelName==='Wind' ? '<div class="field" style="font-size:11.5px;color:var(--ink-soft);">Wind 반은 톡트리·Vocab Booster 안내가 빠져요.</div>' : `<div class="field">
         <label>Vocab Booster 제출 기한 요일</label>
         <select data-field="vocabDay" data-idx="${i}">
           ${WEEKDAYS.map(d=>`<option value="${d}" ${c.vocabDay===d?'selected':''}>${d}요일</option>`).join('')}
         </select>
-      </div>
+      </div>`}
 
       ${c.dayGroup==='MWF' ? renderMwfEditor(c,i) : renderTthEditor(c,i)}
     </div>
@@ -529,7 +605,8 @@ function renderClassList(){
     el.addEventListener('input', ()=>{
       const idx = +el.dataset.idx, field = el.dataset.field;
       state.classes[idx][field] = el.value;
-      renderClassList.__skip = true;
+      if(field==='levelName'){ if(el.value==='Wind' && !['1','2'].includes(state.classes[idx].levelNum)) state.classes[idx].levelNum=''; renderAll(); return; }   // Wind면 입력칸이 달라져서 다시 그림
+      if(['levelNum','room'].includes(field)) el.classList.toggle('req-empty', isBlank(el.value));
       document.querySelector(`.class-card[data-idx="${idx}"] .class-code-preview`).textContent = classCode(state.classes[idx]);
       renderStage();
     });
@@ -571,11 +648,22 @@ function renderClassList(){
 /* ---------------- 렌더: 미리보기(인쇄 페이지) ---------------- */
 function renderStage(){
   const stage = document.getElementById('stage');
-  stage.innerHTML = state.classes.map((c,i)=>{
+  stage.classList.toggle('editing', !!state.editMode);
+  const editBar = `<div class="edit-bar">
+      <button class="tog ${state.editMode?'on':''}" id="editTog" type="button">${state.editMode?'✅ 수정 끝내기':'✏️ 안내문 직접 수정하기'}</button>
+      <span class="hint">${state.editMode ? '파란 점선 칸을 눌러 글자를 바로 고치세요. 고친 칸은 왼쪽 노란 줄로 표시되고 자동 저장돼요.' : '안내문 문장을 직접 바꾸고 싶으면 눌러주세요. 고친 칸은 왼쪽 입력을 바꿔도 그대로 남아요.'}</span>
+    </div>`;
+  stage.innerHTML = editBar + state.classes.map((c,i)=>{
     const code = classCode(c);
+    const codeHtml = classReady(c) ? esc(code) : blankMark('반 이름');
     const spec = timetableSpec(c);
+    const isWind = c.levelName==='Wind';
+    const nEd = Object.keys(c.edits||{}).length;
+    const E = (key, html) => `data-ed="${key}" data-cid="${c.id}" ${state.editMode?'contenteditable="true" spellcheck="false"':''}`;
+    const V = (key, html) => (c.edits && c.edits[key] != null) ? c.edits[key] : html;
+    const edCls = key => (c.edits && c.edits[key] != null) ? 'edited' : '';
     return `
-      <div class="page-label">미리보기 ${i+1} / ${state.classes.length} &nbsp;·&nbsp; ${esc(code)}</div>
+      <div class="page-label">미리보기 ${i+1} / ${state.classes.length} &nbsp;·&nbsp; ${classReady(c)?esc(code):'반 정보 입력 필요'}${nEd?`<button class="reset-edits" data-reset="${c.id}" type="button">직접 고친 ${nEd}곳 되돌리기</button>`:''}</div>
       <div class="page" id="page-${c.id}">
         <div class="page-content">
         <div class="doc-header">
@@ -583,28 +671,28 @@ function renderStage(){
           <div class="doc-title">담임 안내문</div>
         </div>
 
-        <div class="intro">
-          안녕하세요, <span class="code-badge">${esc(code)}</span>반 담임 <b>${esc(state.teacherName)}</b>입니다.
-          수업은 <span class="room"><b>${esc(c.room||'—')}</b>번 강의실</span>에서 합니다.<br>
+        <div class="intro ${edCls('intro')}" ${E('intro')}>${V('intro', `
+          안녕하세요, <span class="code-badge">${codeHtml}</span>반 담임 <b>${isBlank(state.teacherName)?blankMark('선생님 이름'):esc(state.teacherName)}</b>입니다.
+          수업은 <span class="room"><b>${isBlank(c.room)?blankMark('강의실'):esc(c.room)}</b>번 강의실</span>에서 합니다.<br>
           수업, 숙제와 시험에 대한 전반적인 안내 드리오니 확인하시고 궁금하신 사항은 연락 주세요.
-          제 직통 전화번호는 <span class="phone">${esc(state.phone)}</span> 입니다.
+          제 직통 전화번호는 <span class="phone">${isBlank(state.phone)?blankMark('전화번호'):esc(state.phone)}</span> 입니다.`)}
         </div>
 
-        <div class="callout">
-          <b>★ ${esc(c.levelName)} ${esc(c.levelNum)} 숙제</b>는 알림장에 한달치가 기록되어 있으니,
-          담임이 관리하는 숙제의 완료 기한은 아래 표를 잘 따라주세요.
+        <div class="callout ${edCls('callout')}" ${E('callout')}>${V('callout', `
+          <b>★ ${classReady(c) ? `${esc(c.levelName)} ${esc(c.levelNum)}` : blankMark('레벨')} 숙제</b>는 알림장에 한달치가 기록되어 있으니,
+          담임이 관리하는 숙제의 완료 기한은 아래 표를 잘 따라주세요.`)}
         </div>
 
         <div class="hw-grid">
           <div class="hw-box sunday">
             <div class="hw-box-head">일요일까지 완료할 숙제</div>
             <div class="hw-box-body">
-              <ol>
+              <ol class="${edCls(isWind?'sundayW':'sunday')}" ${E(isWind?'sundayW':'sunday')}>${V(isWind?'sundayW':'sunday', `
                 <li>빅박스(온라인학습): 매주 update되는 학습하기</li>
                 <li>영어도서관에서 매주 빌린 책 1권 이상 읽고 Book Quiz 하기</li>
-                <li>톡트리: 매주 update되는 학습하기</li>
+                ${isWind ? '' : '<li>톡트리: 매주 update되는 학습하기</li>'}`)}
               </ol>
-              <div class="hw-note">◆ 자세한 방법은 정이조 주니어 소식지 링크 참조</div>
+              <div class="hw-note ${edCls('hwnote')}" ${E('hwnote')}>${V('hwnote','◆ 자세한 방법은 정이조 주니어 소식지 링크 참조')}</div>
             </div>
           </div>
 
@@ -616,7 +704,7 @@ function renderStage(){
           </div>
         </div>
 
-        <div class="handbook-note">★ Handbook은 매일 가지고 다니세요.</div>
+        <div class="handbook-note ${edCls('handbook')}" ${E('handbook')}>${V('handbook','★ Handbook은 매일 가지고 다니세요.')}</div>
 
         <div class="tt-title">${ICON_CLOCK} 요일별 수업 시간표는 다음과 같습니다</div>
         ${renderTimetable(spec)}
@@ -630,24 +718,43 @@ function renderStage(){
     `;
   }).join('');
 
-  // 드래그 이벤트 바인딩
-  state.classes.forEach(c => bindDrag(c));
+  // 드래그 이벤트 바인딩 (수정 중에는 끔)
+  if(!state.editMode) state.classes.forEach(c => bindDrag(c));
+  document.getElementById('editTog').onclick = () => { state.editMode = !state.editMode; renderStage(); };
+  stage.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>{
+    const c = state.classes.find(x=>x.id===b.dataset.reset); if(!c) return;
+    if(!confirm('이 안내문에서 직접 고친 내용을 모두 원래대로 되돌릴까요?')) return;
+    c.edits = {}; renderStage();
+  });
+  const mb = document.getElementById('missingBox');
+  if(mb){ const m = missingList(); mb.innerHTML = m.length ? `<div class="missing-box">✋ 아직 비어 있어요: ${m.map(esc).join(', ')}<br><small style="font-weight:500;">빨간 칸을 채워야 인쇄·저장할 수 있어요.</small></div>` : ''; }
+  persist();
 }
+/* 오른쪽 안내문에서 직접 고친 내용 저장 (다시 그리지 않고 저장만) */
+document.addEventListener('input', e=>{
+  const el = e.target.closest && e.target.closest('[data-ed]'); if(!el || !state.editMode) return;
+  const c = state.classes.find(x=>x.id===el.dataset.cid); if(!c) return;
+  c.edits = c.edits || {}; c.edits[el.dataset.ed] = el.innerHTML; el.classList.add('edited'); persist();
+});
 
 function renderDragItems(c){
   const content = {
     fixed: { title:'1. LF, FW, NS숙제', due:'기한: 핸드북 알림장 참조', key:'fixed' },
     vocab: { title:'2. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출', due:`기한: ${c.vocabDay}요일까지`, key:'vocab' }
   };
-  return c.order.map((key, idx) => {
+  const keys = c.order.filter(k => !(c.levelName==='Wind' && k==='vocab'));   // Wind는 Vocab Booster 없음
+  const ed = (k) => `data-ed="${k}" data-cid="${c.id}" ${state.editMode?'contenteditable="true" spellcheck="false"':''}`;
+  const val = (k, html) => (c.edits && c.edits[k] != null) ? c.edits[k] : html;
+  const cls = k => (c.edits && c.edits[k] != null) ? 'edited' : '';
+  return keys.map((key, idx) => {
     const item = content[key];
     const num = idx+1;
     const title = item.key==='fixed' ? `${num}. LF, FW, NS숙제` : `${num}. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출`;
     return `
-      <div class="drag-item" draggable="true" data-key="${item.key}" data-cid="${c.id}">
+      <div class="drag-item" draggable="${state.editMode?'false':'true'}" data-key="${item.key}" data-cid="${c.id}">
         <span class="drag-handle">⠿⠿</span>
-        <div class="item-title">${title}</div>
-        <div class="item-due">◆ ${item.due}</div>
+        <div class="item-title ${cls('t_'+key)}" ${ed('t_'+key)}>${val('t_'+key, title)}</div>
+        <div class="item-due ${cls('d_'+key)}" ${ed('d_'+key)}>${val('d_'+key, '◆ '+item.due)}</div>
       </div>
     `;
   }).join('');
@@ -675,7 +782,7 @@ function bindDrag(c){
     cls.order.splice(from,1);
     cls.order.splice(to,0,dragKey);
     zone.innerHTML = renderDragItems(cls);
-    bindDrag(cls);
+    bindDrag(cls); persist();
   });
 }
 
@@ -718,6 +825,7 @@ async function exportImages(btnId, getPages, baseName){
   btn.textContent = '이미지 만드는 중...'; btn.disabled = true;
   try{
     const pages = getPages().filter(Boolean);
+    document.getElementById('stage').classList.add('exporting');
     for(let i=0;i<pages.length;i++){
       const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff' });
       const url = canvas.toDataURL('image/png');
@@ -730,6 +838,7 @@ async function exportImages(btnId, getPages, baseName){
   } catch(err){
     alert('이미지 저장 중 오류가 발생했어요: ' + err.message);
   } finally {
+    document.getElementById('stage').classList.remove('exporting');
     btn.textContent = original; btn.disabled = false;
   }
 }
@@ -744,6 +853,7 @@ async function exportPDF(){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
     const pages = state.classes.map(c=>document.getElementById('page-'+c.id));
+    document.getElementById('stage').classList.add('exporting');
     for(let i=0;i<pages.length;i++){
       const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff' });
       const img = canvas.toDataURL('image/jpeg',0.95);
@@ -754,6 +864,7 @@ async function exportPDF(){
   } catch(err){
     alert('PDF 생성 중 오류가 발생했어요: ' + err.message);
   } finally {
+    document.getElementById('stage').classList.remove('exporting');
     btn.textContent = original;
     btn.disabled = false;
   }
