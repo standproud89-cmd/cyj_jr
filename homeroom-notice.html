@@ -248,6 +248,16 @@
     text-align:center; font-size:13px; font-weight:800; color:var(--ink); letter-spacing:0.01em;
   }
 
+  /* 기한 숙제가 3개(High 5 포함)일 때 A4 한 장에 맞게 조금 촘촘하게 */
+  .page.compact .doc-header{ padding-bottom:12px; margin-bottom:12px; }
+  .page.compact .intro{ line-height:1.7; margin-bottom:12px; }
+  .page.compact .callout{ margin-bottom:12px; padding:10px 14px; }
+  .page.compact .hw-grid{ margin-bottom:14px; }
+  .page.compact .hw-box-body{ padding:12px 14px; line-height:1.6; }
+  .page.compact .drag-item{ padding:9px 36px 10px 12px; margin-bottom:8px; }
+  .page.compact .drag-item .item-title{ font-size:13.5px; line-height:1.5; margin-bottom:2px; }
+  .page.compact .drag-item .item-due{ margin-top:4px; }
+  .page.compact table.tt th{ padding:12px 4px; }
   /* 꼭 채워야 하는 칸 */
   .field input.req-empty, .field select.req-empty{ border:2px solid var(--accent) !important; background:#FFF5F5; }
   .req-tag{ color:var(--accent); font-weight:800; font-size:11px; margin-left:4px; }
@@ -322,7 +332,7 @@ function mkClass(dayGroup, slot, levelName, levelNum, suffix, room, vocabDay, ca
     id: 'c'+Math.random().toString(36).slice(2,9),
     dayGroup, slot, levelName, levelNum, suffix, room, vocabDay,
     campus: CAMPUS_FIXED,
-    order: ['fixed','vocab'],
+    order: ['fixed','vocab','h5'],
     edits: {},          // 오른쪽 안내문에서 직접 고친 내용 (칸 이름 → 내용)
     mwfSchedule: defaultMwfSchedule(),
     tthSchedule: defaultTthSchedule()
@@ -345,11 +355,16 @@ try{
   const saved = JSON.parse(localStorage.getItem(LS)||'null');
   if(saved && Array.isArray(saved.classes) && saved.classes.length){
     state = Object.assign(state, saved, { editMode:false });
-    state.classes.forEach(c=>{ c.edits = c.edits || {}; c.order = c.order || ['fixed','vocab']; c.mwfSchedule = c.mwfSchedule || defaultMwfSchedule(); c.tthSchedule = c.tthSchedule || defaultTthSchedule(); });
+    state.classes.forEach(c=>{ c.edits = c.edits || {}; c.order = c.order || ['fixed','vocab','h5']; if(!c.order.includes('h5')) c.order.push('h5'); c.mwfSchedule = c.mwfSchedule || defaultMwfSchedule(); c.tthSchedule = c.tthSchedule || defaultTthSchedule(); });
   }
 }catch(e){}
 /* 작업하다 나가도 남아 있게 이 노트북 브라우저에 자동 저장 */
 function persist(){ try{ const {editMode, ...rest} = state; localStorage.setItem(LS, JSON.stringify(rest)); }catch(e){} }
+/* 숙제 항목 규칙 (Discover·Miracle 동일)
+   - Vocab Booster: Wind, Island 1·2는 없음
+   - High 5: Middle·Twilight 반(MM·MT·TT) 중 Nation·Globe만 있음 */
+function hasVocab(c){ return !(c.levelName==='Wind' || (c.levelName==='Island' && ['1','2'].includes(c.levelNum))); }
+function hasH5(c){ return ['M','T'].includes(c.slot) && ['Nation','Globe'].includes(c.levelName); }
 const isBlank = v => !(v ?? '').toString().trim();
 const blankMark = label => `<span class="blank-mark">${label}</span>`;
 function classReady(c){ return !isBlank(c.levelName) && !isBlank(c.levelNum); }
@@ -590,7 +605,12 @@ function renderClassList(){
         </div>
       </div>
 
-      ${c.levelName==='Wind' ? '<div class="field" style="font-size:11.5px;color:var(--ink-soft);">Wind 반은 톡트리·Vocab Booster 안내가 빠져요.</div>' : `<div class="field">
+      ${(()=>{ const n=[];
+          if(c.levelName==='Wind') n.push('Wind 반은 톡트리·Vocab Booster 안내가 빠져요.');
+          else if(!hasVocab(c)) n.push('Island 1·2 반은 Vocab Booster 안내가 빠져요.');
+          if(hasH5(c)) n.push('Middle·Twilight Nation 이상 반이라 High 5 안내가 들어가요.');
+          return n.length ? `<div class="field" style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;">${n.join('<br>')}</div>` : ''; })()}
+      ${!hasVocab(c) ? '' : `<div class="field">
         <label>Vocab Booster 제출 기한 요일</label>
         <select data-field="vocabDay" data-idx="${i}">
           ${WEEKDAYS.map(d=>`<option value="${d}" ${c.vocabDay===d?'selected':''}>${d}요일</option>`).join('')}
@@ -605,8 +625,9 @@ function renderClassList(){
     el.addEventListener('input', ()=>{
       const idx = +el.dataset.idx, field = el.dataset.field;
       state.classes[idx][field] = el.value;
+      if(field==='levelNum'){ renderAll(); return; }
       if(field==='levelName'){ if(el.value==='Wind' && !['1','2'].includes(state.classes[idx].levelNum)) state.classes[idx].levelNum=''; renderAll(); return; }   // Wind면 입력칸이 달라져서 다시 그림
-      if(['levelNum','room'].includes(field)) el.classList.toggle('req-empty', isBlank(el.value));
+      if(['room'].includes(field)) el.classList.toggle('req-empty', isBlank(el.value));
       document.querySelector(`.class-card[data-idx="${idx}"] .class-code-preview`).textContent = classCode(state.classes[idx]);
       renderStage();
     });
@@ -664,7 +685,7 @@ function renderStage(){
     const edCls = key => (c.edits && c.edits[key] != null) ? 'edited' : '';
     return `
       <div class="page-label">미리보기 ${i+1} / ${state.classes.length} &nbsp;·&nbsp; ${classReady(c)?esc(code):'반 정보 입력 필요'}${nEd?`<button class="reset-edits" data-reset="${c.id}" type="button">직접 고친 ${nEd}곳 되돌리기</button>`:''}</div>
-      <div class="page" id="page-${c.id}">
+      <div class="page ${hasH5(c) && hasVocab(c) ? 'compact' : ''}" id="page-${c.id}">
         <div class="page-content">
         <div class="doc-header">
           <div class="doc-icon">${ICON_BOOK}</div>
@@ -740,16 +761,19 @@ document.addEventListener('input', e=>{
 function renderDragItems(c){
   const content = {
     fixed: { title:'1. LF, FW, NS숙제', due:'기한: 핸드북 알림장 참조', key:'fixed' },
+    h5:    { due:'기한: 매 수업 전', key:'h5' },
     vocab: { title:'2. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출', due:`기한: ${c.vocabDay}요일까지`, key:'vocab' }
   };
-  const keys = c.order.filter(k => !(c.levelName==='Wind' && k==='vocab'));   // Wind는 Vocab Booster 없음
+  const keys = c.order.filter(k => (k!=='vocab' || hasVocab(c)) && (k!=='h5' || hasH5(c)));
   const ed = (k) => `data-ed="${k}" data-cid="${c.id}" ${state.editMode?'contenteditable="true" spellcheck="false"':''}`;
   const val = (k, html) => (c.edits && c.edits[k] != null) ? c.edits[k] : html;
   const cls = k => (c.edits && c.edits[k] != null) ? 'edited' : '';
   return keys.map((key, idx) => {
     const item = content[key];
     const num = idx+1;
-    const title = item.key==='fixed' ? `${num}. LF, FW, NS숙제` : `${num}. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출`;
+    const title = item.key==='fixed' ? `${num}. LF, FW, NS숙제`
+                : item.key==='h5' ? `${num}. High 5 — High 5 Preview 미리 학습하고 수업에서 발표 준비하기`
+                : `${num}. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출`;
     return `
       <div class="drag-item" draggable="${state.editMode?'false':'true'}" data-key="${item.key}" data-cid="${c.id}">
         <span class="drag-handle">⠿⠿</span>
