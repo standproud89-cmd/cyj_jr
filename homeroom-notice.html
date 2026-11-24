@@ -236,6 +236,12 @@
   }
   table.tt td.cell{ padding:16px 8px; }
   .subj-code{ font-weight:800; font-size:21px; color:var(--accent); }
+  /* 과목 색: LF 노랑 · FW 자주 · NS 청록. 흑백 출력해도 글자가 또렷하도록 바탕은 아주 연하게, 글자는 진하게 */
+  table.tt td.cell.s-LF{ background:#FFF3C4; } table.tt td.cell.s-LF .subj-code{ color:#8A5A00; }
+  table.tt td.cell.s-FW{ background:#F6E3F0; } table.tt td.cell.s-FW .subj-code{ color:#8E2A6B; }
+  table.tt td.cell.s-NS{ background:#DDF2EE; } table.tt td.cell.s-NS .subj-code{ color:#0F6E62; }
+  table.tt td.cell.s-PS .subj-name{ font-size:11.5px; margin:2px 0 8px; }
+  table.tt td.cell.s-PS .subj-detail{ font-size:13px; line-height:1.45; }
   .subj-name{ font-size:13.5px; color:var(--ink-soft); margin:5px 0 10px; }
   .subj-detail{ font-size:14px; color:var(--ink); }
 
@@ -306,7 +312,7 @@
 <script>
 /* ---------------- 상수 ---------------- */
 const WEEKDAYS = ['월','화','수','목','금'];
-const SUBJ = { FW:'Fiction & Writing', NS:'Non-fiction & Speaking', LF:'Language Framework' };
+const SUBJ = { FW:'Fiction & Writing', NS:'Non-fiction & Speaking', LF:'Language Framework', PS:'(Phonics & Speaking)' };
 const CAMPUS_FIXED = '정이조주니어(동작)'; // 캠퍼스는 동작으로 고정
 const CAMPUSES = [
   '정이조주니어영어학원(목동)',
@@ -355,7 +361,7 @@ try{
   const saved = JSON.parse(localStorage.getItem(LS)||'null');
   if(saved && Array.isArray(saved.classes) && saved.classes.length){
     state = Object.assign(state, saved, { editMode:false });
-    state.classes.forEach(c=>{ c.edits = c.edits || {}; c.order = c.order || ['fixed','vocab','h5']; if(!c.order.includes('h5')) c.order.push('h5'); c.mwfSchedule = c.mwfSchedule || defaultMwfSchedule(); c.tthSchedule = c.tthSchedule || defaultTthSchedule(); });
+    state.classes.forEach(c=>{ c.edits = c.edits || {}; if(c.dayGroup==='TTH' && c.slot==='M') c.slot='F'; c.order = c.order || ['fixed','vocab','h5']; if(!c.order.includes('h5')) c.order.push('h5'); c.mwfSchedule = c.mwfSchedule || defaultMwfSchedule(); c.tthSchedule = c.tthSchedule || defaultTthSchedule(); });
   }
 }catch(e){}
 /* 작업하다 나가도 남아 있게 이 노트북 브라우저에 자동 저장 */
@@ -397,6 +403,13 @@ function classCode(c){
 }
 
 function timetableSpec(c){
+  if(c.levelName==='Wind'){
+    const n = c.levelNum || '?';
+    const windBook = state.term==='Discover' ? 'Hats On Top' : 'English Bus Starter';   // Wind 교재: Discover=Hats On Top, Miracle=English Bus Starter
+    const windLabel = `${windBook} ${n}<br>${state.term} Wind ${n}A, ${n}B`;
+    if(c.dayGroup==='MWF') return { orientation:'daysAsCols', cols:['월','수','금'], rows:['1교시','2교시'], data:{ '월':['PS','PS'], '수':['PS','PS'], '금':['PS','PS'] }, lvlLabel:windLabel, wind:true };
+    return { orientation:'daysAsRows', cols:['1교시','2교시','3교시'], rows:['화','목'], data:{ '화':['PS','PS','PS'], '목':['PS','PS','PS'] }, lvlLabel:windLabel, wind:true };
+  }
   const lvlLabel = classReady(c) ? `${state.term} ${c.levelName} ${c.levelNum}` : `${state.term} ${blankMark('레벨')}`;
   if(c.dayGroup === 'MWF'){
     return {
@@ -569,7 +582,7 @@ function renderClassList(){
         <label>타임 슬롯</label>
         <div class="seg" data-field="slot" data-idx="${i}">
           <button type="button" data-val="F" class="${c.slot==='F'?'active':''}">F · Front</button>
-          <button type="button" data-val="M" class="${c.slot==='M'?'active':''}">M · Middle</button>
+          ${c.dayGroup==='MWF' ? `<button type="button" data-val="M" class="${c.slot==='M'?'active':''}">M · Middle</button>` : ''}
           <button type="button" data-val="T" class="${c.slot==='T'?'active':''}">T · Twilight</button>
         </div>
       </div>
@@ -617,7 +630,7 @@ function renderClassList(){
         </select>
       </div>`}
 
-      ${c.dayGroup==='MWF' ? renderMwfEditor(c,i) : renderTthEditor(c,i)}
+      ${c.levelName==='Wind' ? '<div class="field" style="font-size:11.5px;color:var(--ink-soft);">Wind 반은 모든 교시가 PS로 나와요. (Discover: Hats On Top · Miracle: English Bus Starter)</div>' : (c.dayGroup==='MWF' ? renderMwfEditor(c,i) : renderTthEditor(c,i))}
     </div>
   `).join('');
 
@@ -638,6 +651,7 @@ function renderClassList(){
       const seg = btn.parentElement;
       const idx = +seg.dataset.idx, field = seg.dataset.field;
       state.classes[idx][field] = btn.dataset.val;
+      if(field==='dayGroup' && btn.dataset.val==='TTH' && state.classes[idx].slot==='M') state.classes[idx].slot='F';   // 화목에는 Middle 없음
       renderAll();
     });
   });
@@ -679,6 +693,7 @@ function renderStage(){
     const codeHtml = classReady(c) ? esc(code) : blankMark('반 이름');
     const spec = timetableSpec(c);
     const isWind = c.levelName==='Wind';
+    const sunKey = isWind ? 'sundayW' : (['Nation','Globe'].includes(c.levelName) ? 'sundayN' : 'sunday');
     const nEd = Object.keys(c.edits||{}).length;
     const E = (key, html) => `data-ed="${key}" data-cid="${c.id}" ${state.editMode?'contenteditable="true" spellcheck="false"':''}`;
     const V = (key, html) => (c.edits && c.edits[key] != null) ? c.edits[key] : html;
@@ -708,10 +723,11 @@ function renderStage(){
           <div class="hw-box sunday">
             <div class="hw-box-head">일요일까지 완료할 숙제</div>
             <div class="hw-box-body">
-              <ol class="${edCls(isWind?'sundayW':'sunday')}" ${E(isWind?'sundayW':'sunday')}>${V(isWind?'sundayW':'sunday', `
+              <ol class="${edCls(sunKey)}" ${E(sunKey)}>${V(sunKey, `
                 <li>빅박스(온라인학습): 매주 update되는 학습하기</li>
                 <li>영어도서관에서 매주 빌린 책 1권 이상 읽고 Book Quiz 하기</li>
-                ${isWind ? '' : '<li>톡트리: 매주 update되는 학습하기</li>'}`)}
+                ${isWind ? '' : '<li>톡트리: 매주 update되는 학습하기</li>'}
+                ${['Nation','Globe'].includes(c.levelName) ? '<li>첨삭된 Speaking &amp; Writing교재 Final Draft를 My Portfolio &gt; Writing Channel에 다시 쓰기 <b>(★2주에 한번★)</b></li>' : ''}`)}
               </ol>
               <div class="hw-note ${edCls('hwnote')}" ${E('hwnote')}>${V('hwnote','◆ 자세한 방법은 정이조 주니어 소식지 링크 참조')}</div>
             </div>
@@ -771,7 +787,7 @@ function renderDragItems(c){
   return keys.map((key, idx) => {
     const item = content[key];
     const num = idx+1;
-    const title = item.key==='fixed' ? `${num}. LF, FW, NS숙제`
+    const title = item.key==='fixed' ? (c.levelName==='Wind' ? `${num}. PS 숙제` : `${num}. LF, FW, NS숙제`)
                 : item.key==='h5' ? `${num}. High 5 — High 5 Preview 미리 학습하고 수업에서 발표 준비하기`
                 : `${num}. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출`;
     return `
@@ -817,7 +833,7 @@ function renderTimetable(spec){
     const body = spec.rows.map((r, ri) => {
       const cells = spec.cols.map(d=>{
         const code = spec.data[d][ri];
-        return cellHtml(code, spec.lvlLabel);
+        return cellHtml(code, spec.lvlLabel, spec.wind);
       }).join('');
       return `<tr><td class="head-col">${r}</td>${cells}</tr>`;
     }).join('');
@@ -826,18 +842,18 @@ function renderTimetable(spec){
     // 행=요일, 열=교시
     const header = `<th class="corner"></th>` + spec.cols.map((_,ci)=>`<th>${ci+1}교시</th>`).join('');
     const body = spec.rows.map(r=>{
-      const cells = spec.data[r].map(code => cellHtml(code, spec.lvlLabel)).join('');
+      const cells = spec.data[r].map(code => cellHtml(code, spec.lvlLabel, spec.wind)).join('');
       return `<tr><td class="head-col">${r}</td>${cells}</tr>`;
     }).join('');
     return `<table class="tt"><tr>${header}</tr>${body}</table>`;
   }
 }
 
-function cellHtml(code, lvlLabel){
-  return `<td class="cell">
+function cellHtml(code, lvlLabel, wind){
+  return `<td class="cell s-${code}">
     <div class="subj-code">${code}</div>
     <div class="subj-name">${SUBJ[code]}</div>
-    <div class="subj-detail">${lvlLabel} ${code}</div>
+    <div class="subj-detail">${wind ? lvlLabel : `${lvlLabel} ${code}`}</div>
   </td>`;
 }
 
