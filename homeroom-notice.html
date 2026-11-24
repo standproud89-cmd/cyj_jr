@@ -236,11 +236,13 @@
   }
   table.tt td.cell{ padding:16px 8px; }
   .subj-code{ font-weight:800; font-size:21px; color:var(--accent); }
-  /* 과목 색: LF 노랑 · FW 자주 · NS 청록. 흑백 출력해도 글자가 또렷하도록 바탕은 아주 연하게, 글자는 진하게 */
-  table.tt td.cell.s-LF{ background:#FFF3C4; } table.tt td.cell.s-LF .subj-code{ color:#8A5A00; }
-  table.tt td.cell.s-FW{ background:#F6E3F0; } table.tt td.cell.s-FW .subj-code{ color:#8E2A6B; }
-  table.tt td.cell.s-NS{ background:#DDF2EE; } table.tt td.cell.s-NS .subj-code{ color:#0F6E62; }
+  /* 과목 색: LF·GW 노랑 · FW·RA 자주 · NS·AD 청록. 흑백 출력해도 글자가 또렷하도록 바탕은 아주 연하게, 글자는 진하게 */
+  /* Globe도 짝 과목과 같은 색: GW=LF(노랑) · RA=FW(자주) · AD=NS(청록) */
+  table.tt td.cell.s-LF, table.tt td.cell.s-GW{ background:#FFF3C4; } table.tt td.cell.s-LF .subj-code, table.tt td.cell.s-GW .subj-code{ color:#8A5A00; }
+  table.tt td.cell.s-FW, table.tt td.cell.s-RA{ background:#F6E3F0; } table.tt td.cell.s-FW .subj-code, table.tt td.cell.s-RA .subj-code{ color:#8E2A6B; }
+  table.tt td.cell.s-NS, table.tt td.cell.s-AD{ background:#DDF2EE; } table.tt td.cell.s-NS .subj-code, table.tt td.cell.s-AD .subj-code{ color:#0F6E62; }
   table.tt td.cell.s-PS .subj-name{ font-size:11.5px; margin:2px 0 8px; }
+  table.tt td.cell.s-AD .subj-name, table.tt td.cell.s-RA .subj-name, table.tt td.cell.s-GW .subj-name{ font-size:11.5px; margin:2px 0 8px; }
   table.tt td.cell.s-PS .subj-detail{ font-size:13px; line-height:1.45; }
   .subj-name{ font-size:13.5px; color:var(--ink-soft); margin:5px 0 10px; }
   .subj-detail{ font-size:14px; color:var(--ink); }
@@ -312,7 +314,11 @@
 <script>
 /* ---------------- 상수 ---------------- */
 const WEEKDAYS = ['월','화','수','목','금'];
-const SUBJ = { FW:'Fiction & Writing', NS:'Non-fiction & Speaking', LF:'Language Framework', PS:'(Phonics & Speaking)' };
+const SUBJ = { FW:'Fiction & Writing', NS:'Non-fiction & Speaking', LF:'Language Framework', PS:'(Phonics & Speaking)',
+  AD:'(Articles for Discussion)', RA:'(Reading Analysis)', GW:'(Advanced Grammar & Writing)' };
+const SUBJ_IN = ['LF','FW','NS'];        // Island · Nation
+const SUBJ_G  = ['AD','RA','GW'];        // Globe
+const isGlobe = c => c.levelName==='Globe';
 const CAMPUS_FIXED = '정이조주니어(동작)'; // 캠퍼스 기본값 (왼쪽에서 바꿀 수 있음)
 const CAMPUSES = [
   '정이조주니어영어학원(목동)',
@@ -332,6 +338,15 @@ function defaultMwfSchedule(){
 function defaultTthSchedule(){
   return { '화':['FW','NS','LF'], '목':['FW','NS','LF'] };
 }
+/* Globe 기본 배정 (본사 시간표 이미지 기준) — 반별로 직접 조정 가능 */
+function defaultGMwf(){ return { '월':['AD','GW'], '수':['RA','AD'], '금':['RA','GW'] }; }
+function defaultGTth(){ return { '화':['AD','RA','GW'], '목':['AD','RA','GW'] }; }
+/* Globe는 과목이 달라서 배정을 따로 저장 (Island·Nation 배정과 섞이지 않게) */
+function mwfKey(c){ return isGlobe(c) ? 'gMwf' : 'mwfSchedule'; }
+function tthKey(c){ return isGlobe(c) ? 'gTth' : 'tthSchedule'; }
+function ensureSched(c){ c.gMwf = c.gMwf || defaultGMwf();
+  if(c.gTth && JSON.stringify(c.gTth)===JSON.stringify({ '화':['GW','RA','AD'], '목':['GW','RA','AD'] })) c.gTth = null;   // 예전 임시 기본값은 본사 순서로 교체
+  c.gTth = c.gTth || defaultGTth(); c.mwfSchedule = c.mwfSchedule || defaultMwfSchedule(); c.tthSchedule = c.tthSchedule || defaultTthSchedule(); }
 
 function mkClass(dayGroup, slot, levelName, levelNum, suffix, room, vocabDay, campus){
   return {
@@ -341,7 +356,9 @@ function mkClass(dayGroup, slot, levelName, levelNum, suffix, room, vocabDay, ca
     order: ['fixed','vocab','h5'],
     edits: {},          // 오른쪽 안내문에서 직접 고친 내용 (칸 이름 → 내용)
     mwfSchedule: defaultMwfSchedule(),
-    tthSchedule: defaultTthSchedule()
+    tthSchedule: defaultTthSchedule(),
+    gMwf: defaultGMwf(),
+    gTth: defaultGTth()
   };
 }
 
@@ -362,7 +379,7 @@ try{
   const saved = JSON.parse(localStorage.getItem(LS)||'null');
   if(saved && Array.isArray(saved.classes) && saved.classes.length){
     state = Object.assign(state, saved, { editMode:false });
-    state.classes.forEach(c=>{ c.edits = c.edits || {}; if(c.dayGroup==='TTH' && c.slot==='M') c.slot='F'; c.order = c.order || ['fixed','vocab','h5']; if(!c.order.includes('h5')) c.order.push('h5'); c.mwfSchedule = c.mwfSchedule || defaultMwfSchedule(); c.tthSchedule = c.tthSchedule || defaultTthSchedule(); });
+    state.classes.forEach(c=>{ c.edits = c.edits || {}; if(c.dayGroup==='TTH' && c.slot==='M') c.slot='F'; if(c.levelName==='Globe') c.slot='T'; c.order = c.order || ['fixed','vocab','h5']; if(!c.order.includes('h5')) c.order.push('h5'); ensureSched(c); });
   }
 }catch(e){}
 /* 작업하다 나가도 남아 있게 이 노트북 브라우저에 자동 저장 */
@@ -371,7 +388,7 @@ function persist(){ try{ const {editMode, ...rest} = state; localStorage.setItem
    - Vocab Booster: Wind, Island 1·2는 없음
    - High 5: Twilight 반(월수금 MT · 화목 TT) 중 Nation·Globe만 있음 */
 function hasVocab(c){ return !(c.levelName==='Wind' || (c.levelName==='Island' && ['1','2'].includes(c.levelNum))); }
-function hasH5(c){ return c.slot==='T' && ['Nation','Globe'].includes(c.levelName); }
+function hasH5(c){ return c.levelName==='Globe' || (c.slot==='T' && c.levelName==='Nation'); }   // Globe는 항상 T반이라 High 5 있음
 const isBlank = v => !(v ?? '').toString().trim();
 const blankMark = label => `<span class="blank-mark">${label}</span>`;
 function classReady(c){ return !isBlank(c.levelName) && !isBlank(c.levelNum); }
@@ -417,7 +434,7 @@ function timetableSpec(c){
       orientation:'daysAsCols',
       cols: ['월','수','금'],
       rows: ['1교시','2교시'],
-      data: c.mwfSchedule || defaultMwfSchedule(),
+      data: (ensureSched(c), c[mwfKey(c)]),
       lvlLabel
     };
   }
@@ -425,7 +442,7 @@ function timetableSpec(c){
     orientation:'daysAsRows',
     cols: ['1교시','2교시','3교시'],
     rows: ['화','목'],
-    data: c.tthSchedule || defaultTthSchedule(),
+    data: (ensureSched(c), c[tthKey(c)]),
     lvlLabel
   };
 }
@@ -526,6 +543,7 @@ function renderPanel(){
 }
 
 function renderMwfEditor(c, i){
+  ensureSched(c);
   const days = ['월','수','금'];
   return `
     <div class="field">
@@ -536,7 +554,7 @@ function renderMwfEditor(c, i){
             <div class="mwf-day-label">${d}</div>
             ${[0,1].map(p => `
               <select data-mwf="1" data-idx="${i}" data-day="${d}" data-period="${p}">
-                ${Object.keys(SUBJ).map(code=>`<option value="${code}" ${c.mwfSchedule[d][p]===code?'selected':''}>${code}</option>`).join('')}
+                ${(isGlobe(c)?SUBJ_G:SUBJ_IN).map(code=>`<option value="${code}" ${c[mwfKey(c)][d][p]===code?'selected':''}>${code}</option>`).join('')}
               </select>
             `).join('')}
           </div>
@@ -547,6 +565,7 @@ function renderMwfEditor(c, i){
 }
 
 function renderTthEditor(c, i){
+  ensureSched(c);
   const days = ['화','목'];
   return `
     <div class="field">
@@ -557,7 +576,7 @@ function renderTthEditor(c, i){
             <div class="mwf-day-label">${d}</div>
             ${[0,1,2].map(p => `
               <select data-tth="1" data-idx="${i}" data-day="${d}" data-period="${p}">
-                ${Object.keys(SUBJ).map(code=>`<option value="${code}" ${c.tthSchedule[d][p]===code?'selected':''}>${code}</option>`).join('')}
+                ${(isGlobe(c)?SUBJ_G:SUBJ_IN).map(code=>`<option value="${code}" ${c[tthKey(c)][d][p]===code?'selected':''}>${code}</option>`).join('')}
               </select>
             `).join('')}
           </div>
@@ -587,8 +606,8 @@ function renderClassList(){
       <div class="field">
         <label>타임 슬롯</label>
         <div class="seg" data-field="slot" data-idx="${i}">
-          <button type="button" data-val="F" class="${c.slot==='F'?'active':''}">F · Front</button>
-          ${c.dayGroup==='MWF' ? `<button type="button" data-val="M" class="${c.slot==='M'?'active':''}">M · Middle</button>` : ''}
+          ${isGlobe(c) ? '' : `<button type="button" data-val="F" class="${c.slot==='F'?'active':''}">F · Front</button>`}
+          ${c.dayGroup==='MWF' && !isGlobe(c) ? `<button type="button" data-val="M" class="${c.slot==='M'?'active':''}">M · Middle</button>` : ''}
           <button type="button" data-val="T" class="${c.slot==='T'?'active':''}">T · Twilight</button>
         </div>
       </div>
@@ -627,7 +646,7 @@ function renderClassList(){
       ${(()=>{ const n=[];
           if(c.levelName==='Wind') n.push('Wind 반은 톡트리·Vocab Booster 안내가 빠져요.');
           else if(!hasVocab(c)) n.push('Island 1·2 반은 Vocab Booster 안내가 빠져요.');
-          if(hasH5(c)) n.push('Twilight(T) Nation 이상 반이라 High 5 안내가 들어가요.');
+          if(hasH5(c)) n.push(isGlobe(c) ? 'Globe는 항상 마지막 타임(T)이라 High 5가 1번 숙제에 함께 들어가요.' : 'Twilight(T) Nation 반이라 High 5 안내가 들어가요.');
           return n.length ? `<div class="field" style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;">${n.join('<br>')}</div>` : ''; })()}
       ${!hasVocab(c) ? '' : `<div class="field">
         <label>Vocab Booster 제출 기한 요일</label>
@@ -645,6 +664,7 @@ function renderClassList(){
       const idx = +el.dataset.idx, field = el.dataset.field;
       state.classes[idx][field] = el.value;
       if(field==='levelNum'){ renderAll(); return; }
+      if(field==='levelName' && el.value==='Globe') state.classes[idx].slot='T';   // Globe는 항상 마지막 타임(T)
       if(field==='levelName'){ if(el.value==='Wind' && !['1','2'].includes(state.classes[idx].levelNum)) state.classes[idx].levelNum=''; renderAll(); return; }   // Wind면 입력칸이 달라져서 다시 그림
       if(['room'].includes(field)) el.classList.toggle('req-empty', isBlank(el.value));
       document.querySelector(`.class-card[data-idx="${idx}"] .class-code-preview`).textContent = classCode(state.classes[idx]);
@@ -665,7 +685,7 @@ function renderClassList(){
   list.querySelectorAll('select[data-mwf]').forEach(el=>{
     el.addEventListener('change', ()=>{
       const idx = +el.dataset.idx, day = el.dataset.day, period = +el.dataset.period;
-      state.classes[idx].mwfSchedule[day][period] = el.value;
+      const c = state.classes[idx]; c[mwfKey(c)][day][period] = el.value;
       renderStage();
     });
   });
@@ -673,7 +693,7 @@ function renderClassList(){
   list.querySelectorAll('select[data-tth]').forEach(el=>{
     el.addEventListener('change', ()=>{
       const idx = +el.dataset.idx, day = el.dataset.day, period = +el.dataset.period;
-      state.classes[idx].tthSchedule[day][period] = el.value;
+      const c = state.classes[idx]; c[tthKey(c)][day][period] = el.value;
       renderStage();
     });
   });
@@ -699,7 +719,7 @@ function renderStage(){
     const codeHtml = classReady(c) ? esc(code) : blankMark('반 이름');
     const spec = timetableSpec(c);
     const isWind = c.levelName==='Wind';
-    const sunKey = isWind ? 'sundayW' : (['Nation','Globe'].includes(c.levelName) ? 'sundayN' : 'sunday');
+    const sunKey = isWind ? 'sundayW' : isGlobe(c) ? 'sundayG' : (c.levelName==='Nation' ? 'sundayN' : 'sunday');
     const nEd = Object.keys(c.edits||{}).length;
     const E = (key, html) => `data-ed="${key}" data-cid="${c.id}" ${state.editMode?'contenteditable="true" spellcheck="false"':''}`;
     const V = (key, html) => (c.edits && c.edits[key] != null) ? c.edits[key] : html;
@@ -733,7 +753,8 @@ function renderStage(){
                 <li>빅박스(온라인학습): 매주 update되는 학습하기</li>
                 <li>영어도서관에서 매주 빌린 책 1권 이상 읽고 Book Quiz 하기</li>
                 ${isWind ? '' : '<li>톡트리: 매주 update되는 학습하기</li>'}
-                ${['Nation','Globe'].includes(c.levelName) ? '<li>첨삭된 Speaking &amp; Writing교재 Final Draft를 My Portfolio &gt; Writing Channel에 다시 쓰기 <b>(★2주에 한번★)</b></li>' : ''}`)}
+                ${c.levelName==='Nation' ? '<li>첨삭된 Speaking &amp; Writing교재 Final Draft를 My Portfolio &gt; Writing Channel에 다시 쓰기 <b>(★2주에 한번★)</b></li>' : ''}
+                ${isGlobe(c) ? '<li>원서 교재 읽고 Novel Study 풀기</li><li>Final Draft를 홈페이지 My Portfolio &gt; Writing Channel에 올리기 <b>(Week 2, 6, 9)</b></li>' : ''}`)}
               </ol>
               <div class="hw-note ${edCls('hwnote')}" ${E('hwnote')}>${V('hwnote','◆ 자세한 방법은 정이조 주니어 소식지 링크 참조')}</div>
             </div>
@@ -783,18 +804,19 @@ document.addEventListener('input', e=>{
 function renderDragItems(c){
   const content = {
     fixed: { title:'1. LF, FW, NS숙제', due:'기한: 핸드북 알림장 참조', key:'fixed' },
-    h5:    { due:'기한: 매 수업 전', key:'h5' },
+    h5:    { due:'기한: 핸드북 알림장 참조', key:'h5' },
     vocab: { title:'2. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출', due:`기한: ${c.vocabDay}요일까지`, key:'vocab' }
   };
-  const keys = c.order.filter(k => (k!=='vocab' || hasVocab(c)) && (k!=='h5' || hasH5(c)));
+  // Globe는 High 5를 1번 항목(GW, RA, AD, High 5)에 합쳐서 따로 두지 않음
+  const keys = c.order.filter(k => (k!=='vocab' || hasVocab(c)) && (k!=='h5' || (hasH5(c) && !isGlobe(c))));
   const ed = (k) => `data-ed="${k}" data-cid="${c.id}" ${state.editMode?'contenteditable="true" spellcheck="false"':''}`;
   const val = (k, html) => (c.edits && c.edits[k] != null) ? c.edits[k] : html;
   const cls = k => (c.edits && c.edits[k] != null) ? 'edited' : '';
   return keys.map((key, idx) => {
     const item = content[key];
     const num = idx+1;
-    const title = item.key==='fixed' ? (c.levelName==='Wind' ? `${num}. PS 숙제` : `${num}. LF, FW, NS숙제`)
-                : item.key==='h5' ? `${num}. High 5 — High 5 Preview 미리 학습하고 수업에서 발표 준비하기`
+    const title = item.key==='fixed' ? (c.levelName==='Wind' ? `${num}. PS 숙제` : isGlobe(c) ? `${num}. GW, RA, AD${hasH5(c)?', High 5':''} 숙제 하기` : `${num}. LF, FW, NS숙제`)
+                : item.key==='h5' ? `${num}. High 5 — 알림장 기한에 맞춰 숙제하기`
                 : `${num}. CYJ Jr. Vocab Booster — 단어장 두 개씩 쓰기, Self-Test 두 개씩 풀고 담임 선생님께 제출`;
     return `
       <div class="drag-item" draggable="${state.editMode?'false':'true'}" data-key="${item.key}" data-cid="${c.id}">
