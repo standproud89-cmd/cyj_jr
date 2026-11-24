@@ -136,7 +136,11 @@
   document.getElementById('box-cs').onclick = () => { window.location.href = 'class-screen.html'; };
   document.getElementById('box-hb').onclick = () => { window.location.href = 'handbook-bank.html'; };
   document.getElementById('box-nm').onclick = () => { window.location.href = 'next-semester-message.html'; };
-  document.getElementById('box-ot').onclick = () => { window.location.href = 'ot-schedule.html'; };
+  // 신규 선생님 OT는 Tina 원장님(cyjdj00)·Hazel(cyjdj05) 계정에만 보임 — 바꾸려면 이 목록만 고치면 됨 (ot-schedule.html에도 같은 목록)
+  const OT_ACCESS = ['cyjdj00','cyjdj05'];
+  const otBox = document.getElementById('box-ot');
+  if(OT_ACCESS.includes(staffId)) otBox.onclick = () => { window.location.href = 'ot-schedule.html'; };
+  else otBox.remove();
   document.getElementById('box-mr').onclick = () => {
     window.location.href = 'monthly-report.html';
   };

@@ -166,6 +166,9 @@
 <script>
 const staffId = sessionStorage.getItem('staff_id');
 if(!staffId){ location.href = 'coupon-hub.html'; }
+/* 이 페이지는 Tina 원장님(cyjdj00)·Hazel(cyjdj05) 계정만 사용 (staff-home.html에도 같은 목록) */
+const OT_ACCESS = ['cyjdj00','cyjdj05'];
+if(staffId && !OT_ACCESS.includes(staffId)){ alert('신규 선생님 OT 스케쥴은 원장님과 담당 선생님 계정만 쓸 수 있어요.'); location.href = 'staff-home.html'; }
 
 /* ================= 2026 Fall Timetable (동작, 2026_03_29) =================
    반마다 [요일][교시] = '과목 선생님'. 화목(T)반은 화·목 같은 시간표.
