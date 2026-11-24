@@ -313,7 +313,7 @@
 /* ---------------- 상수 ---------------- */
 const WEEKDAYS = ['월','화','수','목','금'];
 const SUBJ = { FW:'Fiction & Writing', NS:'Non-fiction & Speaking', LF:'Language Framework', PS:'(Phonics & Speaking)' };
-const CAMPUS_FIXED = '정이조주니어(동작)'; // 캠퍼스는 동작으로 고정
+const CAMPUS_FIXED = '정이조주니어(동작)'; // 캠퍼스 기본값 (왼쪽에서 바꿀 수 있음)
 const CAMPUSES = [
   '정이조주니어영어학원(목동)',
   '정이조주니어(목2관)',
@@ -352,6 +352,7 @@ function autoTerm(){ const d=new Date(); d.setDate(d.getDate()+14); return [12,1
 const LS = 'cyj-homeroom-notice-v1';
 let state = {
   term: autoTerm(),
+  campus: CAMPUS_FIXED,
   teacherName: '',
   phone: '',
   editMode: false,
@@ -368,9 +369,9 @@ try{
 function persist(){ try{ const {editMode, ...rest} = state; localStorage.setItem(LS, JSON.stringify(rest)); }catch(e){} }
 /* 숙제 항목 규칙 (Discover·Miracle 동일)
    - Vocab Booster: Wind, Island 1·2는 없음
-   - High 5: Middle·Twilight 반(MM·MT·TT) 중 Nation·Globe만 있음 */
+   - High 5: Twilight 반(월수금 MT · 화목 TT) 중 Nation·Globe만 있음 */
 function hasVocab(c){ return !(c.levelName==='Wind' || (c.levelName==='Island' && ['1','2'].includes(c.levelNum))); }
-function hasH5(c){ return ['M','T'].includes(c.slot) && ['Nation','Globe'].includes(c.levelName); }
+function hasH5(c){ return c.slot==='T' && ['Nation','Globe'].includes(c.levelName); }
 const isBlank = v => !(v ?? '').toString().trim();
 const blankMark = label => `<span class="blank-mark">${label}</span>`;
 function classReady(c){ return !isBlank(c.levelName) && !isBlank(c.levelNum); }
@@ -458,6 +459,10 @@ function renderPanel(){
 
     <div class="section-title">담임 선생님 공통 정보</div>
     <div class="field">
+      <label>캠퍼스</label>
+      <select id="campusSel">${CAMPUSES.map(cp=>`<option value="${esc(cp)}" ${(state.campus||CAMPUS_FIXED)===cp?'selected':''}>${esc(cp)}</option>`).join('')}</select>
+    </div>
+    <div class="field">
       <label>선생님 이름 <span class="req-tag">* 필수</span></label>
       <input type="text" id="teacherName" class="${isBlank(state.teacherName)?'req-empty':''}" value="${esc(state.teacherName)}" placeholder="영문 이름">
     </div>
@@ -491,11 +496,12 @@ function renderPanel(){
 
   document.getElementById('teacherName').oninput = e => { state.teacherName = e.target.value; e.target.classList.toggle('req-empty', isBlank(e.target.value)); renderStage(); };
   document.getElementById('phone').oninput = e => { state.phone = e.target.value; e.target.classList.toggle('req-empty', isBlank(e.target.value)); renderStage(); };
+  document.getElementById('campusSel').onchange = e => { state.campus = e.target.value; renderStage(); };
   document.querySelectorAll('#termSeg [data-term]').forEach(b=>b.onclick=()=>{ state.term=b.dataset.term; renderAll(); });
   document.getElementById('resetAllBtn').onclick = () => {
     if(!confirm('입력한 내용과 직접 고친 안내문을 모두 지우고 처음부터 쓸까요?')) return;
     try{ localStorage.removeItem(LS); }catch(e){}
-    state = { term:autoTerm(), teacherName:'', phone:'', editMode:false, classes:[ mkClass('MWF','F','','','','','월') ] };
+    state = { term:autoTerm(), campus:CAMPUS_FIXED, teacherName:'', phone:'', editMode:false, classes:[ mkClass('MWF','F','','','','','월') ] };
     renderAll();
   };
   document.getElementById('incClass').onclick = () => {
@@ -621,7 +627,7 @@ function renderClassList(){
       ${(()=>{ const n=[];
           if(c.levelName==='Wind') n.push('Wind 반은 톡트리·Vocab Booster 안내가 빠져요.');
           else if(!hasVocab(c)) n.push('Island 1·2 반은 Vocab Booster 안내가 빠져요.');
-          if(hasH5(c)) n.push('Middle·Twilight Nation 이상 반이라 High 5 안내가 들어가요.');
+          if(hasH5(c)) n.push('Twilight(T) Nation 이상 반이라 High 5 안내가 들어가요.');
           return n.length ? `<div class="field" style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;">${n.join('<br>')}</div>` : ''; })()}
       ${!hasVocab(c) ? '' : `<div class="field">
         <label>Vocab Booster 제출 기한 요일</label>
@@ -749,7 +755,7 @@ function renderStage(){
 
         <div class="page-footer">
           <div class="footer-line"></div>
-          <div class="footer-campus">${esc(CAMPUS_FIXED)}</div>
+          <div class="footer-campus">${esc(state.campus || CAMPUS_FIXED)}</div>
         </div>
       </div>
     `;
