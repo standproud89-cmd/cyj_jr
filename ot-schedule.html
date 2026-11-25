@@ -63,7 +63,7 @@
     cursor:grab; display:flex; gap:6px; align-items:flex-start; user-select:none; }
   .tbox:active{ cursor:grabbing; }
   .tbox.sel{ outline:2px solid var(--blue); outline-offset:1px; background:var(--blue-soft); }
-  .tbox .txt{ flex:1; min-width:0; word-break:keep-all; }
+  .tbox .txt{ flex:1; min-width:0; word-break:keep-all; white-space:pre-line; }
   .tbox .who{ font-size:10.5px; color:var(--blue); font-weight:700; white-space:nowrap; }
   .tbox .ic{ border:none; background:none; cursor:pointer; color:var(--ink-soft); font-size:12px; padding:0 2px; line-height:1.4; }
   .tray-empty{ font-size:11.5px; color:var(--ink-soft); text-align:center; padding:10px 0; }
@@ -113,9 +113,10 @@
   table.ot td{ border:1px solid #CFD4D2; padding:5px 7px; vertical-align:middle; line-height:1.45; }
   td.day{ background:#F4F5F4; font-weight:800; text-align:center; font-size:13px; }
   td.day small{ display:block; font-weight:600; color:#666; font-size:11px; margin-top:2px; }
-  td.time{ text-align:center; font-variant-numeric:tabular-nums; white-space:nowrap; color:#333; }
+  td.time{ text-align:center; white-space:nowrap; color:#333; }
   td.time.h5{ color:#9B2C4E; font-weight:700; }
   td.who{ text-align:center; font-size:11.5px; color:#333; }
+  td.room{ text-align:center; font-weight:700; color:#B3261E; white-space:nowrap; }
   td.who select{ width:100%; font-family:inherit; font-size:11.5px; padding:3px 2px; border:1px solid #CBD7EC; border-radius:6px; background:#F7FAFF; color:#1C2321; cursor:pointer; }
   td.who select + select{ margin-top:4px; }
   td.slot{ min-height:26px; }
@@ -124,7 +125,15 @@
   td.slot.can:hover{ background:#F7FAFF; }
   .it{ display:flex; gap:6px; align-items:flex-start; }
   .it + .it{ margin-top:4px; padding-top:4px; border-top:1px dotted #D5D9D7; }
-  .it .tx{ flex:1; min-width:0; word-break:keep-all; }
+  .it .tx{ flex:1; min-width:0; word-break:keep-all; white-space:pre-line; }
+  /* 오른쪽 위 한국인 / 원어민 전환 */
+  .mode-bar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .mode-bar .ttl{ font-weight:800; font-size:17px; }
+  .mode-bar .sub{ font-size:12.5px; color:var(--ink-soft); }
+  .mode-tg{ margin-left:auto; display:inline-flex; background:#fff; border:1px solid var(--line); border-radius:24px; padding:4px; box-shadow:0 1px 6px rgba(0,0,0,.05); }
+  .mode-tg button{ border:none; background:transparent; border-radius:20px; padding:9px 18px; font-family:inherit; font-size:13.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
+  .mode-tg button.on{ background:var(--ink); color:#fff; }
+  .mode-tg button.on.en{ background:var(--blue); }
   .it.obs .tx{ color:#B3261E; font-weight:700; }
   .it.train{ cursor:grab; }
   .it .rm{ border:none; background:none; color:#999; cursor:pointer; font-size:12px; padding:0 2px; }
@@ -166,8 +175,8 @@
 <script>
 const staffId = sessionStorage.getItem('staff_id');
 if(!staffId){ location.href = 'coupon-hub.html'; }
-/* 이 페이지는 Tina 원장님(cyjdj00)·Hazel(cyjdj05) 계정만 사용 (staff-home.html에도 같은 목록) */
-const OT_ACCESS = ['cyjdj00','cyjdj05'];
+/* 이 페이지는 Tina 원장님(cyjdj00)·Ryan(cyjdj02, 대표)·Hazel(cyjdj05) 계정만 사용 (staff-home.html에도 같은 목록) */
+const OT_ACCESS = ['cyjdj00','cyjdj02','cyjdj05'];
 if(staffId && !OT_ACCESS.includes(staffId)){ alert('신규 선생님 OT 스케쥴은 원장님과 담당 선생님 계정만 쓸 수 있어요.'); location.href = 'staff-home.html'; }
 
 /* ================= 2026 Fall Timetable (동작, 2026_03_29) =================
@@ -230,8 +239,30 @@ const TT = [
 /* 요일별 고정 안내 (선택 사항이 아닌 정보 줄) */
 const DAY_INFO = { 3:['7:30~8:10 멘토링 (2번 강의실 · Hazel)','7:30~8:10 문법코칭 (8번 강의실 · Cathy)'], 4:['7:50~8:30 멘토링 (8번 강의실 · Rachel)'] };
 
-/* 교육 박스 담당으로 고를 수 있는 선생님 (Ella·Kay·Tiaan 제외) */
-const TRAINERS = ['Hazel','Swan','Rachel','Ryan','Cathy','Justin','Mark'];
+/* 교육 박스 담당으로 고를 수 있는 선생님
+   - 한국인 OT: Ella·Kay·Tiaan 제외
+   - 원어민 OT: 원어민 선생님과 Tina 원장님도 포함 */
+const TRAINERS_KO = ['Hazel','Swan','Rachel','Ryan','Cathy','Justin','Mark'];
+const TRAINERS_EN = ['Tina','Hazel','Kay','Ella','Tiaan','Cathy','Swan','Rachel','Ryan','Justin','Mark'];
+const whoLabel = n => n==='Tina' ? 'Tina D.' : `${n} T.`;
+/* 원어민 OT 기본 교육 박스 (Robin T. Orientation Schedule 기준) — [내용, 담당] */
+const DEFAULT_BOXES_EN = [
+  ['School tour & Introductions & Orientation Schedule & Intro-Teachers Manual & Expectations','Tina'],
+  ['Install\na. Install Pot Encoder\nb. Install printer driver\nc. Install HiWorks\nd. Install LeapFTP\ne. Install codecs for website\nf. Install Zoom','Hazel'],
+  ['Computer preparation\nCheck Microsoft Office\nA quick guide to get Settled in Korea!','Hazel'],
+  ['Printer(Print Tests), copier, projector, AC, S room (Board markers & other instructional materials)','Cathy'],
+  ['Daily Schedule\na. Log in to CYJ Jr. LMS\nb. Set \'마이메뉴 (My Menu)\'\nc. Getting paystubs','Cathy'],
+  ['Q&A','Hazel'],
+  ['SPK T & SPK T Result\nChecking attendance (online & clipboards)\nAdministering tests\nInputting scores\nFolders','Kay'],
+  ['Recording UCCs & Uploading UCCs (general)\nMonthly Vocab Booster & Best List','Kay'],
+  ['Work Allotment\na. Making class materials\nb. Uploading to file server\nc. Error correction','Kay'],
+  ['Relay class related information (CYJ Jr. Curriculum & Schedule (Time Table))\nChecking Speaking & Writing/ Journal\nChecking Vocab Booster Self Tests\nSaturday Classes: Talk Talk/ We Can Class/ Market Day, Spelling Bee, Halloween','Ella'],
+  ['FW & NS OT\na. Test-making overview & instructions\nb. PPT overview & instructions','Tiaan'],
+  ['Download Day 1 PPT & Prepare for Day 1 & Prepare Teaching Demo','Tiaan'],
+  ['Teaching Demo & Turn in written Self-introduction + History of education','Tina'],
+  ['break','']
+];
+const DAY_INFO_EN = { 3:['19:30-20:10 Mentoring (Room 2 · Hazel)','19:30-20:10 Grammar Coaching (Room 8 · Cathy)'], 4:['19:50-20:30 Mentoring (Room 8 · Rachel)'] };
 /* 꼭 들어야 하는 청강 */
 const REQS = [
   { key:'W-PS', stage:'W', name:'Wind · PS' },
@@ -311,10 +342,10 @@ function defaultState(){
   const d = new Date(); const dates=[];
   while(dates.length<3){ d.setDate(d.getDate()+1); if(d.getDay()>=1 && d.getDay()<=5) dates.push(isoOf(d)); }
   return {
-    teacher:'Chloe', trainer:'Hazel 과장님', phone:'', campus:'동작',
+    teacher: EN() ? '' : 'Chloe', trainer: EN() ? 'Hazel T.' : 'Hazel 과장님', phone:'', campus:'동작',
     dates,
     obs:{},          // `${iso}|${slotId}` -> option
-    boxes: DEFAULT_BOXES.map((t,i)=>({ id:'b'+i, text:t, who:'' })),
+    boxes: EN() ? DEFAULT_BOXES_EN.map(([t,w],i)=>({ id:'e'+i, text:t, who:w })) : DEFAULT_BOXES.map((t,i)=>({ id:'b'+i, text:t, who:'' })),
     place:{},        // boxId -> `${iso}|${slotId}`  (없으면 대기함)
     activeDate:'',   // 지금 청강을 고르는 날
     showSeen:false
@@ -323,9 +354,17 @@ function defaultState(){
 function isoOf(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function dowOf(iso){ return new Date(iso+'T00:00:00').getDay(); }
 function mdw(iso){ const d=new Date(iso+'T00:00:00'); return `${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]})`; }
-let state; try{ state = JSON.parse(localStorage.getItem(LS)||'null'); }catch(e){}
-if(!state || !state.boxes) state = defaultState();
-function persist(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+/* 한국인(ko) / 원어민(en) OT — 규칙과 레이아웃은 같고 일정표만 영어. 일정은 따로 저장돼요. */
+const MODE_LS = 'cyj-staff-ot-mode';
+let MODE = 'ko'; try{ MODE = localStorage.getItem(MODE_LS)==='en' ? 'en' : 'ko'; }catch(e){}
+const EN = () => MODE==='en';
+const LSK = () => EN() ? LS+'-en' : LS;
+const TRAINERS_NOW = () => EN() ? TRAINERS_EN : TRAINERS_KO;
+function loadState(){ let st=null; try{ st = JSON.parse(localStorage.getItem(LSK())||'null'); }catch(e){} return (st && st.boxes) ? st : defaultState(); }
+let state = loadState();
+function persist(){ try{ localStorage.setItem(LSK(), JSON.stringify(state)); }catch(e){} }
+function setMode(m){ if(m===MODE) return; MODE=m; try{ localStorage.setItem(MODE_LS, m); }catch(e){} selBox=null; state=loadState(); cleanup(); renderAll();
+  toast(EN() ? '원어민 OT 스케쥴 (영어로 출력)' : '한국인 선생님 OT 스케쥴'); }
 let selBox = null;
 let EXPORT = false;   // 저장·인쇄할 때는 빈 추가 줄과 편집 표시를 빼고 그려요   // 클릭으로 옮길 때 고른 박스
 
@@ -335,15 +374,28 @@ function toast(t){ const el=document.getElementById('toast'); el.textContent=t; 
 function validDates(){ return [...new Set(state.dates.filter(x=>x && [1,2,3,4,5].includes(dowOf(x))))].sort(); }
 function covered(){ const s={}; Object.values(state.obs).forEach(o=>{ s[o.key]=o; }); return s; }
 function seenLevels(){ return new Set(Object.values(state.obs).map(o=>o.level)); }
-function obsText(o){ return `청강: ${o.sub==='High 5'?'High 5':o.sub.replace(/\d$/,'')}, ${o.code}, ${o.room}번 강의실`; }
+function obsText(o){ const sub = o.sub==='High 5' ? 'High 5' : o.sub.replace(/\d$/,'');
+  return EN() ? `★Class Observation: ${sub}, ${o.code}` : `청강: ${sub}, ${o.code}`; }
+/* 강의실은 시간 옆 칸에 따로 */
+/* 연락처 줄: 담당 1명 또는 2명 (담당 2는 이름이나 번호가 있을 때만) */
+function contactLine(){
+  const one = (n,ph) => `${esc(n||'')}${ph?` - ${esc(ph)}`:''}`;
+  const parts = [one(state.trainer, state.phone)];
+  if((state.trainer2||'').trim() || (state.phone2||'').trim()) parts.push(one(state.trainer2, state.phone2));
+  return parts.join(' &nbsp;·&nbsp; ');
+}
+function roomText(o){ return EN() ? `Room ${o.room}` : `${o.room}번`; }
+/* 원어민 일정표는 24시간 표기 (3:10~3:50 → 15:10-15:50) */
+function timeOut(t){ if(!EN()) return t; return t.split('~').map(x=>{ const [h,m]=x.split(':').map(Number); return `${h<12?h+12:h}:${String(m).padStart(2,'0')}`; }).join('-'); }
 function boxesAt(cell){ return state.boxes.filter(b=>state.place[b.id]===cell); }
 function trainerShort(){ return (state.trainer||'').split(/\s/)[0]; }
 /* 박스 담당: 따로 고른 선생님 → 없으면 트레이닝 담당 이름 */
-function boxWho(b){ return (b.who || trainerShort() || '').replace(/\s*과장님|\s*T\.?$/,'').trim(); }
+function boxWho(b){ return (b.who || trainerShort() || '').replace(/\s*과장님|\s*T\.?$|\s*D\.?$/,'').trim(); }
 function whoOptions(cur, withDefault){
-  const list = TRAINERS.includes(cur) || !cur ? TRAINERS : [cur, ...TRAINERS];
+  const T = TRAINERS_NOW();
+  const list = T.includes(cur) || !cur ? T : [cur, ...T];
   return (withDefault ? `<option value="" ${!cur?'selected':''}>트레이닝 담당 (${esc(trainerShort()||'-')})</option>` : '')
-    + list.map(t=>`<option value="${esc(t)}" ${t===cur?'selected':''}>${esc(t)} T.</option>`).join('');
+    + list.map(t=>`<option value="${esc(t)}" ${t===cur?'selected':''}>${esc(whoLabel(t))}</option>`).join('');
 }
 function whoSelect(b){ return `<select data-who="${b.id}" title="담당 선생님">${whoOptions(boxWho(b), false)}</select>`; }
 
@@ -388,6 +440,10 @@ function renderPanel(){
       <div class="field"><label>트레이닝 담당</label><input id="fTrainer" value="${esc(state.trainer)}" placeholder="Hazel 과장님"></div>
       <div class="field"><label>연락처</label><input id="fPhone" value="${esc(state.phone)}" placeholder="010-0000-0000"></div>
     </div>
+    <div class="row2">
+      <div class="field"><label>담당 2 <small style="font-weight:500;">(선택)</small></label><input id="fTrainer2" value="${esc(state.trainer2||'')}" placeholder="${EN()?'Tina D.':'Tina 원장님'}"></div>
+      <div class="field"><label>연락처 2</label><input id="fPhone2" value="${esc(state.phone2||'')}" placeholder="010-0000-0000"></div>
+    </div>
 
     <div class="section-title">OT 날짜 (평일 · 최대 5일)</div>
     <div id="dates">${state.dates.map((d,i)=>{ const w=d?dowOf(d):-1; const bad = d && !(w>=1&&w<=5);
@@ -414,7 +470,7 @@ function renderPanel(){
     <div class="note" style="margin-top:8px;">💾 만들던 일정은 이 노트북에 자동 저장돼요.</div>
   `;
   const bind=(id,k)=>{ document.getElementById(id).oninput=e=>{ state[k]=e.target.value; persist(); renderStage(); }; };
-  bind('fTeacher','teacher'); bind('fTrainer','trainer'); bind('fPhone','phone');
+  bind('fTeacher','teacher'); bind('fTrainer','trainer'); bind('fPhone','phone'); bind('fTrainer2','trainer2'); bind('fPhone2','phone2');
   p.querySelectorAll('[data-di]').forEach(inp=>inp.onchange=()=>{ state.dates[+inp.dataset.di]=inp.value; if(inp.value && [1,2,3,4,5].includes(dowOf(inp.value))) state.activeDate=inp.value; cleanup(); persist(); renderAll(); });
   p.querySelectorAll('[data-dpick]').forEach(b=>b.onclick=()=>{ state.activeDate=b.dataset.dpick; persist(); renderAll(); });
   p.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{ state.dates.splice(+b.dataset.dx,1); cleanup(); persist(); renderAll(); });
@@ -463,6 +519,11 @@ function renderStage(){
   }).join('');
 
   stage.innerHTML = `
+    <div class="mode-bar no-print">
+      <span class="ttl">${EN() ? '🌏 원어민 선생님 OT' : '🧑‍🏫 한국인 선생님 OT'}</span>
+      <span class="sub">${EN() ? '규칙은 같고, 일정표는 영어로 나와요' : '청강을 고르고 교육 박스를 배치하세요'}</span>
+      <div class="mode-tg"><button data-mode="ko" class="${EN()?'':'on'}">한국인 선생님</button><button data-mode="en" class="en ${EN()?'on':''}">원어민 선생님</button></div>
+    </div>
     <div class="card no-print">
       <div class="card-title">필수 청강 고르기 ${act?`<span style="font-size:13px;color:var(--ink-soft);font-weight:700;">· ${mdw(act)}</span>`:''}
         <label class="toggle" style="margin-left:auto;"><input type="checkbox" id="showSeen" ${state.showSeen?'checked':''}> 다 들은 과목도 후보 보기</label></div>
@@ -478,6 +539,7 @@ function renderStage(){
   const optMap = Object.fromEntries(allOpts.map(o=>[o.id,o]));
   stage.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>pickObs(optMap[b.dataset.opt]));
   stage.querySelectorAll('[data-unobs]').forEach(b=>b.onclick=()=>removeObs(b.dataset.unobs));
+  stage.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
   stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ state.activeDate=b.dataset.tab; persist(); renderAll(); });
   document.getElementById('showSeen').onchange=e=>{ state.showSeen=e.target.checked; persist(); renderStage(); };
   bindBoxes(stage);
@@ -493,31 +555,35 @@ function renderPages(dates){
   const chunks=[]; for(let i=0;i<dates.length;i+=3) chunks.push(dates.slice(i,i+3));
   return chunks.map((ch,pi)=>`
     <div class="page" id="page-${pi}">
-      ${pi===0 ? `<div class="doc-title">신규강사 OT 일정 - ${esc(state.teacher||'○○')} T.</div>
-      <div class="doc-sub">트레이닝 담당: ${esc(state.campus)} ${esc(state.trainer||'')}${state.phone?` - ${esc(state.phone)}`:''} &nbsp;<b>늦거나 무슨 일 있으면 꼭! 연락주세요.</b></div>`
-      : `<div class="doc-title" style="font-size:16px;">신규강사 OT 일정 - ${esc(state.teacher||'○○')} T. (이어서)</div>`}
+      ${EN()
+        ? (pi===0 ? `<div class="doc-title">Orientation Schedule - ${esc(state.teacher||'○○')} T.</div>
+      <div class="doc-sub">${contactLine()} &nbsp;<b>Please call if you're running late or if anything comes up!</b></div>`
+          : `<div class="doc-title" style="font-size:16px;">Orientation Schedule - ${esc(state.teacher||'○○')} T. (cont.)</div>`)
+        : (pi===0 ? `<div class="doc-title">신규강사 OT 일정 - ${esc(state.teacher||'○○')} T.</div>
+      <div class="doc-sub">트레이닝 담당: ${esc(state.campus)} ${contactLine()} &nbsp;<b>늦거나 무슨 일 있으면 꼭! 연락주세요.</b></div>`
+          : `<div class="doc-title" style="font-size:16px;">신규강사 OT 일정 - ${esc(state.teacher||'○○')} T. (이어서)</div>`)}
       <table class="ot">
-        <colgroup><col style="width:92px"><col style="width:92px"><col><col style="width:84px"></colgroup>
-        <thead><tr><th>날짜</th><th>시간</th><th>내용</th><th>담당</th></tr></thead>
+        <colgroup><col style="width:80px"><col style="width:92px"><col style="width:62px"><col><col style="width:84px"></colgroup>
+        <thead><tr>${EN() ? '<th>Date</th><th>Time</th><th>Room</th><th>Schedule</th><th>In charge</th>' : '<th>날짜</th><th>시간</th><th>강의실</th><th>내용</th><th>담당</th>'}</tr></thead>
         <tbody>${ch.map(dayRows).join('')}</tbody>
       </table>
     </div>`).join('');
 }
 function dayRows(iso){
-  const dow=dowOf(iso), slots=slotsFor(dow), info=DAY_INFO[dow]||[];
+  const dow=dowOf(iso), slots=slotsFor(dow), info=(EN()?DAY_INFO_EN:DAY_INFO)[dow]||[];
   const d=new Date(iso+'T00:00:00');
   const rows = slots.map(s=>{
     const cell=`${iso}|${s.id}`, o=state.obs[cell], bx=boxesAt(cell);
     const blank = !o && !bx.length;
-    let content, who='';
-    if(o){ content=`<div class="it obs"><span class="tx">${esc(obsText(o))}</span><button class="rm" data-unobs="${cell}" title="청강 빼기">✕</button></div>`; who=`${esc(o.teacher)} T.`; }
+    let content, who='', room='';
+    if(o){ content=`<div class="it obs"><span class="tx">${esc(obsText(o))}</span><button class="rm" data-unobs="${cell}" title="청강 빼기">✕</button></div>`; who=`${esc(o.teacher)} T.`; room=esc(roomText(o)); }
     else if(bx.length){ content=bx.map(b=>boxHtml(b,true)).join('');
-      who = EXPORT ? [...new Set(bx.map(boxWho).filter(Boolean))].map(w=>esc(w)+' T.').join('<br>')
+      who = EXPORT ? [...new Set(bx.map(boxWho).filter(Boolean))].map(w=>esc(whoLabel(w))).join('<br>')
                    : bx.map(b=>whoSelect(b)).join(''); }
     else content= EXPORT ? '' : `<span class="empty-hint">${selBox?'여기를 눌러 넣기':'비어 있음'}</span>`;
-    return { html:`<td class="time ${s.h5?'h5':''}">${s.h5?'High 5<br>':''}${s.time}</td><td class="slot can" data-drop="${cell}">${content}</td><td class="who">${who}</td>`, cls:`${s.extra?'extra':''} ${blank?'blank':''}` };
+    return { html:`<td class="time ${s.h5?'h5':''}">${s.h5?'High 5<br>':''}${timeOut(s.time)}</td><td class="room">${room}</td><td class="slot can" data-drop="${cell}">${content}</td><td class="who">${who}</td>`, cls:`${s.extra?'extra':''} ${blank?'blank':''}` };
   });
-  const infoRows = info.map(t=>({ html:`<td class="time">ⓘ</td><td colspan="2">${esc(t)}</td>`, cls:'info-row extra blank' }));
+  const infoRows = info.map(t=>({ html:`<td class="time">ⓘ</td><td colspan="3">${esc(t)}</td>`, cls:'info-row extra blank' }));
   let all = rows.concat(infoRows);
   if(EXPORT) all = all.filter(r=>!(r.cls.includes('extra') && r.cls.includes('blank')));
   const actCls = (!EXPORT && iso===state.activeDate) ? ' active-day' : '';
@@ -573,7 +639,7 @@ function confirmBox(msg, ok){
 }
 
 /* ================= 인쇄 · 이미지 · PDF ================= */
-function fileBase(){ return `신규강사OT_${(state.teacher||'선생님').replace(/[\\/:*?"<>|\s]/g,'')}`; }
+function fileBase(){ const n=(state.teacher||(EN()?'Teacher':'선생님')).replace(/[\\/:*?"<>|\s]/g,''); return EN() ? `OT_Schedule_${n}` : `신규강사OT_${n}`; }
 function doPrint(){ window.print(); }
 window.addEventListener('beforeprint',()=>{ selBox=null; EXPORT=true; renderStage(); document.getElementById('pages').classList.add('exporting'); });
 window.addEventListener('afterprint',()=>{ EXPORT=false; renderStage(); });
