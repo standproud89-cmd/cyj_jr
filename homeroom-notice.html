@@ -297,6 +297,14 @@
   .exporting [data-ed]{ outline:none !important; background:none !important; box-shadow:none !important; }
   @media print{
     .edit-bar{ display:none !important; }
+
+    /* 인쇄: 브라우저 머리글·바닥글 없이 A4 한 장에 꽉 차게 */
+    @page{ size:A4; margin:0; }
+    html, body{ margin:0 !important; padding:0 !important; background:#fff !important; }
+    .app{ display:block !important; min-height:0 !important; }
+    .stage{ display:block !important; padding:0 !important; margin:0 !important; gap:0 !important; }
+    .page{ width:210mm !important; height:297mm !important; min-height:297mm !important; max-height:297mm !important; overflow:hidden; margin:0 !important; box-shadow:none !important; break-after:page; page-break-after:always; }
+    .page:last-child{ break-after:auto; page-break-after:auto; }
     [data-ed]{ outline:none !important; background:none !important; box-shadow:none !important; }
     .panel{ display:none; }
     .stage{ padding:0; gap:0; }
