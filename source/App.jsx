@@ -1262,8 +1262,9 @@ function RQQuestion({ q, onAnswer, locked }) {
 /* ---------- 메인 ---------- */
 function ReviewQuiz() {
   const [store, setStore] = useState(rqLoad);
-  const initial = store.classes[store.last] || {};
-  const [className, setClassName] = useState(store.last || "");
+  // 처음 열면: 쓰던 초안 → 없으면 마지막으로 저장한 반
+  const initial = store.draft || store.classes[store.last] || {};
+  const [className, setClassName] = useState(store.draft ? (store.draft.className || "") : (store.last || ""));
   const [studentsText, setStudentsText] = useState(initial.students || "");
   const [enabled, setEnabled] = useState(initial.enabled || { unscramble: true, sentence: true, choice: true, fill: true, dictation: true, listen: true, fix: true, order: true });
   const [texts, setTexts] = useState(initial.texts || Object.fromEntries(RQ_TYPES.map((t) => [t.key, t.sample])));
@@ -1319,21 +1320,28 @@ function ReviewQuiz() {
   const counts = useMemo(() => Object.fromEntries(RQ_TYPES.map((t) => [t.key, rqBuild(t.key, texts[t.key]).length])), [texts]);
   const total = RQ_TYPES.reduce((n, t) => n + (enabled[t.key] ? counts[t.key] : 0), 0);
 
-  // 반별 저장
-  const persistClass = (name, patch) => {
-    if (!name.trim()) return;
-    const cur = { students: studentsText, enabled, texts, mix, ...patch };
-    const next = { last: name, classes: { ...store.classes, [name]: cur } };
-    setStore(next); rqSave(next);
+  // 입력 중에는 '초안'으로만 저장 (반 목록은 안 생김) — 나갔다 와도 그대로
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setStore((st) => { const next = { ...st, draft: { className, students: studentsText, enabled, texts, mix } }; rqSave(next); return next; });
+    }, 400);
+    return () => clearTimeout(id);
+  }, [className, studentsText, enabled, texts, mix]);
+  // 반 목록에 저장: 시작하기 또는 [반 저장]을 눌렀을 때만
+  const [savedFlash, setSavedFlash] = useState(false);
+  const saveClass = () => {
+    const name = className.trim();
+    if (!name) { setSetupMsg("반 이름을 먼저 적어주세요."); return false; }
+    setStore((st) => { const next = { ...st, last: name, classes: { ...st.classes, [name]: { students: studentsText, enabled, texts, mix } } }; rqSave(next); return next; });
+    setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1500);
+    return true;
   };
-  useEffect(() => { const id = setTimeout(() => persistClass(className), 400); return () => clearTimeout(id); }, [className, studentsText, enabled, texts, mix]);
   const loadClass = (name) => {
     const c = store.classes[name]; setClassName(name);
     if (c) { setStudentsText(c.students || ""); setEnabled(c.enabled || enabled); setTexts(c.texts || texts); setMix(c.mix ?? false); }
   };
   const deleteClass = (name) => {
-    const classes = { ...store.classes }; delete classes[name];
-    const next = { last: store.last === name ? "" : store.last, classes }; setStore(next); rqSave(next);
+    setStore((st) => { const classes = { ...st.classes }; delete classes[name]; const next = { ...st, last: st.last === name ? "" : st.last, classes }; rqSave(next); return next; });
   };
 
   const reshuffle = (prevLast) => {
@@ -1345,6 +1353,7 @@ function ReviewQuiz() {
     if (!students.length) { setSetupMsg("학생 이름을 한 명 이상 적어주세요."); return; }
     if (!total) { setSetupMsg("켜진 유형에 문제가 없어요. 문제를 적거나 유형을 켜주세요."); return; }
     setSetupMsg("");
+    if (className.trim()) saveClass();   // 시작하면 이 반을 목록에 저장
     let qs = [];
     RQ_TYPES.forEach((t) => { if (enabled[t.key]) qs = qs.concat(rqBuild(t.key, texts[t.key])); });
     if (mix) qs = shuffleArray(qs);
@@ -1415,7 +1424,11 @@ function ReviewQuiz() {
                     ))}
                   </div>
                 )}
-                <p className="text-xs mt-2" style={{ color: C.sub }}>반 이름별로 명단과 문제가 이 기기에 저장돼요.</p>
+                <div className="flex items-center gap-2 mt-3">
+                  <button onClick={saveClass} className="text-sm font-bold px-3 py-1.5 rounded-full" style={{ color: C.blue, border: `1.5px solid ${C.blue}` }}>💾 반 저장</button>
+                  {savedFlash && <span className="text-sm font-bold" style={{ color: "#1E6B3A" }}>저장했어요</span>}
+                </div>
+                <p className="text-xs mt-2" style={{ color: C.sub }}>반 이름을 다 적은 뒤 [반 저장]이나 [시작하기]를 누르면 반 목록에 저장돼요. 저장된 반을 누르면 명단과 문제를 불러와요.</p>
               </div>
               <div className="rounded-2xl p-5" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
                 <label className="block text-sm font-black mb-2" style={{ color: C.sub }}>학생 명단 <span style={{ color: C.blue }}>({students.length}명)</span></label>
