@@ -976,6 +976,82 @@ function rqSpeak(text, slow) {
   } catch (e) { return false; }
 }
 
+/* 정답·오답 소리 (예전 퀴즈에서 정한 소리: 정답 = 띠링 3음, 오답 = 낮은 부저) */
+let rqAudio = null;
+function rqTone(freq, start, dur, type, vol) {
+  try {
+    if (!rqAudio) { const AC = window.AudioContext || window.webkitAudioContext; rqAudio = new AC(); }
+    const ctx = rqAudio; ctx.resume && ctx.resume().catch(() => {});
+    const t0 = ctx.currentTime + start;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+  } catch (e) { /* 소리 안 나는 기기 */ }
+}
+const rqCorrectSound = () => { rqTone(988, 0, 0.08, "square", 0.15); rqTone(1319, 0.06, 0.08, "square", 0.15); rqTone(1568, 0.12, 0.18, "square", 0.15); };
+const rqWrongSound = () => { rqTone(180, 0, 0.35, "sawtooth", 0.18); };
+
+/* 진행 화면 고정: 정해진 크기를 창 크기에 맞춰 축소 — 문제 내용이 바뀌어도 크기 그대로 */
+function RQStage({ width = 1500, height = 860, children }) {
+  const outer = useRef(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const fit = () => { const el = outer.current; if (!el) return; setScale(Math.min(el.clientWidth / width, el.clientHeight / height)); };
+    fit();
+    const ro = new ResizeObserver(fit); if (outer.current) ro.observe(outer.current);
+    window.addEventListener("resize", fit);
+    return () => { ro.disconnect(); window.removeEventListener("resize", fit); };
+  }, [width, height]);
+  return (
+    <div ref={outer} className="w-full h-full flex items-center justify-center overflow-hidden">
+      <div style={{ width, height, flex: "0 0 auto", transform: `scale(${scale})`, transformOrigin: "center center", overflow: "hidden" }}>{children}</div>
+    </div>
+  );
+}
+
+/* 게임 중 잠금: 우클릭·더블클릭/두 번 탭 확대·두 손가락 확대·Ctrl+휠 확대·동시 터치·끌기 막기 */
+function useKioskLock(on) {
+  useEffect(() => {
+    if (!on) return;
+    const stop = (e) => { e.preventDefault(); };
+    const multi = (e) => { if (e.touches && e.touches.length > 1) { e.preventDefault(); e.stopPropagation(); } };
+    const wheel = (e) => { if (e.ctrlKey) e.preventDefault(); };
+    const keys = (e) => { if ((e.ctrlKey || e.metaKey) && ["+", "-", "=", "0"].includes(e.key)) e.preventDefault(); };
+    let lastTouch = 0;
+    const dblTap = (e) => { const now = Date.now(); if (now - lastTouch < 350) e.preventDefault(); lastTouch = now; };
+    const opts = { passive: false, capture: true };
+    document.addEventListener("contextmenu", stop);
+    document.addEventListener("dblclick", stop);
+    document.addEventListener("gesturestart", stop);
+    document.addEventListener("gesturechange", stop);
+    document.addEventListener("selectstart", stop);
+    document.addEventListener("dragstart", stop);
+    document.addEventListener("touchstart", multi, opts);
+    document.addEventListener("touchmove", multi, opts);
+    document.addEventListener("touchend", dblTap, { passive: false });
+    document.addEventListener("wheel", wheel, { passive: false });
+    document.addEventListener("keydown", keys);
+    const b = document.body.style;
+    const prev = [b.touchAction, b.userSelect, b.webkitUserSelect, b.webkitTouchCallout];
+    b.touchAction = "manipulation"; b.userSelect = "none"; b.webkitUserSelect = "none"; b.webkitTouchCallout = "none";
+    return () => {
+      document.removeEventListener("contextmenu", stop);
+      document.removeEventListener("dblclick", stop);
+      document.removeEventListener("gesturestart", stop);
+      document.removeEventListener("gesturechange", stop);
+      document.removeEventListener("selectstart", stop);
+      document.removeEventListener("dragstart", stop);
+      document.removeEventListener("touchstart", multi, opts);
+      document.removeEventListener("touchmove", multi, opts);
+      document.removeEventListener("touchend", dblTap);
+      document.removeEventListener("wheel", wheel);
+      document.removeEventListener("keydown", keys);
+      [b.touchAction, b.userSelect, b.webkitUserSelect, b.webkitTouchCallout] = prev;
+    };
+  }, [on]);
+}
+
 /* 화면 키보드 (터치 TV용) */
 function RQKeyboard({ value, onChange, onSubmit, color }) {
   const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
@@ -1195,6 +1271,7 @@ function ReviewQuiz() {
   const [setupMsg, setSetupMsg] = useState("");
   const [pptMsg, setPptMsg] = useState(null); // { ok, text, empty:[] }
   const [maxPer, setMaxPer] = useState(4);
+  const [ppt, setPpt] = useState(null);        // { name, slides, before:{texts, enabled} } — 이 화면에서만 기억
   const [pptOver, setPptOver] = useState(false);
   const pptInput = useRef(null);
 
@@ -1205,15 +1282,25 @@ function ReviewQuiz() {
     setPptMsg({ ok: true, text: "PPT 읽는 중..." });
     try {
       const slides = await readPptx(await file.arrayBuffer(), (x) => new DOMParser().parseFromString(x, "application/xml"));
-      const r = generateFromSlides(slides, maxPer);
-      const nt = { ...texts }, ne = { ...enabled }, empty = [];
-      RQ_TYPES.forEach((t) => { const v = r.texts[t.key] || ""; nt[t.key] = v; ne[t.key] = !!v.trim(); if (!v.trim()) empty.push(t.label); });
-      setTexts(nt); setEnabled(ne);
-      const n = RQ_TYPES.reduce((a, t) => a + rqBuild(t.key, nt[t.key]).length, 0);
-      setPptMsg({ ok: n > 0, text: n > 0
-        ? `${file.name} → 오늘 수업 슬라이드 ${r.summary.today}장에서 단어 ${r.summary.vocab}개, 문장 ${r.summary.sentences}개를 찾아 ${n}문제를 만들었어요. 아래에서 훑어보고 고친 뒤 시작하세요.`
-        : `${file.name}에서 문제로 만들 내용을 찾지 못했어요. 문제를 직접 적어주세요.`, empty });
+      const before = ppt ? ppt.before : { texts, enabled };   // 지우면 PPT 넣기 전으로 돌아가게
+      setPpt({ name: file.name, slides, before });
+      applyPpt(slides, maxPer);
     } catch (e) { setPptMsg({ ok: false, text: "PPT를 읽지 못했어요: " + e.message }); }
+  };
+  const applyPpt = (slides, n) => {
+    const r = generateFromSlides(slides, n);
+    const nt = { ...texts }, ne = { ...enabled }, empty = [];
+    RQ_TYPES.forEach((t) => { const v = r.texts[t.key] || ""; nt[t.key] = v; ne[t.key] = !!v.trim(); if (!v.trim()) empty.push(t.label); });
+    setTexts(nt); setEnabled(ne);
+    const total2 = RQ_TYPES.reduce((a, t) => a + rqBuild(t.key, nt[t.key]).length, 0);
+    setPptMsg({ ok: total2 > 0, text: total2 > 0
+      ? `오늘 수업 슬라이드 ${r.summary.today}장에서 단어 ${r.summary.vocab}개, 문장 ${r.summary.sentences}개를 찾아 ${total2}문제를 만들었어요. 아래에서 훑어보고 고친 뒤 시작하세요.`
+      : `이 PPT에서 문제로 만들 내용을 찾지 못했어요. 문제를 직접 적어주세요.`, empty });
+  };
+  const changeMaxPer = (n) => { setMaxPer(n); if (ppt) applyPpt(ppt.slides, n); };   // 문제 수 바꾸면 그 수대로 다시 뽑기
+  const removePpt = () => {
+    if (ppt) { setTexts(ppt.before.texts); setEnabled(ppt.before.enabled); }
+    setPpt(null); setPptMsg(null);
   };
 
   const [phase, setPhase] = useState("setup"); // setup | play | end
@@ -1227,6 +1314,7 @@ function ReviewQuiz() {
   const [qKey, setQKey] = useState(0);
 
   const students = useMemo(() => [...new Set(rqLines(studentsText))], [studentsText]);
+  useKioskLock(phase !== "setup");
   const counts = useMemo(() => Object.fromEntries(RQ_TYPES.map((t) => [t.key, rqBuild(t.key, texts[t.key]).length])), [texts]);
   const total = RQ_TYPES.reduce((n, t) => n + (enabled[t.key] ? counts[t.key] : 0), 0);
 
@@ -1277,6 +1365,7 @@ function ReviewQuiz() {
   const onAnswer = (ok) => {
     if (flash) return;
     window.speechSynthesis?.cancel();
+    if (ok) rqCorrectSound(); else rqWrongSound();
     if (ok) {
       setScores((s) => ({ ...s, [current]: (s[current] || 0) + 1 }));
       setFlash({ kind: "ok", text: `${current} 정답! +1` });
@@ -1362,16 +1451,24 @@ function ReviewQuiz() {
                 <span style={{ fontSize: 40 }}>📂</span>
                 <div className="flex-1">
                   <div className="text-xl font-black" style={{ color: C.blue }}>오늘 수업 PPT 넣기</div>
-                  <div className="text-sm mt-1" style={{ color: C.sub }}>.pptx 파일을 끌어다 놓거나 눌러서 고르면, "Student book" 이후 오늘 배운 내용으로 문제를 자동으로 채워요. (파일은 이 화면 안에서만 읽어요)</div>
+                  <div className="text-sm mt-1" style={{ color: C.sub }}>.pptx 파일을 끌어다 놓거나 눌러서 고르면, "Student book" 이후 오늘 배운 내용으로 문제를 자동으로 채워요. 유형별 문제 수를 바꾸면 그 수대로 다시 뽑아요. (파일은 이 화면 안에서만 읽어요)</div>
                 </div>
                 <label className="text-sm font-bold flex items-center gap-2" style={{ color: C.ink }} onClick={(e) => e.stopPropagation()}>
                   유형별
-                  <select value={maxPer} onChange={(e) => setMaxPer(Number(e.target.value))} className="rounded-lg px-2 py-1" style={{ border: `1px solid ${C.border}` }}>
+                  <select value={maxPer} onChange={(e) => changeMaxPer(Number(e.target.value))} className="rounded-lg px-2 py-1" style={{ border: `1px solid ${C.border}` }}>
                     {[3, 4, 5, 6, 8, 10].map((n) => <option key={n} value={n}>{n}문제</option>)}
                   </select>
                 </label>
                 <input ref={pptInput} type="file" accept=".pptx" hidden onChange={(e) => { onPpt(e.target.files[0]); e.target.value = ""; }} />
               </div>
+              {ppt && (
+                <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: "#fff", border: `1.5px solid ${C.blue}` }}>
+                  <span className="text-2xl">📄</span>
+                  <span className="text-base font-black truncate" style={{ color: C.ink }}>{ppt.name}</span>
+                  <button onClick={() => applyPpt(ppt.slides, maxPer)} className="ml-auto text-sm font-bold px-3 py-1.5 rounded-full flex-shrink-0" style={{ color: C.blue, border: `1.5px solid ${C.blue}` }}>🔀 문제 다시 뽑기</button>
+                  <button onClick={removePpt} className="text-sm font-bold px-3 py-1.5 rounded-full flex-shrink-0" style={{ color: C.red, border: `1.5px solid ${C.red}` }}>✕ PPT 지우기</button>
+                </div>
+              )}
               {pptMsg && (
                 <div className="rounded-xl px-4 py-3 text-sm font-bold" style={{ background: pptMsg.ok ? "#EAF7EF" : "#FDECEC", color: pptMsg.ok ? "#1E6B3A" : C.red, lineHeight: 1.6 }}>
                   {pptMsg.ok ? "✅ " : "⚠️ "}{pptMsg.text}
@@ -1414,8 +1511,8 @@ function ReviewQuiz() {
     const medal = { 1: "🥇", 2: "🥈", 3: "🥉" };
     const ph = { 1: 230, 2: 170, 3: 130 };
     return (
-      <FitToScreen>
-        <div style={{ width: 1280, padding: "10px 40px 30px" }} className="flex flex-col items-center gap-6">
+      <RQStage width={1280} height={820}>
+        <div style={{ width: 1280, height: 820, padding: "20px 40px 30px" }} className="flex flex-col items-center justify-center gap-6">
           <h2 className="font-black" style={{ fontSize: 52, color: C.ink }}>🏆 {className || "Review Quiz"} 결과</h2>
           <div className="flex items-end gap-6">
             {podium.map((group, i) => {
@@ -1443,7 +1540,7 @@ function ReviewQuiz() {
             <button onClick={() => setPhase("setup")} className="rounded-2xl px-8 py-4 text-2xl font-black" style={{ border: `2px solid ${C.border}`, color: C.ink }}>설정으로</button>
           </div>
         </div>
-      </FitToScreen>
+      </RQStage>
     );
   }
 
@@ -1452,8 +1549,8 @@ function ReviewQuiz() {
   const t = RQ_TYPE[q.type];
   const board = [...students].sort((a, b) => (scores[b] || 0) - (scores[a] || 0));
   return (
-    <FitToScreen>
-      <div style={{ width: 1500, height: 860 }} className="flex gap-6 px-6">
+    <RQStage width={1500} height={860}>
+      <div style={{ width: 1500, height: 860 }} className="flex gap-6 px-6 py-2">
         <div className="flex-1 min-w-0 flex flex-col">
           {/* 위: 진행 정보 + 지금 차례 */}
           <div className="flex items-center gap-4 mb-5">
@@ -1496,7 +1593,7 @@ function ReviewQuiz() {
           </div>
         </div>
       </div>
-    </FitToScreen>
+    </RQStage>
   );
 }
 
