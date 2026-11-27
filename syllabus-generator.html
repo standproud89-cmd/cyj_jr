@@ -247,7 +247,7 @@ let state = {
   hq:null,
   sideDow:0,
   includeMasterCalendar:true,
-  campus: '정이조주니어(동작)'
+  campus: (()=>{ try{ const v=localStorage.getItem('cyj-syllabus-campus'); if(v && CAMPUSES.includes(v)) return v; }catch(e){} return '정이조주니어(동작)'; })()
 };
 
 /* ============== 날짜 유틸 ============== */
@@ -580,6 +580,11 @@ function renderPanel(){
     </div>
 
     <div class="field">
+      <label>캠퍼스 <span style="font-weight:500;color:var(--ink-soft);">(표 아래에 들어가요)</span></label>
+      <select id="campusSel">${CAMPUSES.map(cp=>`<option value="${esc(cp)}" ${state.campus===cp?'selected':''}>${esc(cp)}</option>`).join('')}</select>
+    </div>
+
+    <div class="field">
       <label>반명</label>
       <input type="text" id="className" value="${esc(state.className)}">
     </div>
@@ -649,6 +654,7 @@ function bindPanelEvents(){
     btn.onclick = ()=>{ state.dayGroup = btn.dataset.val; state.sideDow = 0; renderAll(); };
   });
   document.getElementById('className').oninput = e=>{ state.className=e.target.value; renderStage(); };
+  document.getElementById('campusSel').onchange = e=>{ state.campus=e.target.value; try{ localStorage.setItem('cyj-syllabus-campus', state.campus); }catch(x){} renderStage(); };
   const $ = id=>document.getElementById(id)||{};
   $('startDate').oninput = e=>{ state.startDate=e.target.value; renderStage(); };
   $('endDate').oninput = e=>{ state.endDate=e.target.value; renderStage(); };
