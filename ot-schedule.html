@@ -162,6 +162,13 @@
     .page{ box-shadow:none; page-break-after:always; }
     .rm, .empty-hint{ display:none !important; }
     tr.extra.blank{ display:none; }
+    /* 흑백 프린트용: 빨강·노랑 → 검정 */
+    .page{ color:#000; }
+    .doc-sub{ background:#fff !important; border:1.5px solid #000 !important; color:#000 !important; }
+    .doc-sub b{ color:#000 !important; text-decoration:underline; text-underline-offset:2px; }
+    td.time.h5{ color:#000 !important; font-weight:800; }
+    td.room{ color:#000 !important; }
+    .it.obs .tx{ color:#000 !important; font-weight:800; }
   }
 </style>
 </head>

@@ -186,6 +186,24 @@
   table.lt td{ line-height:1.25; position:relative; }
   .wl-note{ position:absolute; left:2px; right:2px; bottom:4px; display:block; font-size:9px; line-height:1.2; color:var(--ink-soft); white-space:normal; word-break:keep-all; }
   .wl-note.wl-jr{ color:var(--accent); font-weight:800; }
+  /* Wind 기한표: 칸이 큰 만큼 글씨도 크게 */
+  table.lt th{ font-size:13.5px; }
+  table.lt td.wl-label{ font-size:14px; white-space:nowrap; }
+  table.lt td.wl-date{ font-size:19px; font-weight:800; }
+  table.lt td.wl-date .wl-note{ font-size:10.5px; font-weight:500; bottom:5px; }
+  table.lt td.wl-date .wl-note.wl-jr{ font-weight:800; }
+  /* Wind 3개월 캘린더 (한 장) */
+  .cal3{ flex:1; min-height:0; display:flex; flex-direction:column; gap:10px; }
+  .cal3-month{ min-height:0; display:flex; flex-direction:column; }
+  .cal3-head{ font-size:15px; font-weight:800; margin:0 0 4px; }
+  .cal3-month > table{ flex:1; height:100%; }
+  .cal3 .cal-grid th{ font-size:10px; padding:2px 0; }
+  .cal3 .cal-grid thead th{ height:18px; }
+  .cal3 .cal-grid td{ padding:2px 3px; }
+  .cal3 .cal-daynum{ font-size:11px; margin-bottom:1px; }
+  .cal3 .cal-badge{ font-size:9.5px; padding:1px 4px; margin:0; text-align:center; }
+  .cal3 .cal3-off{ background:#F6F7F7; }
+  .cal3 .cal-noclass{ position:static; display:block; padding:2px 0; font-size:9.5px; border-radius:6px; }
 
   @media print{
     .panel{ display:none; }
@@ -193,6 +211,35 @@
     .page-label{ display:none; }
     .page{ box-shadow:none; page-break-after:always; margin:0 auto; }
     body{ background:#fff; }
+
+    /* ===== 흑백 프린트용 (인쇄하기에서만) — 담임 안내문 3안과 같은 스타일 ===== */
+    .page, .page *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .page{ color:#000; }
+    .doc-sub{ color:#222; }
+    .doc-sub u{ text-decoration-color:#000; }
+    /* 반명칭 등 빨간 글씨 → 검정 */
+    table.dd td[style*="--accent"]{ color:#000 !important; }
+    table.dd th, table.dd td{ border-color:#000; }
+    table.dd td.daylabel{ background:#EDEDED; }
+    /* 수업요일(월수·수금·월금) 연한 색 칸 → 흰 바탕 + 굵은 검정 */
+    .p-mw-soft, .p-wf-soft, .p-mf-soft{ background:#fff !important; color:#000 !important; }
+    .jrtest-note{ color:#000 !important; text-decoration:underline; text-underline-offset:2px; }
+    .cp-note{ color:#333; }
+    /* 오른쪽 Speaking & Writing / Novel Study 표 */
+    .side-table th, .side-table td{ border-color:#000; }
+    .side-table thead th{ background:#000 !important; color:#fff !important; }
+    .side-note, .side-fixed{ color:#333; }
+    /* Wind 기한표 */
+    table.lt th, table.lt td{ border-color:#000; }
+    .wl-note{ color:#333; }
+    .wl-note.wl-jr{ color:#000 !important; text-decoration:underline; text-underline-offset:2px; }
+    /* Wind 캘린더: 수업 = 흰 바탕 테두리, No Class = 검정 */
+    .cal-grid th, .cal-grid td{ border-color:#000; }
+    .cal-grid th{ color:#000; }
+    .cal-badge{ background:#fff !important; color:#000 !important; border:1px solid #000; }
+    .cal-title .cal-badge{ background:#000 !important; color:#fff !important; }
+    .cal-noclass{ background:#000 !important; color:#fff !important; }
+    .cal3 .cal3-off{ background:#F2F2F2; }
   }
 </style>
 </head>
@@ -225,7 +272,7 @@ const PAIR_DEFS = {
 const LEVEL_DEFS = {
   Nation: { subjects:['FW','LF','NS'], exempt:null, side:'speaking', showLabels:true, sideBasis:'NS' },
   Island: { subjects:['FW','LF','NS'], exempt:null, side:'speaking', showLabels:true, sideBasis:'NS' },
-  Globe:  { subjects:['GW','RA','AD'], exempt:'AD', side:'novel', showLabels:false, sideBasis:'AD' },
+  Globe:  { subjects:['GW','RA','AD'], exempt:'AD', side:'novel', showLabels:true, sideBasis:'AD' },
   Wind:   { lessonBased:true }
 };
 const WIND_PATTERNS = {
@@ -1023,14 +1070,14 @@ function renderWindLessonPage(){
       <div class="doc-sub">아래 표를 보고 숙제 검사 날짜를 핸드북 알림장에 적어주세요.<br>
       반명칭: <b style="color:var(--accent);">${esc(state.className)}</b> (${pat.label} Wind)</div>
       <div class="fill"><table class="lt">
-        <colgroup>${chunks.map(()=>'<col style="width:14.5%"><col style="width:18.83%">').join('')}</colgroup>
+        <colgroup>${chunks.map(()=>'<col style="width:18.5%"><col style="width:14.83%">').join('')}</colgroup>
         <thead><tr>
           ${chunks.map(()=>`<th>수업한 날</th><th>검사날짜</th>`).join('')}
         </tr></thead>
         <tbody>
           ${Array.from({length:chunkSize},(_,r)=>`
             <tr>
-              ${chunks.map(chunk=>`<td>${chunk[r].label}</td><td>${chunk[r].html}</td>`).join('')}
+              ${chunks.map(chunk=>`<td class="wl-label">${chunk[r].label}</td><td class="wl-date">${chunk[r].html}</td>`).join('')}
             </tr>
           `).join('')}
         </tbody>
@@ -1209,6 +1256,60 @@ function renderWindCalendarPage(monthDate){
   `;
 }
 
+/* Wind: 학기 전체(보통 3개월)를 한 장에 */
+function renderWindCalendarsPage(months){
+  const pat = WIND_PATTERNS[state.dayGroup];
+  const dates = buildWindMeetings();
+  const hSet = holidaySet();
+  const shown = new Set(months.map(md=>md.getFullYear()*12+md.getMonth()));
+  const dateToLesson = {};
+  dates.forEach((d,i)=>{
+    if(!d) return;
+    const l1=i*pat.lessonsPerMeeting+1, l2=i*pat.lessonsPerMeeting+pat.lessonsPerMeeting;
+    dateToLesson[toISO(d)] = `Lesson ${l1}-${l2}`;
+  });
+  const blocks = months.map(md=>{
+    const y = md.getFullYear(), m = md.getMonth();
+    const firstDow = new Date(y,m,1).getDay();
+    const dim = new Date(y,m+1,0).getDate();
+    const cells = [];
+    for(let i=firstDow;i>0;i--) cells.push(new Date(y,m,1-i));
+    for(let d=1; d<=dim; d++) cells.push(new Date(y,m,d));
+    while(cells.length % 7 !== 0) cells.push(null);
+    const weeks = []; for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
+    return `<div class="cal3-month" style="flex:${weeks.length+0.6} 1 0;">
+      <div class="cal3-head">${y}년 ${m+1}월</div>
+      <table class="cal-grid">
+        <thead><tr>${WEEKDAY_KO.map(w=>`<th>${w}</th>`).join('')}</tr></thead>
+        <tbody>${weeks.map(week=>`<tr>${week.map(d=>{
+          if(!d) return `<td class="cal3-off"></td>`;
+          const other = d.getMonth()!==m;
+          if(other && shown.has(d.getFullYear()*12+d.getMonth())) return `<td class="cal3-off"></td>`;   // 다른 달 칸에 이미 나오는 날짜는 비워 둠
+          const iso = toISO(d);
+          const isHol = hSet.has(iso);
+          const isClass = hqOn() ? !!dateToLesson[iso] : (pat.days.includes(d.getDay()) && !isHol);
+          let inner = `<div class="cal-daynum" ${other?'style="color:#9aa3a0;"':''}>${other?(d.getMonth()+1)+'/':''}${d.getDate()}</div>`;
+          if(isHol) inner += `<div class="cal-noclass">No Class</div>`;
+          else if(isClass) inner += `<span class="cal-badge ${pat.cls}">${dateToLesson[iso]||pat.label}</span>`;
+          return `<td>${inner}</td>`;
+        }).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  });
+  const range = months.length ? `${months[0].getMonth()+1}월 ~ ${months[months.length-1].getMonth()+1}월` : '';
+  return `
+    <div class="page-content">
+      <div class="doc-header"><div class="doc-title">🗓️ &nbsp;Wind 캘린더 — ${range}</div></div>
+      <div class="cal-title"><span class="cal-badge ${pat.cls}" style="display:inline-block;">${pat.label} Wind (${state.dayGroup})</span></div>
+      <div class="cal3">${blocks.join('')}</div>
+    </div>
+    <div class="page-footer">
+      <div class="footer-line"></div>
+      <div class="footer-campus">${esc(state.campus)}</div>
+    </div>
+  `;
+}
+
 /* ============== Stage 렌더 ============== */
 function renderStage(){
   const stage = document.getElementById('stage');
@@ -1226,11 +1327,9 @@ function renderStage(){
   const masterCount = showMaster ? months.length : 0;
 
   if(state.level === 'Wind'){
-    pageCount = 1 + months.length + masterCount;
+    pageCount = 2 + masterCount;
     pagesHtml += `<div class="page-label">미리보기 1 / ${pageCount} · Lesson 기한표</div><div class="page" id="page-lesson">${renderWindLessonPage()}</div>`;
-    months.forEach((md,i)=>{
-      pagesHtml += `<div class="page-label">미리보기 ${i+2} / ${pageCount} · ${md.getFullYear()}.${md.getMonth()+1} Wind 캘린더</div><div class="page" id="page-cal-${i}">${renderWindCalendarPage(md)}</div>`;
-    });
+    pagesHtml += `<div class="page-label">미리보기 2 / ${pageCount} · Wind 캘린더 (${months.length}개월 한 장)</div><div class="page" id="page-cal-0">${renderWindCalendarsPage(months)}</div>`;
   } else {
     pageCount = 1 + masterCount;
     pagesHtml += `<div class="page-label">미리보기 1 / ${pageCount} · ${state.level} ${state.dayGroup}</div><div class="page" id="page-main">${renderNIGPage()}</div>`;
