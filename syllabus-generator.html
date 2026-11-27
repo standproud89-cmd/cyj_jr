@@ -108,25 +108,30 @@
   .btn-secondary:hover{ background:var(--paper); }
 
   /* ---------- A4 page ---------- */
-  .page{ width:210mm; min-height:297mm; background:#fff; box-shadow:0 8px 30px rgba(20,25,25,0.10);
+  /* 결과물은 항상 A4 한 장 크기 고정 — 내용이 늘거나 줄어도 종이 크기는 그대로, 표가 남는 높이를 채움 */
+  .page{ width:210mm; height:297mm; min-height:297mm; max-height:297mm; overflow:hidden; background:#fff; box-shadow:0 8px 30px rgba(20,25,25,0.10);
     padding:12mm 13mm 8mm; position:relative; flex:0 0 auto; display:flex; flex-direction:column; }
-  .page-content{ flex:1; }
+  .page-content{ flex:1; min-height:0; display:flex; flex-direction:column; transform-origin:top center; }
+  .fill{ flex:1; min-height:0; display:flex; flex-direction:column; }
+  .fill > table{ flex:1; height:100%; }
   .page-label{ font-size:12px; color:var(--ink-soft); font-weight:700; align-self:flex-start; margin-left:2px; }
-  .doc-header{ display:flex; align-items:center; justify-content:center; gap:10px; padding-bottom:10px;
-    margin-bottom:12px; border-bottom:3px solid var(--ink); }
+  .doc-header{ display:flex; align-items:center; justify-content:center; gap:10px; padding-bottom:8px;
+    margin-bottom:10px; border-bottom:3px solid var(--ink); flex:0 0 auto; }
   .doc-title{ font-size:27px; font-weight:800; letter-spacing:-0.01em; }
-  .doc-sub{ text-align:center; font-size:12.5px; color:var(--ink-soft); line-height:1.75; margin-bottom:18px; }
+  .doc-sub{ text-align:center; font-size:12.5px; color:var(--ink-soft); line-height:1.7; margin-bottom:12px; flex:0 0 auto; }
   .doc-sub u{ text-decoration:underline; text-decoration-color:var(--accent); }
 
-  .two-col{ display:grid; grid-template-columns:2.15fr 1fr; gap:16px; align-items:start; }
+  .two-col{ display:grid; grid-template-columns:2.15fr 1fr; gap:16px; align-items:stretch; flex:1; min-height:0; }
+  .two-col.solo{ grid-template-columns:1fr; }
+  .two-col > .side{ align-self:start; }
 
   table.dd{ width:100%; border-collapse:collapse; font-size:12.5px; }
-  table.dd th, table.dd td{ border:1px solid var(--line); text-align:center; padding:6px 4px; vertical-align:middle; }
+  table.dd th, table.dd td{ border:1px solid var(--line); text-align:center; padding:4px 4px; vertical-align:middle; }
   table.dd thead th.top{ background:var(--teal); color:#fff; font-size:13.5px; padding:10px; }
   table.dd th.pairhead{ font-weight:800; font-size:14px; padding:10px 4px; }
   table.dd th.paircode{ font-weight:700; font-size:13px; padding:7px 4px; }
   table.dd td.daylabel{ background:#F1F3F4; font-weight:800; width:15%; }
-  table.dd td.spacer{ background:#fff; border:none; padding:4px 0; }
+  table.dd td.spacer{ background:#fff; border:none; padding:0; height:8px; }
   .jrtest-note{ display:block; margin-top:4px; font-size:11px; font-weight:800; color:var(--accent); }
   .cp-note{ display:block; font-size:10.5px; color:var(--ink-soft); margin-top:2px; }
 
@@ -139,7 +144,7 @@
   .side-note{ font-size:10.5px; color:var(--ink-soft); text-align:center; margin-bottom:12px; line-height:1.65; }
   .side-fixed{ font-style:normal; color:var(--ink-soft); }
 
-  .page-footer{ margin-top:12px; }
+  .page-footer{ margin-top:10px; flex:0 0 auto; }
   .footer-line{ border-top:3px solid var(--ink); margin-bottom:6px; }
   .footer-campus{ text-align:center; font-size:11.5px; font-weight:800; color:var(--ink); }
 
@@ -161,7 +166,8 @@
   .cal-title{ font-size:16px; font-weight:800; margin:4px 0 8px; }
   .cal-grid{ width:100%; border-collapse:collapse; table-layout:fixed; }
   .cal-grid th{ font-size:10.5px; font-weight:700; color:var(--ink-soft); padding:4px 0; border:1px solid var(--line); }
-  .cal-grid td{ border:1px solid var(--line); vertical-align:top; height:23mm; padding:3px; font-size:9.5px; position:relative; }
+  .cal-grid td{ border:1px solid var(--line); vertical-align:top; height:auto; padding:3px; font-size:9.5px; position:relative; }
+  .cal-grid thead th{ height:22px; }
   .cal-daynum{ font-weight:700; font-size:11px; margin-bottom:2px; }
   .cal-daynum.muted{ color:#C6CBCE; }
   .cal-badge{ display:block; border-radius:6px; padding:1.5px 4px; margin-bottom:2px; font-size:8.6px;
@@ -172,9 +178,14 @@
     display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:10px; }
 
   .lesson-title{ font-weight:800; font-size:13px; margin:12px 0 6px; }
-  table.lt{ width:100%; border-collapse:collapse; font-size:10px; margin-bottom:10px; }
+  table.lt{ width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:10px; }
   table.lt th, table.lt td{ border:1px solid var(--line); text-align:center; padding:4px 2px; }
-  table.lt th{ background:var(--ink); color:#fff; font-size:10px; }
+  table.lt th{ background:var(--ink); color:#fff; font-size:11px; height:28px; }
+  /* Wind 표: 체크포인트·주니어테스트 메모는 작은 글씨 한 줄 → 칸 높이가 들쭉날쭉하지 않게 */
+  table.lt{ table-layout:fixed; }
+  table.lt td{ line-height:1.25; position:relative; }
+  .wl-note{ position:absolute; left:2px; right:2px; bottom:4px; display:block; font-size:9px; line-height:1.2; color:var(--ink-soft); white-space:normal; word-break:keep-all; }
+  .wl-note.wl-jr{ color:var(--accent); font-weight:800; }
 
   @media print{
     .panel{ display:none; }
@@ -581,7 +592,7 @@ function renderPanel(){
     <div class="section-title">주니어테스트</div>
     <div id="jrTestList"></div>
 
-    ${isWind ? '' : `<div class="section-title">${state.level==='Globe'?'Novel Study':'Speaking & Writing'} 제출 날짜 (자동)</div><div id="sideInputs"></div>`}
+    ${(isWind || state.level==='Island') ? '' : `<div class="section-title">${state.level==='Globe'?'Novel Study':'Speaking & Writing'} 제출 날짜 (자동)</div><div id="sideInputs"></div>`}
 
     <div class="actions">
       <button class="btn btn-primary" id="printBtn" type="button">🖨️ 인쇄하기</button>
@@ -927,10 +938,9 @@ function renderNIGPage(){
       <div class="doc-header"><div class="doc-title">📋 &nbsp;Homework Due Dates</div></div>
       <div class="doc-sub">아래 표를 보고 과목별 숙제 검사날짜를 핸드북 알림장에 적어주세요.<br>
       Day 8, 16, 24 수업날짜 또한 <u>밑줄</u> 부분에 적어주세요.</div>
-      <div class="two-col">
-        <div>${bodyHtml}</div>
-        <div>${renderSideTable(spec, state.level+'-'+state.dayGroup)}</div>
-      </div>
+      ${state.level==='Island'
+        ? `<div class="two-col solo"><div class="fill">${bodyHtml}</div></div>`
+        : `<div class="two-col"><div class="fill">${bodyHtml}</div><div class="side">${renderSideTable(spec, state.level+'-'+state.dayGroup)}</div></div>`}
     </div>
     <div class="page-footer">
       <div class="footer-line"></div>
@@ -975,19 +985,19 @@ function renderWindLessonPage(){
     if(hqOn()){
       const v = hqWind(state.dayGroup, meetingNum), prev = dates[meetingNum-1];
       const md = x=> (x && /^\d{4}-/.test(x)) ? fmtMD(parseISO(x)) : '—';
-      if(meetingNum === total) html = `<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(prev)})</span>`;
-      else if(checkpoints.includes(meetingNum)) html = `${md(v)}<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(prev)})</span>`;
+      if(meetingNum === total) html = `<span class="wl-note">(L${l1}-${l2} 수업 ${fmtMD(prev)})</span>`;
+      else if(checkpoints.includes(meetingNum)) html = `${md(v)}<span class="wl-note">(L${l1}-${l2} 수업 ${fmtMD(prev)})</span>`;
       else html = v==='IN' ? 'In class' : md(v);
     } else if(meetingNum === total){
-      html = `<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(dates[meetingNum-2])})</span>`;
+      html = `<span class="wl-note">(L${l1}-${l2} 수업 ${fmtMD(dates[meetingNum-2])})</span>`;
     } else if(checkpoints.includes(meetingNum)){
-      html = `${fmtMD(dates[meetingNum-1])}<span class="cp-note">(L${l1}-${l2} 수업날짜: ${fmtMD(dates[meetingNum-2])})</span>`;
+      html = `${fmtMD(dates[meetingNum-1])}<span class="wl-note">(L${l1}-${l2} 수업 ${fmtMD(dates[meetingNum-2])})</span>`;
     } else {
       html = fmtMD(dates[meetingNum-1]);
     }
     if(i === jrRowIdx){
       const jd = parseISO(jrISO);
-      html += `<span class="jrtest-note">${jd.getMonth()+1}월 ${jd.getDate()}일에 주니어테스트 있음</span>`;
+      html += `<span class="wl-note wl-jr">★ ${jd.getMonth()+1}/${jd.getDate()} 주니어테스트</span>`;
     }
     return { label, html };
   });
@@ -1006,7 +1016,8 @@ function renderWindLessonPage(){
       <div class="doc-header"><div class="doc-title">📋 &nbsp;Homework Due Dates — Wind</div></div>
       <div class="doc-sub">아래 표를 보고 숙제 검사 날짜를 핸드북 알림장에 적어주세요.<br>
       반명칭: <b style="color:var(--accent);">${esc(state.className)}</b> (${pat.label} Wind)</div>
-      <table class="lt">
+      <div class="fill"><table class="lt">
+        <colgroup>${chunks.map(()=>'<col style="width:14.5%"><col style="width:18.83%">').join('')}</colgroup>
         <thead><tr>
           ${chunks.map(()=>`<th>수업한 날</th><th>검사날짜</th>`).join('')}
         </tr></thead>
@@ -1017,8 +1028,8 @@ function renderWindLessonPage(){
             </tr>
           `).join('')}
         </tbody>
-      </table>
-      <div class="side-note" style="text-align:left;">
+      </table></div>
+      <div class="side-note" style="text-align:left;flex:0 0 auto;margin-bottom:0;">
         ${hqOn() && (state.hq.ucc||[]).length ? hqUccHtml() : `[UCC 찍는날]<br>
         1. ${ucc[0]} &nbsp; 2. ${ucc[1]} &nbsp; 3. ${ucc[2]}`}
       </div>
@@ -1165,7 +1176,7 @@ function renderWindCalendarPage(monthDate){
     <div class="page-content">
       <div class="doc-header"><div class="doc-title">🗓️ &nbsp;Wind 월별 캘린더 — ${monthName}</div></div>
       <div class="cal-title"><span class="cal-badge ${pat.cls}" style="display:inline-block;">${pat.label} Wind (${state.dayGroup})</span></div>
-      <table class="cal-grid">
+      <div class="fill"><table class="cal-grid">
         <thead><tr>${WEEKDAY_KO.map(w=>`<th>${w}</th>`).join('')}</tr></thead>
         <tbody>
           ${weeks.map(week=>`<tr>${week.map(d=>{
@@ -1183,7 +1194,7 @@ function renderWindCalendarPage(monthDate){
             return `<td>${inner}</td>`;
           }).join('')}</tr>`).join('')}
         </tbody>
-      </table>
+      </table></div>
     </div>
     <div class="page-footer">
       <div class="footer-line"></div>
@@ -1227,6 +1238,7 @@ function renderStage(){
   }
 
   stage.innerHTML = pagesHtml;
+  requestAnimationFrame(fitPages);
 
   renderSideInputs();
   renderJrTestList();
@@ -1280,6 +1292,18 @@ async function exportPDF(){
 }
 
 /* ============== 초기화 ============== */
+function fitPages(){
+  document.querySelectorAll('.page').forEach(pg=>{
+    const pc = pg.querySelector('.page-content'); if(!pc) return;
+    pc.style.transform = ''; pc.style.marginBottom = '';
+    const over = pg.scrollHeight - pg.clientHeight;
+    if(over > 1){
+      const avail = pc.clientHeight, need = pc.scrollHeight;
+      const k = Math.max(0.7, avail / need);
+      pc.style.transform = `scale(${k})`;
+    }
+  });
+}
 function renderAll(){ renderPanel(); renderStage(); }
 hqRestore();
 renderAll();
