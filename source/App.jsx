@@ -4,7 +4,7 @@ import {
   Users2, Plus, Minus, Save, X, Pencil, Trophy, Loader2
   
 } from "lucide-react";
-import { readPptx, generateFromSlides } from "./rqPpt.js";
+import { readPptx, generateFromSlides, RQ_MIN, RQ_MAX } from "./rqPpt.js";
 
 /* ---------- Design tokens (from GnB CYJ Jr. hexagon identity) ---------- */
 const C = {
@@ -1270,7 +1270,7 @@ function ReviewQuiz() {
   const [mix, setMix] = useState(initial.mix ?? false);
   const [setupMsg, setSetupMsg] = useState("");
   const [pptMsg, setPptMsg] = useState(null); // { ok, text, empty:[] }
-  const [maxPer, setMaxPer] = useState(4);
+  const [maxPer, setMaxPer] = useState(RQ_MIN);   // 유형별 최소 5 · 최대 10
   const [ppt, setPpt] = useState(null);        // { name, slides, before:{texts, enabled} } — 이 화면에서만 기억
   const [pptOver, setPptOver] = useState(false);
   const pptInput = useRef(null);
@@ -1295,7 +1295,8 @@ function ReviewQuiz() {
     const total2 = RQ_TYPES.reduce((a, t) => a + rqBuild(t.key, nt[t.key]).length, 0);
     setPptMsg({ ok: total2 > 0, text: total2 > 0
       ? `오늘 수업 슬라이드 ${r.summary.today}장에서 단어 ${r.summary.vocab}개, 문장 ${r.summary.sentences}개를 찾아 ${total2}문제를 만들었어요. 아래에서 훑어보고 고친 뒤 시작하세요.`
-      : `이 PPT에서 문제로 만들 내용을 찾지 못했어요. 문제를 직접 적어주세요.`, empty });
+      : `이 PPT에서 문제로 만들 내용을 찾지 못했어요. 문제를 직접 적어주세요.`, empty,
+      short: Object.entries(r.short || {}).filter(([, c]) => c > 0).map(([k, c]) => `${RQ_TYPE[k].label} ${c}문제`) });
   };
   const changeMaxPer = (n) => { setMaxPer(n); if (ppt) applyPpt(ppt.slides, n); };   // 문제 수 바꾸면 그 수대로 다시 뽑기
   const removePpt = () => {
@@ -1456,7 +1457,7 @@ function ReviewQuiz() {
                 <label className="text-sm font-bold flex items-center gap-2" style={{ color: C.ink }} onClick={(e) => e.stopPropagation()}>
                   유형별
                   <select value={maxPer} onChange={(e) => changeMaxPer(Number(e.target.value))} className="rounded-lg px-2 py-1" style={{ border: `1px solid ${C.border}` }}>
-                    {[3, 4, 5, 6, 8, 10].map((n) => <option key={n} value={n}>{n}문제</option>)}
+                    {Array.from({ length: RQ_MAX - RQ_MIN + 1 }, (_, i) => RQ_MIN + i).map((n) => <option key={n} value={n}>{n}문제</option>)}
                   </select>
                 </label>
                 <input ref={pptInput} type="file" accept=".pptx" hidden onChange={(e) => { onPpt(e.target.files[0]); e.target.value = ""; }} />
@@ -1472,6 +1473,7 @@ function ReviewQuiz() {
               {pptMsg && (
                 <div className="rounded-xl px-4 py-3 text-sm font-bold" style={{ background: pptMsg.ok ? "#EAF7EF" : "#FDECEC", color: pptMsg.ok ? "#1E6B3A" : C.red, lineHeight: 1.6 }}>
                   {pptMsg.ok ? "✅ " : "⚠️ "}{pptMsg.text}
+                  {pptMsg.short && pptMsg.short.length > 0 && <div style={{ fontWeight: 600, color: "#B26A00" }}>PPT 내용이 모자라 {maxPer}문제를 다 못 채운 유형: {pptMsg.short.join(", ")} (직접 더 적어 넣을 수 있어요)</div>}
                   {pptMsg.empty && pptMsg.empty.length > 0 && <div style={{ fontWeight: 500, color: C.sub }}>이 PPT로 만들 수 없어서 꺼 둔 유형: {pptMsg.empty.join(", ")} (직접 적으면 다시 켤 수 있어요)</div>}
                 </div>
               )}
